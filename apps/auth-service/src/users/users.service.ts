@@ -398,6 +398,8 @@ export class UsersService {
 
       .select('course.course_id', 'courseId')
       .addSelect('course.course_title', 'courseTitle')
+      .addSelect('course.course_imageUrl', 'courseImageUrl')
+      .addSelect('course.course_description', 'courseDescription')
 
       .addSelect(
         `COUNT(DISTINCT CASE 
