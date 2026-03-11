@@ -56,7 +56,6 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
   async listAdmins() {
-   
     return this.adminInvitationsService.listAdmins();
   }
 
