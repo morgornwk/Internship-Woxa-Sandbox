@@ -151,6 +151,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([
         {
+          lessonId: 101,
           status: 'COMPLETED',
           lesson: {
             chapter: {
@@ -161,6 +162,7 @@ describe('LearnerHomeService', () => {
           },
         },
         {
+          lessonId: 102,
           status: 'IN_PROGRESS',
           progressPercent: 40,
           lesson: {
@@ -188,7 +190,13 @@ describe('LearnerHomeService', () => {
           course_levels: [
             {
               level_chapters: [
-                { lessons: [{ lesson_id: 101 }, { lesson_id: 102 }] },
+                {
+                  isPublished: true,
+                  lessons: [
+                    { lesson_id: 101, isPublished: true },
+                    { lesson_id: 102, isPublished: true },
+                  ],
+                },
               ],
             },
           ],
@@ -212,7 +220,7 @@ describe('LearnerHomeService', () => {
     expect(res.header.streakDays).toBe(5);
 
     expect(res.continueLearning?.course_id).toBe(10);
-    expect(res.continueLearning?.progressPercent).toBe(50);
+    expect(res.continueLearning?.progressPercent).toBe(0);
     expect(res.myCourses).toEqual([{ course_id: 10, title: 'C1', progressPercent: 50 }]);
     expect(res.notifications.unreadCount).toBe(2);
     expect(res.recommendations.courses).toHaveLength(2);
@@ -427,5 +435,432 @@ describe('LearnerHomeService', () => {
     expect(res.myCourses).toEqual([]);
     expect(res.notifications.unreadCount).toBe(0);
     expect(res.recommendations.courses).toEqual([]);
+  });
+
+  it('excludes draft chapters and lessons from progress calculations', async () => {
+    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
+    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+
+    const userXpQb: any = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+    };
+    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+
+    // Mock progress data: includes both published and draft lessons
+    const continueLearningQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 101, // Published lesson
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 101,
+            isPublished: true,
+            chapter: {
+              chapter_id: 1,
+              isPublished: true,
+              chapter_title: 'Published Chapter',
+              level: {
+                level_title: 'L1',
+                course: { 
+                  course_id: 10, 
+                  course_title: 'Course with Draft Content' 
+                },
+              },
+            },
+          },
+        },
+        {
+          lessonId: 102, // Draft lesson (should not count)
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 102,
+            isPublished: false,
+            chapter: {
+              chapter_id: 1,
+              isPublished: true,
+              chapter_title: 'Published Chapter',
+              level: {
+                level_title: 'L1',
+                course: { 
+                  course_id: 10, 
+                  course_title: 'Course with Draft Content' 
+                },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    const myCoursesQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 101, // Published lesson
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 101,
+            isPublished: true,
+            chapter: {
+              chapter_id: 1,
+              isPublished: true,
+              level: {
+                course: { course_id: 10, course_title: 'Course with Draft Content' },
+              },
+            },
+          },
+        },
+        {
+          lessonId: 102, // Draft lesson (should not count)
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 102,
+            isPublished: false,
+            chapter: {
+              chapter_id: 1,
+              isPublished: true,
+              level: {
+                course: { course_id: 10, course_title: 'Course with Draft Content' },
+              },
+            },
+          },
+        },
+        {
+          lessonId: 103, // Draft chapter (should not count)
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 103,
+            isPublished: true,
+            chapter: {
+              chapter_id: 2,
+              isPublished: false, // Draft chapter
+              chapter_title: 'Draft Chapter',
+              level: {
+                course: { course_id: 10, course_title: 'Course with Draft Content' },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(continueLearningQb)
+      .mockReturnValueOnce(myCoursesQb);
+
+    // Mock course structure with mixed published/draft content
+    const courseStructureQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          course_id: 10,
+          course_title: 'Course with Draft Content',
+          course_levels: [
+            {
+              level_chapters: [
+                {
+                  isPublished: true, // Published chapter
+                  lessons: [
+                    { lesson_id: 101, isPublished: true },  // Published lesson
+                    { lesson_id: 102, isPublished: false }, // Draft lesson
+                  ],
+                },
+                {
+                  isPublished: false, // Draft chapter (should be filtered out by query)
+                  lessons: [
+                    { lesson_id: 103, isPublished: true },  // Lesson in draft chapter
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    };
+    (courseRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(courseStructureQb)
+      .mockReturnValueOnce(courseStructureQb);
+
+    courseRepo.find!.mockResolvedValue([]);
+
+    const res = await service.getHome('u1', 'Bearer x', 'true');
+
+    // Verify that only published content is counted
+    expect(res.continueLearning?.course_id).toBe(10);
+    expect(res.continueLearning?.progressPercent).toBe(100); // Chapter 100% (1/1 published lesson completed)
+    
+    // Only published lessons should count: 1 completed out of 1 published lesson = 100%
+    expect(res.myCourses).toEqual([{ 
+      course_id: 10, 
+      title: 'Course with Draft Content', 
+      progressPercent: 100 // Only published lessons counted
+    }]);
+
+    // Verify that the query filters were applied correctly
+    expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(2);
+  });
+
+  it('handles course with only draft content gracefully', async () => {
+    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
+    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+
+    const userXpQb: any = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+    };
+    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+
+    // Mock progress data for draft content only
+    const continueLearningQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 201,
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 201,
+            isPublished: true,
+            chapter: {
+              chapter_id: 3,
+              isPublished: false, // Draft chapter
+              chapter_title: 'Draft Chapter Only',
+              level: {
+                level_title: 'L1',
+                course: { 
+                  course_id: 20, 
+                  course_title: 'All Draft Course' 
+                },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    const myCoursesQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 201,
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 201,
+            isPublished: true,
+            chapter: {
+              chapter_id: 3,
+              isPublished: false, // Draft chapter
+              level: {
+                course: { course_id: 20, course_title: 'All Draft Course' },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(continueLearningQb)
+      .mockReturnValueOnce(myCoursesQb);
+
+    // Mock course structure with only draft content
+    const courseStructureQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          course_id: 20,
+          course_title: 'All Draft Course',
+          course_levels: [
+            {
+              level_chapters: [
+                {
+                  isPublished: false, // Only draft chapters
+                  lessons: [
+                    { lesson_id: 201, isPublished: true },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    };
+    (courseRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(courseStructureQb)
+      .mockReturnValueOnce(courseStructureQb);
+
+    courseRepo.find!.mockResolvedValue([]);
+
+    const res = await service.getHome('u1', 'Bearer x', 'true');
+
+    // Should handle gracefully - no published content to count
+    expect(res.continueLearning?.course_id).toBe(20);
+    expect(res.continueLearning?.progressPercent).toBe(0);
+    expect(res.myCourses).toEqual([]); // No published content = no courses shown
+  });
+
+  it('calculates correct progress when course has mixed published/draft chapters', async () => {
+    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
+    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+
+    const userXpQb: any = {
+      select: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
+    };
+    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+
+    // Mock progress where user completed lessons in both published and draft chapters
+    const continueLearningQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      orderBy: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 301,
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 301,
+            isPublished: true,
+            chapter: {
+              chapter_id: 4,
+              isPublished: true,
+              chapter_title: 'Published Chapter 1',
+              level: {
+                level_title: 'L1',
+                course: { 
+                  course_id: 30, 
+                  course_title: 'Mixed Content Course' 
+                },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    const myCoursesQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          lessonId: 301, // Published chapter, published lesson
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 301,
+            isPublished: true,
+            chapter: {
+              chapter_id: 4,
+              isPublished: true,
+              level: {
+                course: { course_id: 30, course_title: 'Mixed Content Course' },
+              },
+            },
+          },
+        },
+        {
+          lessonId: 302, // Published chapter, draft lesson
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 302,
+            isPublished: false,
+            chapter: {
+              chapter_id: 4,
+              isPublished: true,
+              level: {
+                course: { course_id: 30, course_title: 'Mixed Content Course' },
+              },
+            },
+          },
+        },
+        {
+          lessonId: 303, // Draft chapter, published lesson
+          status: 'COMPLETED',
+          lesson: {
+            lesson_id: 303,
+            isPublished: true,
+            chapter: {
+              chapter_id: 5,
+              isPublished: false,
+              level: {
+                course: { course_id: 30, course_title: 'Mixed Content Course' },
+              },
+            },
+          },
+        },
+      ]),
+    };
+
+    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(continueLearningQb)
+      .mockReturnValueOnce(myCoursesQb);
+
+    // Mock course structure: 2 published chapters, 1 draft chapter
+    const courseStructureQb: any = {
+      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      getMany: jest.fn().mockResolvedValue([
+        {
+          course_id: 30,
+          course_title: 'Mixed Content Course',
+          course_levels: [
+            {
+              level_chapters: [
+                {
+                  isPublished: true,
+                  lessons: [
+                    { lesson_id: 301, isPublished: true },  // Count: completed
+                    { lesson_id: 302, isPublished: false }, // Count: excluded (draft)
+                    { lesson_id: 304, isPublished: true },  // Count: not completed
+                  ],
+                },
+                {
+                  isPublished: true,
+                  lessons: [
+                    { lesson_id: 305, isPublished: true },  // Count: not completed
+                  ],
+                },
+                {
+                  isPublished: false, // Excluded by query filter
+                  lessons: [
+                    { lesson_id: 303, isPublished: true },  // Would be in draft chapter
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ]),
+    };
+    (courseRepo.createQueryBuilder as jest.Mock)
+      .mockReturnValueOnce(courseStructureQb)
+      .mockReturnValueOnce(courseStructureQb);
+
+    courseRepo.find!.mockResolvedValue([]);
+
+    const res = await service.getHome('u1', 'Bearer x', 'true');
+
+    // Only published content should be counted:
+    // Published lessons: 301, 304, 305 = 3 total
+    // Completed published lessons: 301 = 1 completed
+    // Progress = 1/3 * 100 = 33%
+    expect(res.continueLearning?.course_id).toBe(30);
+    expect(res.continueLearning?.progressPercent).toBe(33); // Chapter 100% (1/1 published lesson completed in current chapter)
+    expect(res.myCourses).toEqual([{ 
+      course_id: 30, 
+      title: 'Mixed Content Course', 
+      progressPercent: 33 // Only published lessons counted
+    }]);
   });
 });
