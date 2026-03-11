@@ -69,14 +69,10 @@ pnpm run build:all
 pnpm install
 
 # run migrations
-pnpm run migration:run:auth
-pnpm run migration:run:course
-pnpm run migration:run:reward
+pnpm run migration:run:<Name>
 
 # start service
-pnpm run start:auth
-pnpm run start:course
-pnpm run start:reward
+pnpm run start:<Name>
 ```
 
 ## Environment Setup
