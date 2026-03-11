@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AdminInvitationsService } from './admin-invitations.service';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { AcceptAdminInviteDto } from './dto/accept-admin-invite.dto';
+import { SuspendUserResponseDto, DeleteUserResponseDto, CancelInvitationResponseDto } from './dto/admin-management-response.dto';
 import { UserRole } from '@common/enums';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
@@ -66,5 +67,47 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 404, description: 'Invitation not found or expired.' })
   async acceptInvite(@Body() dto: AcceptAdminInviteDto) {
     return this.adminInvitationsService.acceptInvite(dto.token, dto.newPassword);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @Patch(':userId/suspend')
+  @ApiOperation({ summary: 'Suspend admin user (OWNER only)' })
+  @ApiResponse({ status: 200, description: 'Admin suspended.', type: SuspendUserResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async suspendUser(@Param('userId') userId: string): Promise<SuspendUserResponseDto> {
+    return this.adminInvitationsService.suspendUser(userId);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @Delete(':userId')
+  @ApiOperation({ summary: 'Delete admin user (OWNER only)' })
+  @ApiResponse({ status: 200, description: 'Admin deleted.', type: DeleteUserResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  async deleteUser(@Param('userId') userId: string): Promise<DeleteUserResponseDto> {
+    return this.adminInvitationsService.deleteUser(userId);
+  }
+
+  @ApiBearerAuth('access-token')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER)
+  @Delete(':userId/invitation')
+  @ApiOperation({ summary: 'Cancel pending invitation email (OWNER only)' })
+  @ApiResponse({ status: 200, description: 'Invitation canceled.', type: CancelInvitationResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
+  @ApiResponse({ status: 404, description: 'No pending invitation found.' })
+  async cancelInvitationEmail(@Param('userId') userId: string): Promise<CancelInvitationResponseDto> {
+    return this.adminInvitationsService.cancelInvitationEmail(userId);
   }
 }
