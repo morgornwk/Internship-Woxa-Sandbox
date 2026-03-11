@@ -580,6 +580,28 @@ describe('ProgressService', () => {
       expect(res.items[0].progressPercent).toBe(100);
     });
 
+    it('includes video lessons with a URL even when DB isPublished is false', async () => {
+      chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any);
+      lessonRepo.find!.mockResolvedValue([
+        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 0, lesson_title: 'Article', lesson_type: 'article' as any, isPublished: true }),
+        makeLesson({ lesson_id: 11, chapter_id: 1, orderIndex: 1, lesson_title: 'Video', lesson_type: 'video' as any, lesson_videoUrl: 'https://cdn.skllracademy.com/videos/1.mp4', isPublished: false }),
+        makeLesson({ lesson_id: 12, chapter_id: 1, orderIndex: 2, lesson_title: 'Draft', lesson_type: 'article' as any, isPublished: false }),
+      ] as any);
+
+      progressRepo.findOne!.mockResolvedValue(makeProgress({ lessonId: 10 }));
+      progressRepo.find!.mockResolvedValue([
+        makeProgress({ lessonId: 10, status: LessonProgressStatus.IN_PROGRESS, progressPercent: 0 }),
+        makeProgress({ lessonId: 11, status: LessonProgressStatus.LOCKED, progressPercent: 0, mapLessonId: 10 }),
+      ]);
+
+      (streakService.getStreak as jest.Mock).mockResolvedValue({ isReward: false, isFlameOn: false });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+
+      expect(res.items.map((item) => item.lessonId)).toEqual([10, 11]);
+      expect(res.items.find((item) => item.lessonId === 11)?.isPublished).toBe(true);
+    });
+
     it('forces progressPercent=100 for COMPLETED even if stored progressPercent is lower', async () => {
       chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any);
       lessonRepo.find!.mockResolvedValue([

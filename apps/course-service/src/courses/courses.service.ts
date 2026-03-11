@@ -251,16 +251,20 @@ export class CoursesService {
           .sort((a, b) => a.chapter_orderIndex - b.chapter_orderIndex)
           .map((chapter) => {
             const lessons: LessonStructureDto[] = (chapter.lessons || [])
-              .filter((lesson) => includeUnpublishedLessons || lesson?.isPublished === true)
+              .filter((lesson) => {
+                const isPublished = this.resolveLessonStructurePublishedState(lesson);
+                return includeUnpublishedLessons || isPublished;
+              })
               .sort((a, b) => a.orderIndex - b.orderIndex)
               .map((lesson) => {
+                const isPublished = this.resolveLessonStructurePublishedState(lesson);
                 const dto: LessonStructureDto = {
                   lesson_id: lesson.lesson_id,
                   lesson_title: lesson.lesson_title,
                   lesson_type: lesson.lesson_type,
                   lesson_description: lesson.lesson_description ?? undefined,
                   orderIndex: lesson.orderIndex,
-                  isPublished: lesson.isPublished,
+                  isPublished,
                 };
 
                 if (lesson.lesson_type === LessonType.CHECKPOINT) {
@@ -360,5 +364,23 @@ export class CoursesService {
       createdAt: course.createdAt,
       updatedAt: course.updatedAt,
     };
+  }
+
+  private resolveLessonStructurePublishedState(
+    lesson?: {
+      lesson_type?: LessonType;
+      lesson_videoUrl?: string | null;
+      isPublished?: boolean;
+    } | null,
+  ): boolean {
+    if (!lesson) {
+      return false;
+    }
+
+    if (lesson.lesson_type === LessonType.VIDEO) {
+      return Boolean(lesson.lesson_videoUrl?.trim());
+    }
+
+    return lesson.isPublished === true;
   }
 }

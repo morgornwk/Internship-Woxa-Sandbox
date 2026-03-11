@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, BadRequestException, Optional } from '@n
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, LessThan, MoreThan, Repository } from 'typeorm';
 
-import { Lesson } from '../lessons/entities/lesson.entity';
+import { Lesson, LessonType } from '../lessons/entities/lesson.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
 import { UpsertLessonProgressDto } from './dto/upsert-lesson-progress.dto';
 import { LessonProgress, LessonProgressStatus } from './entities/progress.entity';
@@ -668,11 +668,11 @@ export class ProgressService {
       throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
     }
 
-    // ดึงบทเรียนทั้งหมดในบทนั้น
-    const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId, isPublished: true },
+    // ดึงบทเรียนทั้งหมดในบทนั้น แล้วคัดเฉพาะที่ควรเห็นใน roadmap
+    const lessons = (await this.lessonRepository.find({
+      where: { chapter_id: chapterId },
       order: { orderIndex: 'ASC' }
-    });
+    })).filter((lesson) => this.resolveRoadmapLessonPublishedState(lesson));
 
     // ถ้าไม่มีบทเรียนเลย ให้คืนค่า roadmap ว่าง
     if (lessons.length === 0) {
@@ -701,7 +701,7 @@ export class ProgressService {
         lessonId: lesson.lesson_id,
         lessonTitle: lesson.lesson_title,
         lessonType: lesson.lesson_type,
-        isPublished: lesson.isPublished,
+        isPublished: this.resolveRoadmapLessonPublishedState(lesson),
         status: LessonProgressStatus.LOCKED,
         progressPercent: 0,
         positionSeconds: null,
@@ -784,7 +784,7 @@ export class ProgressService {
         lessonId: lesson.lesson_id,
         lessonTitle: lesson.lesson_title,
         lessonType: lesson.lesson_type,
-        isPublished: lesson.isPublished,
+        isPublished: this.resolveRoadmapLessonPublishedState(lesson),
         status,
         progressPercent: status === LessonProgressStatus.COMPLETED || status === LessonProgressStatus.SKIPPED
           ? 100
@@ -889,10 +889,10 @@ export class ProgressService {
     chapterId: number,
   ): Promise<boolean> {
     // ดึงบทเรียนทั้งหมดในบทนั้น
-    const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId, isPublished: true },
+    const lessons = (await this.lessonRepository.find({
+      where: { chapter_id: chapterId },
       order: { orderIndex: 'ASC' },
-    });
+    })).filter((lesson) => this.resolveRoadmapLessonPublishedState(lesson));
 
     // ถ้าไม่มีบทเรียนเลย ให้ถือว่าเป็นบทที่เสร็จสมบูรณ์แล้ว
     if (lessons.length === 0) {
@@ -917,5 +917,15 @@ export class ProgressService {
     );
 
     return completed.size === lessonIds.length;
+  }
+
+  private resolveRoadmapLessonPublishedState(
+    lesson: Pick<Lesson, 'lesson_type' | 'lesson_videoUrl' | 'isPublished'>,
+  ): boolean {
+    if (lesson.lesson_type === LessonType.VIDEO) {
+      return Boolean(lesson.lesson_videoUrl?.trim());
+    }
+
+    return lesson.isPublished === true;
   }
 }

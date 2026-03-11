@@ -379,7 +379,9 @@ export class LessonsService {
       chapter_id: lesson.chapter_id,
       lesson_ImageUrl: lesson.lesson_ImageUrl,
       lesson_videoUrl: lesson.lesson_videoUrl,
-      isPublished: lesson.isPublished,
+      isPublished: lesson.lesson_type === LessonType.VIDEO
+        ? Boolean(lesson.lesson_videoUrl?.trim())
+        : lesson.isPublished,
       createdAt: lesson.createdAt,
     };
 
@@ -388,20 +390,6 @@ export class LessonsService {
         const checkpoint = await this.checkpointRepository.findOne({
           where: { lessonId: lesson.lesson_id },
         });
-
-        if (checkpoint) {
-          base.checkpoint = {
-            checkpoint_id: checkpoint.checkpointId,
-            checkpoint_score: checkpoint.checkpointScore,
-            checkpoint_type: checkpoint.checkpointType,
-            checkpoint_questions: checkpoint.checkpointQuestions,
-            checkpoint_option: checkpoint.checkpointOption,
-            checkpoint_answer: checkpoint.checkpointAnswer,
-            checkpoint_explanation: checkpoint.checkpointExplanation,
-            createdAt: checkpoint.createdAt,
-            updatedAt: checkpoint.updatedAt,
-          };
-        }
       } catch {
         // Ignore checkpoint enrichment errors and return base lesson data.
       }
@@ -452,6 +440,10 @@ export class LessonsService {
     const hasContent = await this.hasPublishableContent(lesson);
 
     if (requestedPublished === undefined) {
+      // VIDEO: auto-derive from URL existence, don't keep stale false
+      if (lesson.lesson_type === LessonType.VIDEO) {
+        return hasContent;
+      }
       return hasContent ? lesson.isPublished : false;
     }
 

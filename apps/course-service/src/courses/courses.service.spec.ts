@@ -271,6 +271,50 @@ describe('CoursesService', () => {
       );
     });
 
+    it('treats video lessons with a URL as published in course structure responses', async () => {
+      const course = makeCourse({
+        course_id: 1,
+        course_levels: [
+          {
+            level_id: 10,
+            level_title: 'L1',
+            level_orderIndex: 0,
+            level_chapters: [
+              {
+                chapter_id: 100,
+                chapter_title: 'C1',
+                chapter_orderIndex: 0,
+                lessons: [
+                  {
+                    lesson_id: 1008,
+                    lesson_title: 'Video lesson',
+                    lesson_type: LessonType.VIDEO,
+                    lesson_description: '',
+                    lesson_videoUrl: 'https://cdn.skllracademy.com/videos/video-1.mp4',
+                    orderIndex: 0,
+                    isPublished: false,
+                  },
+                ],
+              },
+            ],
+          },
+        ] as any,
+      });
+
+      repo.findOne!.mockResolvedValue(course);
+      repo.query!.mockResolvedValue([]);
+
+      const result = await service.getStructure(1);
+
+      expect(result.course_levels[0].chapters[0].lessons).toEqual([
+        expect.objectContaining({
+          lesson_id: 1008,
+          lesson_type: LessonType.VIDEO,
+          isPublished: true,
+        }),
+      ]);
+    });
+
     it('sorts levels/chapters/lessons and filters out empty chapters/levels', async () => {
       const course = makeCourse({
         course_id: 1,
