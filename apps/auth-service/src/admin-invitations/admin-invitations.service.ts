@@ -9,23 +9,6 @@ import { UserRole } from '@common/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
-/**
- * Admin Invitations Service
- * 
- * บริการจัดการการเชิญผู้ดูแลระบบ (Admin) โดยเจ้าของระบบ (OWNER)
- * 
- * หน้าที่หลัก:
- * - สร้างและจัดการ invitation tokens
- * - ส่งอีเมลเชิญพร้อม temporary password
- * - ตรวจสอบและยืนยันการเชิญ
- * - จัดการสถานะของ admin users (invited -> active)
- * 
- * Security:
- * - Tokens ถูก hash ก่อนเก็บในฐานข้อมูล
- * - Temporary passwords ถูก hash ก่อนเก็บ
- * - Tokens มีอายุ 24 ชั่วโมงและใช้ได้ครั้งเดียว
- * - เฉพาะ OWNER ที่สามารถเชิญและจัดการ admin ได้
- */
 const INVITE_TOKEN_EXPIRY_MINUTES = 60 * 24 * 3; // 3 days
 const BCRYPT_SALT_ROUNDS = 10;
 
@@ -41,27 +24,13 @@ export class AdminInvitationsService {
     private readonly configService: ConfigService,
   ) { }
 
-  /**
-   * เชิญผู้ดูแลระบบ (Admin) ใหม่
-   * 
-   * ขั้นตอนการทำงาน:
-   * 1. ตรวจสอบว่าอีเมลไม่ซ้ำหรือเป็น admin ที่ยังไม่ active
-   * 2. สร้าง/อัพเดต user ให้มี role=ADMIN และ status='invited'
-   * 3. สร้าง temporary password และบันทึก (hash)
-   * 4. สร้าง invitation token (hash) พร้อม expiry 3 วัน
-   * 5. ส่งอีเมลเชิญพร้อม link และ temporary password
-   * 
-   * @param input ข้อมูลการเชิญ (email, ชื่อ, ความรับผิดชอบ)
-   * @returns { userId, status, emailSent } ผลการดำเนินการ
-   */
   async inviteAdmin(input: {
     invitedByUserId: string;
     email: string;
     firstName?: string;
     lastName?: string;
     responsibility?: string;
-  }): Promise<{ userId: string; status: string; emailSent: boolean }>
-  {
+  }): Promise<{ userId: string; status: string; emailSent: boolean }> {
     const email = input.email.trim().toLowerCase();
 
     const existing = await this.usersService.findByEmail(email);
@@ -129,22 +98,7 @@ export class AdminInvitationsService {
     return { userId: user.id, status: 'invited', emailSent };
   }
 
-  /**
-   * ยอมรับการเชิญและตั้งรหัสผ่านใหม่
-   * 
-   * ขั้นตอนการทำงาน:
-   * 1. ตรวจสอบ token ว่าถูกต้องและไม่หมดอายุ
-   * 2. ยืนยันว่า user เป็น ADMIN และมี status='invited'
-   * 3. อัพเดตรหัสผ่านใหม่ (hash)
-   * 4. เปลี่ยนสถานะ user เป็น 'active' และ verified=true
-   * 5. ทำเครื่องหมาย token ว่าใช้แล้ว
-   * 
-   * @param token Invitation token ที่ได้รับจากอีเมล
-   * @param newPassword รหัสผ่านใหม่ที่ตั้งโดย admin
-   * @returns { message } ข้อความยืนยันการเชิญ
-   */
-  async acceptInvite(token: string, newPassword: string): Promise<{ message: string }>
-  {
+  async acceptInvite(token: string, newPassword: string): Promise<{ message: string }> {
     const matched = await this.findInvitationByToken(token);
 
     const user = await this.usersService.findById(matched.userId);
@@ -165,21 +119,7 @@ export class AdminInvitationsService {
     return { message: 'Invitation accepted' };
   }
 
-  /**
-   * ส่งอีเมลเชิญซ้ำสำหรับ admin ที่ยังไม่ได้ยอมรับ
-   * 
-   * ขั้นตอนการทำงาน:
-   * 1. ตรวจสอบว่า user เป็น ADMIN และยังไม่ active
-   * 2. สร้าง temporary password ใหม่
-   * 3. สร้าง invitation token ใหม่ (invalidate token เก่า)
-   * 4. ส่งอีเมลเชิญใหม่พร้อม temporary password
-   * 
-   * @param userId ID ของ admin ที่ต้องการส่งเชิญซ้ำ
-   * @param invitedByUserId ID ของผู้ที่ส่งเชิญ (ต้องเป็น OWNER)
-   * @returns { emailSent } สถานะการส่งอีเมล
-   */
-  async resendInvite(userId: string, invitedByUserId: string): Promise<{ emailSent: boolean }>
-  {
+  async resendInvite(userId: string, invitedByUserId: string): Promise<{ emailSent: boolean }> {
     const user = await this.usersService.findById(userId);
     if (user.role !== UserRole.ADMIN) {
       throw new BadRequestException('User is not admin');
@@ -205,27 +145,15 @@ export class AdminInvitationsService {
       }),
     );
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? '';
-    const acceptUrl = frontendUrl ? `${frontendUrl}/accept-admin-invite?token=${encodeURIComponent(tokenPlain)}` : '';
-
     const emailSent = await this.emailService.sendAdminInviteEmail({
       to: user.email || '',
-      inviteUrl: acceptUrl,
+      inviteUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}` : '',
       temporaryPassword,
     });
 
     return { emailSent };
   }
 
-  /**
-   * ดึงรายชื่อ admin ทั้งหมดพร้อมสถานะ
-   * 
-   * ข้อมูลที่ส่งกลับ:
-   * - ข้อมูลพื้นฐานของ admin (id, email, ชื่อ, role, status)
-   * - ความรับผิดชอบ (responsibility) สำหรับ admin ที่ยังเป็น 'invited'
-   * 
-   * @returns รายการ admin ทั้งหมดในระบบ
-   */
   async listAdmins(): Promise<
     Array<{
       id: string;
@@ -275,20 +203,10 @@ export class AdminInvitationsService {
     return results;
   }
 
-  /**
-   * สร้างรหัสผ่านชั่วคราว (9 bytes base64url)
-   * 
-   * @returns temporary password ที่ยังไม่ได้ hash
-   */
   private generateTemporaryPassword(): string {
     return crypto.randomBytes(9).toString('base64url');
   }
 
-  /**
-   * สร้าง invitation token พร้อม hash และ expiry
-   * 
-   * @returns { tokenPlain, tokenHash, expiresAt } token ดิบ, token ที่ hash, และวันหมดอายุ
-   */
   private async generateInviteToken(): Promise<{ tokenPlain: string; tokenHash: string; expiresAt: Date }> {
     const tokenPlain = crypto.randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(tokenPlain, BCRYPT_SALT_ROUNDS);
@@ -297,13 +215,6 @@ export class AdminInvitationsService {
     return { tokenPlain, tokenHash, expiresAt };
   }
 
-  /**
-   * ค้นหา invitation จาก token ที่ยังไม่ใช้และไม่หมดอายุ
-   * 
-   * @param token Token ดิบที่ได้รับจากอีเมล
-   * @returns AdminInvitation ที่ตรงกัน
-   * @throws BadRequestException ถ้า token ไม่ถูกต้อง หมดอายุ หรือใช้แล้ว
-   */
   private async findInvitationByToken(token: string): Promise<AdminInvitation> {
     const invitations = await this.invitationRepo.find({
       where: { isUsed: false },
