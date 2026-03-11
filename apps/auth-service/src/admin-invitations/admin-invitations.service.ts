@@ -47,8 +47,8 @@ export class AdminInvitationsService {
       ? await this.usersService.update(existing.id, {
         firstName: input.firstName ?? existing.firstName,
         lastName: input.lastName ?? existing.lastName,
-        role: UserRole.ADMIN,  // 👉 เปลี่ยน role เป็น ADMIN
-        status: 'invited',     // 👉 เปลี่ยน status เป็น invited
+        role: UserRole.ADMIN,  // เปลี่ยน role เป็น ADMIN
+        status: 'invited',     // เปลี่ยน status เป็น invited
       } as any)
       : await this.usersService.create({
         email,
@@ -81,12 +81,10 @@ export class AdminInvitationsService {
       }),
     );
 
-    const frontendUrl = this.configService.get<string>('FRONTEND_URL') ?? '';
-    const acceptUrl = frontendUrl ? `${frontendUrl}/accept-admin-invite?token=${encodeURIComponent(tokenPlain)}` : '';
 
     const emailSent = await this.emailService.sendAdminInviteEmail({
       to: email,
-      inviteUrl: acceptUrl,
+      inviteUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}` : '',
       responsibility: input.responsibility,
       temporaryPassword,
     });
