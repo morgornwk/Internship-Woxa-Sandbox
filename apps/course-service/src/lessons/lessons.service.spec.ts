@@ -9,6 +9,8 @@ import { Article } from '../articles/entities/article.entity';
 import { Quizs } from '../quizs/entities/quizs.entity';
 import { QuizsCheckpoint } from '../quizs/entities/checkpoint.entity';
 import { VideoAsset } from '../media-videos/entities/video.entity';
+import { Level } from '../levels/entities/level.entity';
+import { CoursesService } from '../courses/courses.service';
 
 describe('LessonsService', () => {
   let service: LessonsService;
@@ -26,6 +28,10 @@ describe('LessonsService', () => {
   type ChapterRepoMock = {
     findOne: jest.Mock;
     update: jest.Mock;
+  };
+
+  type LevelRepoMock = {
+    findOne: jest.Mock;
   };
 
   type ArticleRepoMock = {
@@ -47,10 +53,15 @@ describe('LessonsService', () => {
 
   let lessonRepo: LessonRepoMock;
   let chapterRepo: ChapterRepoMock;
+  let levelRepo: LevelRepoMock;
   let articleRepo: ArticleRepoMock;
   let quizRepo: QuizRepoMock;
   let checkpointRepo: CheckpointRepoMock;
   let videoRepo: VideoRepoMock;
+
+  const coursesServiceMock = {
+    invalidateCourseCaches: jest.fn(),
+  };
 
   const fixedNow = new Date('2026-03-05T00:00:00.000Z');
 
@@ -109,12 +120,21 @@ describe('LessonsService', () => {
           provide: getRepositoryToken(VideoAsset),
           useValue: { findOne: jest.fn() },
         },
+        {
+          provide: getRepositoryToken(Level),
+          useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: CoursesService,
+          useValue: coursesServiceMock,
+        },
       ],
     }).compile();
 
     service = module.get(LessonsService);
     lessonRepo = module.get(getRepositoryToken(Lesson));
     chapterRepo = module.get(getRepositoryToken(Chapter));
+    levelRepo = module.get(getRepositoryToken(Level));
     articleRepo = module.get(getRepositoryToken(Article));
     quizRepo = module.get(getRepositoryToken(Quizs));
     checkpointRepo = module.get(getRepositoryToken(QuizsCheckpoint));
@@ -124,6 +144,9 @@ describe('LessonsService', () => {
     // default syncChapterIsPublished path
     lessonRepo.exist!.mockResolvedValue(false);
     chapterRepo.update!.mockResolvedValue({} as any);
+    chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10, levelId: 99 } as any);
+    levelRepo.findOne!.mockResolvedValue({ level_id: 99, course_id: 123 } as any);
+    coursesServiceMock.invalidateCourseCaches.mockResolvedValue(undefined);
   });
 
   describe('create', () => {
@@ -247,9 +270,10 @@ describe('LessonsService', () => {
 
       const newLesson = makeLesson({
         lesson_id: 1,
-        lesson_type: LessonType.ARTICLE,
+        lesson_type: LessonType.VIDEO,
         orderIndex: 0,
         isPublished: true,
+        lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
       });
       lessonRepo.create!.mockReturnValue(newLesson);
       lessonRepo.save!.mockResolvedValue(newLesson);
@@ -257,7 +281,8 @@ describe('LessonsService', () => {
       await service.create({
         chapter_id: 10,
         lesson_title: 'A',
-        lesson_type: LessonType.ARTICLE,
+        lesson_type: LessonType.VIDEO,
+        lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
         isPublished: true,
       } as any);
 
@@ -383,16 +408,40 @@ describe('LessonsService', () => {
       await expect(service.update(1, { isPublished: true } as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('updates non-checkpoint and auto-publishes by default', async () => {
+    it('keeps non-checkpoint unpublished by default when content is missing', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false });
       lessonRepo.findOne!.mockResolvedValue(lesson);
       lessonRepo.save!.mockImplementation(async (l) => l as any);
+      articleRepo.findOne!.mockResolvedValue(null);
 
       const result = await service.update(1, { lesson_title: 'New' } as any);
 
-      expect(lesson.isPublished).toBe(true);
+      expect(lesson.isPublished).toBe(false);
       expect(result.lesson_title).toBe('New');
       expect(chapterRepo.update).toHaveBeenCalled();
+    });
+
+    it('throws when trying to publish article without content', async () => {
+      const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false });
+      lessonRepo.findOne!.mockResolvedValue(lesson);
+      articleRepo.findOne!.mockResolvedValue(null);
+
+      await expect(service.update(1, { isPublished: true } as any)).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('publishes video when video url exists', async () => {
+      const lesson = makeLesson({
+        lesson_id: 1,
+        lesson_type: LessonType.VIDEO,
+        lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
+        isPublished: false,
+      });
+      lessonRepo.findOne!.mockResolvedValue(lesson);
+      lessonRepo.save!.mockImplementation(async (l) => l as any);
+
+      const result = await service.update(1, { isPublished: true } as any);
+
+      expect(result.isPublished).toBe(true);
     });
 
     it('converts lesson to CHECKPOINT, removes other checkpoint, moves to end, and forces draft', async () => {

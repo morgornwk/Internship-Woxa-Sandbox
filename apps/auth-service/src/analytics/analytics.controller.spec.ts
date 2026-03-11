@@ -142,44 +142,6 @@ describe('AnalyticsController', () => {
     });
   });
 
-  describe('getDashboardUsers', () => {
-    it('should return dashboard users for OWNER role', async () => {
-      service.getDashboardUsers.mockResolvedValue(mockDashboardUsers.users);
-
-      const result = await controller.getDashboardUsers();
-
-      expect(service.getDashboardUsers).toHaveBeenCalled();
-      expect(result).toEqual(mockDashboardUsers);
-    });
-
-    it('should return users array with correct structure', async () => {
-      const mockUsers = [
-        {
-          id: 'user-1',
-          email: 'user1@example.com',
-          username: 'user1',
-          avatar: null,
-          firstName: 'User',
-          lastName: 'One',
-          role: UserRole.STUDENT,
-          isVerified: true,
-          status: 'offline',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      ];
-
-      service.getDashboardUsers.mockResolvedValue(mockUsers);
-
-      const result = await controller.getDashboardUsers();
-
-      expect(result).toEqual({ users: mockUsers });
-      expect(result.users).toHaveLength(1);
-      expect(result.users[0]).toHaveProperty('id');
-      expect(result.users[0]).toHaveProperty('status');
-    });
-  });
-
   describe('Guards', () => {
     it('should have JwtAuthGuard and RolesGuard decorators', () => {
       // Test that the controller has the appropriate decorators
@@ -189,36 +151,23 @@ describe('AnalyticsController', () => {
     });
   });
 
-  describe('Endpoint Access Control', () => {
-    it('should allow OWNER to access both endpoints', async () => {
-      service.getDashboardAnalytics.mockResolvedValue(mockAnalyticsResponse);
-      service.getDashboardUsers.mockResolvedValue(mockDashboardUsers.users);
+  it('should allow ADMIN to access analytics endpoint', async () => {
+    const adminUser: AuthUser = {
+      userId: 'admin-1',
+      email: 'admin@example.com',
+      role: UserRole.ADMIN,
+    };
 
-      const analyticsResult = await controller.getDashboardAnalytics(mockAuthUser);
-      const usersResult = await controller.getDashboardUsers();
+    const adminResponse = {
+      learningOverview: mockAnalyticsResponse.learningOverview,
+    };
 
-      expect(analyticsResult).toBeDefined();
-      expect(usersResult).toBeDefined();
-    });
+    service.getDashboardAnalytics.mockResolvedValue(adminResponse);
 
-    it('should allow ADMIN to access analytics endpoint', async () => {
-      const adminUser: AuthUser = {
-        userId: 'admin-1',
-        email: 'admin@example.com',
-        role: UserRole.ADMIN,
-      };
+    const result = await controller.getDashboardAnalytics(adminUser);
 
-      const adminResponse = {
-        learningOverview: mockAnalyticsResponse.learningOverview,
-      };
-
-      service.getDashboardAnalytics.mockResolvedValue(adminResponse);
-
-      const result = await controller.getDashboardAnalytics(adminUser);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('learningOverview');
-      expect(result).not.toHaveProperty('ownerOverview');
-    });
+    expect(result).toBeDefined();
+    expect(result).toHaveProperty('learningOverview');
+    expect(result).not.toHaveProperty('ownerOverview');
   });
 });

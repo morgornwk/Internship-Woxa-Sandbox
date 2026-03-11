@@ -1,4 +1,4 @@
-import { Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '@auth';
 import { CurrentUserId } from './decorators/current-user-id.decorator';
@@ -146,29 +146,29 @@ export class StreakController {
     return { message: 'Reward modal marked as shown' };
   }
 
-  // @Post('debug/bump')
-  // @ApiOperation({ summary: '[DEBUG] Bump streak with detailed log' })
-  // @ApiBody({ schema: { type: 'object', properties: { date: { type: 'string', example: '2025-01-01T16:50:00.000Z' } } } })
-  // async debugBump(
-  //   @CurrentUserId() userId: string,
-  //   @Body() body: { date: string },
-  // ) {
-  //   const testDate = new Date(body.date);
+  @Post('debug/bump')
+  @ApiOperation({ summary: '[DEBUG] Bump streak with detailed log' })
+  @ApiBody({ schema: { type: 'object', properties: { date: { type: 'string', example: '2025-01-01T16:50:00.000Z' } } } })
+  async debugBump(
+    @CurrentUserId() userId: string,
+    @Body() body: { date: string },
+  ) {
+    const testDate = new Date(body.date);
 
-  //   if (isNaN(testDate.getTime())) {
-  //     throw new Error('Invalid ISO date format. Example: 2025-01-01T16:50:00.000Z');
-  //   }
+    if (isNaN(testDate.getTime())) {
+      throw new Error('Invalid ISO date format. Example: 2025-01-01T16:50:00.000Z');
+    }
 
-  //   const result = await this.streakService.bumpStreak(userId, testDate);
+    const result = await this.streakService.bumpStreak(userId, testDate);
 
-  //   return {
-  //     inputUTC: testDate.toISOString(),
-  //     currentStreak: result.currentStreak,
-  //     longestStreak: result.longestStreak,
-  //     lastCompletedAt: result.lastCompletedAt,
-  //   };
+    return {
+      inputUTC: testDate.toISOString(),
+      currentStreak: result.currentStreak,
+      longestStreak: result.longestStreak,
+      lastCompletedAt: result.lastCompletedAt,
+    };
 
-  // }
+  }
 
   // @Post('test/reset')
   // @ApiOperation({

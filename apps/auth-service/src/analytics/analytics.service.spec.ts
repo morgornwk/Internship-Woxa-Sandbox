@@ -194,33 +194,6 @@ describe('AnalyticsService', () => {
     });
   });
 
-  describe('getDashboardUsers', () => {
-    it('should return users with online/offline status', async () => {
-      const mockUsers = [mockUser];
-      
-      userRepo.find.mockResolvedValue(mockUsers);
-      websocketGateway.getOnlineUserIds.mockReturnValue(new Set([mockUser.id]));
-
-      const result = await service.getDashboardUsers();
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toHaveProperty('status', 'online');
-      expect(websocketGateway.getOnlineUserIds).toHaveBeenCalled();
-    });
-
-    it('should return users with offline status when not online', async () => {
-      const mockUsers = [mockUser];
-      
-      userRepo.find.mockResolvedValue(mockUsers);
-      websocketGateway.getOnlineUserIds.mockReturnValue(new Set());
-
-      const result = await service.getDashboardUsers();
-
-      expect(result).toHaveLength(1);
-      expect(result[0]).toHaveProperty('status', 'offline');
-    });
-  });
-
   describe('getActiveLearnerCount', () => {
     it('should return count of active learners', async () => {
       const mockQueryBuilder = {

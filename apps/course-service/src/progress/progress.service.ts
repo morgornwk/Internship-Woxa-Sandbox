@@ -209,6 +209,7 @@ export class ProgressService {
       where: {
         chapter_id: lesson.chapter_id,
         orderIndex: MoreThan(lesson.orderIndex),
+        isPublished: true,
       },
       order: { orderIndex: 'ASC' },
     });
@@ -265,7 +266,7 @@ export class ProgressService {
           // ถ้ามีบทถัดไปในระดับเดียวกัน ให้ปลดล็อกบทเรียนตัวแรกของบทถัดไป
           if (nextChapter) {
             const firstLessonNextChapter = await this.lessonRepository.findOne({
-              where: { chapter_id: nextChapter.chapter_id },
+              where: { chapter_id: nextChapter.chapter_id, isPublished: true },
               order: { orderIndex: 'ASC' },
             });
 
@@ -377,6 +378,7 @@ export class ProgressService {
       where: {
         chapter_id: currentLesson.chapter_id,
         orderIndex: MoreThan(currentLesson.orderIndex),
+        isPublished: true,
       },
       order: { orderIndex: 'ASC' },
     });
@@ -413,7 +415,7 @@ export class ProgressService {
         // ถ้ามีบทถัดไปในระดับเดียวกัน ให้ปลดล็อกบทเรียนตัวแรกของบทถัดไป
         if (nextChapter) {
           const firstLessonNextChapter = await this.lessonRepository.findOne({
-            where: { chapter_id: nextChapter.chapter_id },
+            where: { chapter_id: nextChapter.chapter_id, isPublished: true },
             order: { orderIndex: 'ASC' },
           });
 
@@ -541,7 +543,7 @@ export class ProgressService {
 
     // ดึงบทเรียนทั้งหมดในบทนั้น
     const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId },
+      where: { chapter_id: chapterId, isPublished: true },
       order: { orderIndex: 'ASC' },
     });
 
@@ -668,7 +670,7 @@ export class ProgressService {
 
     // ดึงบทเรียนทั้งหมดในบทนั้น
     const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId },
+      where: { chapter_id: chapterId, isPublished: true },
       order: { orderIndex: 'ASC' }
     });
 
@@ -903,7 +905,7 @@ export class ProgressService {
   ): Promise<boolean> {
     // ดึงบทเรียนทั้งหมดในบทนั้น
     const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId },
+      where: { chapter_id: chapterId, isPublished: true },
       order: { orderIndex: 'ASC' },
     });
 

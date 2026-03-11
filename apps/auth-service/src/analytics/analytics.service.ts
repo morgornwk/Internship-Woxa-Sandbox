@@ -12,10 +12,8 @@ import { WebsocketGateway } from '../gateway/websocket.gateway';
 import { Course } from '../../../../apps/course-service/src/courses/entities/course.entity';
 import { UserStreak } from '../../../../apps/course-service/src/streaks/entities/user-streak.entity';
 
-// DTOs
 import {
   AdminDashboardAnalyticsDto,
-  DashboardUserDto,
   LearningOverviewDto,
   OwnerOverviewDto,
   StreaksOverviewDto,
@@ -24,17 +22,7 @@ import {
   AdminStatusSummaryDto,
 } from './dto/admin-dashboard-analytics.dto';
 
-/**
- * Analytics Service
- * 
- * ประมวลผลข้อมูล analytics สำหรับ Admin Dashboard
- * ใช้งานกับหลาย Database connections:
- * - Auth DB: users, admin accounts
- * - Course DB: lesson progress, course data
- * - Reward DB: reward redemptions (unused)
- * 
- * แบ่งข้อมูลตามสิทธิ์ผู้ใช้ (ADMIN vs OWNER)
- */
+
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
@@ -57,19 +45,9 @@ export class AnalyticsService {
     private readonly userStreakRepo: Repository<UserStreak>,
 
     private readonly websocketGateway: WebsocketGateway,
-  ) {}
+  ) { }
 
-  /**
-   * ดึงข้อมูล Analytics หลักตามสิทธิ์ผู้ใช้
-   * 
-   * @param authUser ข้อมูลผู้ใช้จาก JWT (userId, email, role)
-   * @param timeRange ช่วงเวลาสำหรับข้อมูลผู้ใช้รายเดือน
-   * @returns AdminDashboardAnalyticsDto ข้อมูล analytics ตามสิทธิ์
-   */
-  async getDashboardAnalytics(
-    authUser: AuthUser,
-    timeRange?: string,
-  ): Promise<AdminDashboardAnalyticsDto> {
+  async getDashboardAnalytics(authUser: AuthUser, timeRange?: string): Promise<AdminDashboardAnalyticsDto> {
     // ดึงข้อมูลการเรียนรู้ (ทุก role ต้องได้)
     const learningOverview = await this.getLearningOverview();
 
@@ -87,15 +65,7 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * ดึงข้อมูลภาพรวมการเรียนรู้ (ทุก role เห็น)
-   * 
-   * Logic:
-   * 1. Active Learners = นับ users ที่มี progress ไม่ใช่ LOCKED
-   * 2. Course Progress = นับ user-course ที่ completed vs in-progress
-   * 
-   * @returns LearningOverviewDto ข้อมูลการเรียนรู้
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลภาพรวมการเรียนรู้ (ใช้ได้ทั้ง ADMIN และ OWNER)
   private async getLearningOverview(): Promise<LearningOverviewDto> {
     const activeLearners = await this.getActiveLearnerCount();
     const dailyActiveLearners = await this.getDailyActiveLearnerCount();
@@ -109,21 +79,9 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * ดึงข้อมูลภาพรวมสำหรับ OWNER (เฉพาะ OWNER เห็น)
-   * 
-   * @param timeRange ช่วงเวลาสำหรับข้อมูลผู้ใช้รายเดือน
-   * @returns OwnerOverviewDto ข้อมูลภาพรวมสำหรับ OWNER
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลภาพรวมของ OWNER (มีข้อมูลมากกว่า ADMIN)
   private async getOwnerOverview(timeRange?: string): Promise<OwnerOverviewDto> {
-    // ดึงข้อมูลพร้อมกันเพื่อ performance (parallel queries)
-    const [
-      totalUsers,
-      usersByMonth,
-      adminStatusSummary,
-      totalCourses,
-      streaks,
-    ] = await Promise.all([
+    const [totalUsers, usersByMonth, adminStatusSummary, totalCourses, streaks] = await Promise.all([
       this.userRepo.count(),                    // นับ users ทั้งหมด
       this.getUsersByTimeRange(timeRange),      // ข้อมูลผู้ใช้รายเดือน
       this.getAdminStatusSummary(),             // สรุป admin accounts
@@ -133,7 +91,7 @@ export class AnalyticsService {
 
     // User Activity Active = มีการเข้ามาใช้งาน, Inactive = ไม่ได้ใช้งาน
     const activeUsers = await this.getActiveLearnerCount(); // คนที่มี lesson progress
-    
+
     const userActivity: UserActivitySummaryDto = {
       active: activeUsers,                    // เคยเข้ามาใช้งานในระบบ
       inactive: Math.max(totalUsers - activeUsers, 0),  // ไม่เคยเข้ามาใช้งาน
@@ -149,50 +107,7 @@ export class AnalyticsService {
     };
   }
 
-  /**
-   * ดึงรายชื่อผู้ใช้ทั้งหมดสำหรับ OWNER dashboard (optional)
-   * จำกัดเฉพาะ field ที่จำเป็นต่อการแสดงผล
-   * 
-   * @param limit จำนวนผู้ใช้สูงสุดที่ต้องการ (default: 100)
-   * @returns DashboardUserDto[] รายชื่อผู้ใช้
-   */
-  async getDashboardUsers(): Promise<DashboardUserDto[]> {
-    const users = await this.userRepo.find({
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        avatar: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        isVerified: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
-
-    const onlineUserIds = this.websocketGateway.getOnlineUserIds();
-
-    return users.map((user) => ({
-      ...user,
-      status: onlineUserIds.has(user.id) ? 'online' : 'offline',
-    }));
-  }
-
-  /**
-   * นับจำนวน Active Learners
-   * 
-   * Logic: นับ users ที่มี lesson progress ไม่ใช่ LOCKED
-   * - คนที่เคยคลิกเริ่มเรียน = Active Learner
-   * - ไม่นับคนที่สมัครแต่ยังไม่เคยเรียน
-   * 
-   * @returns number จำนวน active learners
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
   private async getActiveLearnerCount(): Promise<number> {
     const result = await this.lessonProgressRepo
       .createQueryBuilder('lp')
@@ -203,9 +118,7 @@ export class AnalyticsService {
     return Number(result?.count ?? 0);
   }
 
-  /**
-   * จำนวนผู้เข้าเรียนรายวัน (distinct users ที่มี progress วันนี้)
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้ที่มีการใช้งานในวันนั้น (สำหรับ OWNER)
   private async getDailyActiveLearnerCount(): Promise<number> {
     const { start, end } = this.getBangkokDayRange();
 
@@ -219,22 +132,8 @@ export class AnalyticsService {
     return Number(result?.count ?? 0);
   }
 
-  /**
-   * สรุปความคืบหน้าคอร์ส (completed vs in-progress)
-   * 
-   * Logic:
-   * 1. Join progress → lesson → chapter → level → course
-   * 2. Group ตาม userId และ courseId
-   * 3. นับ total lessons และ completed lessons
-   * 4. completed = total → course เสร็จ
-   * 5. มี progress แต่ยังไม่ completed → กำลังเรียน
-   * 
-   * @returns {completed: number, inProgress: number}
-   */
-  private async getCourseProgressSummary(): Promise<{
-    completed: number;
-    inProgress: number;
-  }> {
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลความคืบหน้าการเรียน (สำหรับ ADMIN และ OWNER)
+  private async getCourseProgressSummary(): Promise<{ completed: number; inProgress: number; }> {
     const rows = await this.lessonProgressRepo
       .createQueryBuilder('lp')
       .leftJoin('lp.lesson', 'l')
@@ -248,12 +147,7 @@ export class AnalyticsService {
         'COUNT(CASE WHEN lp.status IN (\'COMPLETED\', \'SKIPPED\') THEN 1 END) as completed',
       ])
       .groupBy('c.course_id, lp.user_id')
-      .getRawMany<{
-        course_id: string;
-        user_id: string;
-        total_lessons: string;
-        completed: string;
-      }>();
+      .getRawMany<{ course_id: string; user_id: string; total_lessons: string; completed: string; }>();
 
     let completed = 0;
     let inProgress = 0;
@@ -274,9 +168,7 @@ export class AnalyticsService {
     return { completed, inProgress };
   }
 
-  /**
-   * สรุป streaks เพื่อใช้ในกราฟ (bucket)
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
   private async getStreaksOverview(): Promise<StreaksOverviewDto> {
     const row = await this.userStreakRepo
       .createQueryBuilder('us')
@@ -332,12 +224,7 @@ export class AnalyticsService {
     return { start, end };
   }
 
-  /**
-   * ดึงข้อมูลผู้ใช้รายเดือนตาม timeRange
-   * 
-   * @param timeRange ช่วงเวลา (last12Months, yearYYYY, allTime)
-   * @returns UsersByMonthPointDto[] ข้อมูลผู้ใช้รายเดือน
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
   private async getUsersByTimeRange(timeRange?: string): Promise<UsersByMonthPointDto[]> {
     const range = timeRange || 'last12Months';
 
@@ -356,17 +243,7 @@ export class AnalyticsService {
     return this.getUsersByMonthLast12Months();
   }
 
-  /**
-   * ดึงข้อมูลผู้ใช้รายเดือนสำหรับปีที่ระบุ
-   * 
-   * Logic:
-   * 1. Query users ที่สมัครในปีนั้น
-   * 2. Group ตามเดือน (date_trunc month)
-   * 3. เติมเดือนที่ไม่มีข้อมูลให้เป็น 0 (เพื่อให้กราฟสวย)
-   * 
-   * @param year ปีที่ต้องการ (เช่น 2026)
-   * @returns UsersByMonthPointDto[] ข้อมูล 12 เดือนของปีนั้น
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามปีที่ระบุ (สำหรับ OWNER)
   private async getUsersByMonth(year: number): Promise<UsersByMonthPointDto[]> {
     const startDate = `${year}-01-01T00:00:00.000Z`;
     const endDate = `${year + 1}-01-01T00:00:00.000Z`;
@@ -396,13 +273,7 @@ export class AnalyticsService {
     return points;
   }
 
-  /**
-   * ดึงข้อมูลผู้ใช้รายเดือนตั้งแต่เริ่มระบบ
-   * 
-   * Logic: แสดงเฉพาะเดือนที่มีข้อมูลจริง (ไม่เติม 0)
-   * 
-   * @returns UsersByMonthPointDto[] ข้อมูลผู้ใช้รายเดือนทั้งหมด
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนทั้งหมดตั้งแต่เริ่มระบบ (สำหรับ OWNER)
   private async getUsersByMonthAllTime(): Promise<UsersByMonthPointDto[]> {
     const rawRows = await this.userRepo
       .createQueryBuilder('u')
@@ -418,16 +289,7 @@ export class AnalyticsService {
     }));
   }
 
-  /**
-   * ดึงข้อมูลผู้ใช้รายเดือน 12 เดือนล่าสุด
-   * 
-   * Logic:
-   * 1. หาช่วง 12 เดือนหลังจากเดือนปัจจุบัน
-   * 2. Query users ในช่วงนั้น
-   * 3. เติมเดือนว่างให้เป็น 0
-   * 
-   * @returns UsersByMonthPointDto[] ข้อมูล 12 เดือนล่าสุด
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
   private async getUsersByMonthLast12Months(): Promise<UsersByMonthPointDto[]> {
     const now = new Date();
     const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
@@ -459,13 +321,7 @@ export class AnalyticsService {
     return points;
   }
 
-  /**
-   * สรุปสถานะ Admin Accounts
-   * 
-   * Logic: นับ ADMIN เท่านั้น (ไม่รวม OWNER)
-   * 
-   * @returns AdminStatusSummaryDto สรุป admin accounts
-   */
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลสรุปสถานะของ admin accounts (สำหรับ OWNER)
   private async getAdminStatusSummary(): Promise<AdminStatusSummaryDto> {
     const rows = await this.userRepo
       .createQueryBuilder('u')
@@ -483,5 +339,4 @@ export class AnalyticsService {
 
     return { total, active, invited };
   }
-
 }

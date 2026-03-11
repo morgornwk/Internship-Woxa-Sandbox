@@ -8,6 +8,7 @@ import { User } from './entities/user.entity';
 import { AuthAccount } from './entities/auth-account.entity';
 import { AuthModule } from '../auth/auth.module';
 import { UsersAdminController } from './users-admin.controller';
+import { AdminInvitation } from '../admin-invitations/entities/admin-invitation.entity';
 
 // import course entities
 import { Course } from 'apps/course-service/src/courses/entities/course.entity';
@@ -23,7 +24,7 @@ import { WebsocketModule } from '../gateway/websocket.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, AuthAccount], 'auth'),
+    TypeOrmModule.forFeature([User, AuthAccount, AdminInvitation], 'auth'),
     TypeOrmModule.forFeature([Course, Level, Chapter, Lesson, Article, LessonProgress, UserStreak, UserXp], 'course'),
     HttpModule,
     ConfigModule,
@@ -34,4 +35,4 @@ import { WebsocketModule } from '../gateway/websocket.module';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }

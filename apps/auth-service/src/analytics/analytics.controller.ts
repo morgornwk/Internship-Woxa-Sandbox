@@ -1,29 +1,13 @@
 import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiQuery,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '@auth';
 import { UserRole } from '@common/enums';
 import type { AuthUser } from '@auth';
 
 import { AnalyticsService } from './analytics.service';
-import { AdminDashboardAnalyticsDto, DashboardUsersResponseDto } from './dto/admin-dashboard-analytics.dto';
+import { AdminDashboardAnalyticsDto} from './dto/admin-dashboard-analytics.dto';
 
-/**
- * Admin Dashboard Analytics Controller
- * 
- * จัดการ endpoint สำหรับดึงข้อมูล analytics ของ Admin Dashboard
- * แบ่งข้อมูลตามสิทธิ์ผู้ใช้:
- * - ADMIN: เห็นเฉพาะข้อมูลการเรียนรู้ (learningOverview)
- * - OWNER: เห็นข้อมูลทั้งหมด (learningOverview + ownerOverview)
- * 
- * รองรับ timeRange parameter สำหรับเลือกช่วงเวลาของข้อมูลผู้ใช้รายเดือน
- */
 @ApiTags('Admin Analytics')
 @ApiBearerAuth('access-token')
 @Controller('admin/dashboard')
@@ -32,20 +16,8 @@ import { AdminDashboardAnalyticsDto, DashboardUsersResponseDto } from './dto/adm
 export class AnalyticsController {
   private readonly logger = new Logger(AnalyticsController.name);
 
-  /**
-   * Constructor สำหรับ inject service
-   * 
-   * @param analyticsService Service สำหรับประมวลผลข้อมูล analytics
-   */
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
-  /**
-   * ดึงข้อมูล Analytics ของ Admin Dashboard
-   * 
-   * @param user ข้อมูลผู้ใช้จาก JWT (userId, email, role)
-   * @param timeRange ช่วงเวลาสำหรับข้อมูลผู้ใช้รายเดือน (default: last12Months)
-   * @returns AdminDashboardAnalyticsDto ข้อมูล analytics ตามสิทธิ์ผู้ใช้
-   */
   @Get('analytics')
   @ApiOperation({
     summary: 'ดึงข้อมูล Analytics ของ Admin Dashboard (read-only)',
@@ -182,27 +154,9 @@ export class AnalyticsController {
   })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getDashboardAnalytics(
-    @CurrentUser() user: AuthUser,
-    @Query('timeRange') timeRange?: string,
-  ): Promise<AdminDashboardAnalyticsDto> {
-    // Log สำหรับ debug: บันทึก userId, role และ timeRange ที่เรียก
-    this.logger.log(
-      `Analytics request from user: ${user.userId} with role: ${user.role}, timeRange: ${timeRange || 'last12Months'}`,
-    );
-    
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
+  async getDashboardAnalytics(@CurrentUser() user: AuthUser, @Query('timeRange') timeRange?: string): Promise<AdminDashboardAnalyticsDto> {
     // ส่งข้อมูล user และ timeRange ให้ Service ประมวลผลต่อ
     return this.analyticsService.getDashboardAnalytics(user, timeRange);
-  }
-
-  @Get('analytics/users')
-  @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'ดึงรายชื่อผู้ใช้ใน Admin Dashboard (OWNER เท่านั้น)' })
-  @ApiResponse({ status: 200, type: DashboardUsersResponseDto, description: 'Dashboard users retrieved successfully.' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  async getDashboardUsers(): Promise<DashboardUsersResponseDto> {
-    const users = await this.analyticsService.getDashboardUsers();
-    return { users };
   }
 }

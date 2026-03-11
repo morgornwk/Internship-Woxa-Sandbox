@@ -75,10 +75,7 @@ export class LessonsService {
       }
     }
 
-    const isCheckpointLesson = createLessonDto.lesson_type === LessonType.CHECKPOINT;
-    const isPublished = isCheckpointLesson
-      ? false
-      : (createLessonDto.isPublished ?? false);
+    const isPublished = this.resolveInitialPublishedState(createLessonDto);
 
     const lesson = this.lessonRepository.create({
       lesson_title: createLessonDto.lesson_title,
@@ -240,17 +237,6 @@ export class LessonsService {
       updateLessonDto.lesson_type === LessonType.CHECKPOINT &&
       updateLessonDto.lesson_type !== originalType;
 
-    if (updateLessonDto.isPublished !== undefined) {
-      lesson.isPublished = updateLessonDto.isPublished;
-    } else {
-      lesson.isPublished = nextLessonType === LessonType.CHECKPOINT ? lesson.isPublished : true;
-    }
-
-    // If converting to checkpoint, force draft to avoid publishing without checkpoint content
-    if (isChangingToCheckpoint) {
-      lesson.isPublished = false;
-    }
-
     // ถ้าเปลี่ยน type ตรวจสอบและจัดการความสัมพันธ์ของ content ตาม type ใหม่
     if (
       updateLessonDto.lesson_type !== undefined &&
@@ -280,16 +266,13 @@ export class LessonsService {
       lesson.lesson_type = updateLessonDto.lesson_type;
     }
 
-    // If publishing a checkpoint lesson, ensure checkpoint content exists
-    if (lesson.isPublished && lesson.lesson_type === LessonType.CHECKPOINT) {
-      const checkpointExists = await this.checkpointRepository.exist({
-        where: { lessonId: lesson.lesson_id },
-      });
-      if (!checkpointExists) {
-        throw new BadRequestException(
-          `Cannot publish checkpoint lesson ${lesson.lesson_id} without checkpoint content. Create it via POST /admin/checkpoint first.`,
-        );
-      }
+    if (isChangingToCheckpoint) {
+      lesson.isPublished = false;
+    } else {
+      lesson.isPublished = await this.resolveUpdatedPublishedState(
+        lesson,
+        updateLessonDto.isPublished,
+      );
     }
 
     // ถ้า update orderIndex ให้ตรวจสอบว่าไม่ใช่ checkpoint และไม่ให้ไปอยู่กลาง chapter
@@ -400,6 +383,30 @@ export class LessonsService {
       createdAt: lesson.createdAt,
     };
 
+    if (lesson.lesson_type === LessonType.CHECKPOINT) {
+      try {
+        const checkpoint = await this.checkpointRepository.findOne({
+          where: { lessonId: lesson.lesson_id },
+        });
+
+        if (checkpoint) {
+          base.checkpoint = {
+            checkpoint_id: checkpoint.checkpointId,
+            checkpoint_score: checkpoint.checkpointScore,
+            checkpoint_type: checkpoint.checkpointType,
+            checkpoint_questions: checkpoint.checkpointQuestions,
+            checkpoint_option: checkpoint.checkpointOption,
+            checkpoint_answer: checkpoint.checkpointAnswer,
+            checkpoint_explanation: checkpoint.checkpointExplanation,
+            createdAt: checkpoint.createdAt,
+            updatedAt: checkpoint.updatedAt,
+          };
+        }
+      } catch {
+        // Ignore checkpoint enrichment errors and return base lesson data.
+      }
+    }
+
     return base as LessonResponseDto;
   }
 
@@ -420,5 +427,69 @@ export class LessonsService {
     const level = await this.levelRepository.findOne({ where: { level_id: chapter.levelId } });
     if (!level) return;
     await this.coursesService.invalidateCourseCaches(level.course_id);
+  }
+
+  private resolveInitialPublishedState(createLessonDto: CreateLessonDto): boolean {
+    if (!createLessonDto.isPublished) {
+      return false;
+    }
+
+    if (createLessonDto.lesson_type === LessonType.CHECKPOINT) {
+      return false;
+    }
+
+    if (createLessonDto.lesson_type === LessonType.VIDEO) {
+      return Boolean(createLessonDto.lesson_videoUrl?.trim());
+    }
+
+    return false;
+  }
+
+  private async resolveUpdatedPublishedState(
+    lesson: Lesson,
+    requestedPublished?: boolean,
+  ): Promise<boolean> {
+    const hasContent = await this.hasPublishableContent(lesson);
+
+    if (requestedPublished === undefined) {
+      return hasContent ? lesson.isPublished : false;
+    }
+
+    if (!requestedPublished) {
+      return false;
+    }
+
+    if (!hasContent) {
+      throw new BadRequestException(
+        `Cannot publish ${lesson.lesson_type} lesson ${lesson.lesson_id} without content.`,
+      );
+    }
+
+    return true;
+  }
+
+  private async hasPublishableContent(lesson: Lesson): Promise<boolean> {
+    switch (lesson.lesson_type) {
+      case LessonType.ARTICLE: {
+        const article = await this.articleRepo.findOne({
+          where: { lesson: { lesson_id: lesson.lesson_id } },
+        });
+        return Boolean(article);
+      }
+      case LessonType.QUIZ: {
+        const quiz = await this.quizRepo.findOne({
+          where: { lesson: { lesson_id: lesson.lesson_id } },
+        });
+        return Boolean(quiz);
+      }
+      case LessonType.CHECKPOINT:
+        return this.checkpointRepository.exist({
+          where: { lessonId: lesson.lesson_id },
+        });
+      case LessonType.VIDEO:
+        return Boolean(lesson.lesson_videoUrl?.trim());
+      default:
+        return false;
+    }
   }
 }

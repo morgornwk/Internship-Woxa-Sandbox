@@ -1,9 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/**
- * ข้อมูลผู้ใช้รายเดือน - ใช้สำหรับกราฟการเติบโตของผู้ใช้
- * จะคืนข้อมูล 12 เดือนเสมอ (เดือนที่ไม่มีข้อมูลจะเป็น 0)
- */
+// DTO สำหรับข้อมูลผู้ใช้ในรายเดือน (สำหรับกราฟ usersByMonth ใน OwnerOverview)
 export class UsersByMonthPointDto {
   @ApiProperty({ example: '2026-01', description: 'Year-month label (YYYY-MM)' })
   month: string;
@@ -12,10 +9,7 @@ export class UsersByMonthPointDto {
   count: number;
 }
 
-/**
- * ข้อมูลภาพรวมการเรียนรู้ - ทั้ง ADMIN และ OWNER เห็นข้อมูลนี้
- * ใช้สำหรับติดตามความคืบหน้าการเรียนของนักเรียน
- */
+// DTO สำหรับข้อมูลผู้ใช้ในรายเดือน (สำหรับ endpoint /analytics/users)
 export class LearningOverviewDto {
   @ApiProperty({ description: 'Active learners (unique users who have started learning and are not only in LOCKED state)' })
   activeLearners: number;
@@ -30,10 +24,7 @@ export class LearningOverviewDto {
   inProgressCourses: number;
 }
 
-/**
- * สรุปสถานะ Admin Accounts - เฉพาะ OWNER เห็นข้อมูลนี้
- * นับเฉพาะ ADMIN role เท่านั้น (ไม่รวม OWNER)
- */
+// DTO สำหรับสรุปสถานะของ admin accounts (สำหรับ OWNER)
 export class AdminStatusSummaryDto {
   @ApiProperty({ description: 'Total number of admin accounts (role = ADMIN only)' })
   total: number;
@@ -45,9 +36,7 @@ export class AdminStatusSummaryDto {
   invited: number;
 }
 
-/**
- * สรุปการใช้งานของผู้ใช้ (active/inactive)
- */
+// DTO สำหรับสรุป Active vs Inactive users (สำหรับ OWNER)
 export class UserActivitySummaryDto {
   @ApiProperty({ description: 'Active users within the recent activity window' })
   active: number;
@@ -56,9 +45,7 @@ export class UserActivitySummaryDto {
   inactive: number;
 }
 
-/**
- * Bucket ของ Streak สำหรับแสดงกราฟ
- */
+// DTO สำหรับแต่ละ bucket ของ Streaks (สำหรับ OWNER)
 export class StreakBucketDto {
   @ApiProperty({ description: 'Bucket label' })
   label: string;
@@ -67,57 +54,13 @@ export class StreakBucketDto {
   count: number;
 }
 
-/**
- * สรุป Streaks สำหรับกราฟ
- */
 export class StreaksOverviewDto {
   @ApiProperty({ type: () => [StreakBucketDto] })
   buckets: StreakBucketDto[];
 }
 
-/**
- * ข้อมูลผู้ใช้สำหรับแสดงใน Owner Dashboard
- * ใช้สำหรับ endpoint analytics/users
- */
-export class DashboardUserDto {
-  @ApiProperty()
-  id: string;
 
-  @ApiPropertyOptional({ nullable: true })
-  email: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  username: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  avatar: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  firstName: string | null;
-
-  @ApiPropertyOptional({ nullable: true })
-  lastName: string | null;
-
-  @ApiProperty()
-  role: string;
-
-  @ApiProperty()
-  isVerified: boolean;
-
-  @ApiProperty({ description: "Current presence status derived from socket connection ('online' | 'offline')" })
-  status: string;
-
-  @ApiProperty()
-  createdAt: Date;
-
-  @ApiProperty()
-  updatedAt: Date;
-}
-
-/**
- * ข้อมูลภาพรวมสำหรับ OWNER - เฉพาะ OWNER เห็นข้อมูลนี้เท่านั้น
- * รวมข้อมูลธุรกิจ การเติบโต และการจัดการทีมงาน
- */
+// DTO สำหรับข้อมูล Owner-only analytics (visible เฉพาะ OWNER)
 export class OwnerOverviewDto {
   @ApiProperty({ description: 'Total user accounts in the system (all roles)' })
   totalUsers: number;
@@ -141,19 +84,7 @@ export class OwnerOverviewDto {
   streaks: StreaksOverviewDto;
 }
 
-/**
- * Response สำหรับดึงรายชื่อผู้ใช้ใน Admin Dashboard (OWNER เท่านั้น)
- */
-export class DashboardUsersResponseDto {
-  @ApiProperty({ type: () => [DashboardUserDto] })
-  users: DashboardUserDto[];
-}
-
-/**
- * Response หลักของ Admin Dashboard Analytics - แบ่งข้อมูลตามสิทธิ์ผู้ใช้
- * ADMIN: เห็นแค่ learningOverview
- * OWNER: เห็นทั้ง learningOverview และ ownerOverview
- */
+// DTO หลักสำหรับ Admin Dashboard Analytics Endpoint
 export class AdminDashboardAnalyticsDto {
   @ApiProperty({ type: () => LearningOverviewDto, description: 'Learning analytics visible to ADMIN and OWNER' })
   learningOverview: LearningOverviewDto;
