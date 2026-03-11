@@ -226,54 +226,54 @@ export class AdminInvitationsService {
    * 
    * @returns รายการ admin ทั้งหมดในระบบ
    */
-  // async listAdmins(): Promise<
-  //   Array<{
-  //     id: string;
-  //     email: string | null;
-  //     firstName: string | null;
-  //     lastName: string | null;
-  //     status: string | null;
-  //     role: UserRole;
-  //     responsibility: string | null;
-  //   }>
-  // > {
-  //   const users = await this.usersService.findAll();
-  //   const admins = users.filter((u) => u.role === UserRole.ADMIN || u.role === UserRole.OWNER);
+  async listAdmins(): Promise<
+    Array<{
+      id: string;
+      email: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      status: string | null;
+      role: UserRole;
+      responsibility: string | null;
+    }>
+  > {
+    const users = await this.usersService.findAll();
+    const admins = users.filter((u) => u.role === UserRole.ADMIN || u.role === UserRole.OWNER);
 
-  //   const results: Array<{
-  //     id: string;
-  //     email: string | null;
-  //     firstName: string | null;
-  //     lastName: string | null;
-  //     status: string | null;
-  //     role: UserRole;
-  //     responsibility: string | null;
-  //   }> = [];
+    const results: Array<{
+      id: string;
+      email: string | null;
+      firstName: string | null;
+      lastName: string | null;
+      status: string | null;
+      role: UserRole;
+      responsibility: string | null;
+    }> = [];
 
-  //   for (const u of admins) {
-  //     let responsibility: string | null = null;
+    for (const u of admins) {
+      let responsibility: string | null = null;
 
-  //     if (u.role === UserRole.ADMIN && String(u.status ?? '').toLowerCase() === 'invited') {
-  //       const latest = await this.invitationRepo.findOne({
-  //         where: { userId: u.id, isUsed: false },
-  //         order: { createdAt: 'DESC' },
-  //       });
-  //       responsibility = latest?.responsibility ?? null;
-  //     }
+      if (u.role === UserRole.ADMIN && String(u.status ?? '').toLowerCase() === 'invited') {
+        const latest = await this.invitationRepo.findOne({
+          where: { userId: u.id, isUsed: false },
+          order: { createdAt: 'DESC' },
+        });
+        responsibility = latest?.responsibility ?? null;
+      }
 
-  //     results.push({
-  //       id: u.id,
-  //       email: u.email ?? null,
-  //       firstName: (u.firstName as any) ?? null,
-  //       lastName: (u.lastName as any) ?? null,
-  //       status: (u.status as any) ?? null,
-  //       role: u.role,
-  //       responsibility,
-  //     });
-  //   }
+      results.push({
+        id: u.id,
+        email: u.email ?? null,
+        firstName: (u.firstName as any) ?? null,
+        lastName: (u.lastName as any) ?? null,
+        status: (u.status as any) ?? null,
+        role: u.role,
+        responsibility,
+      });
+    }
 
-  //   return results;
-  // }
+    return results;
+  }
 
   /**
    * สร้างรหัสผ่านชั่วคราว (9 bytes base64url)

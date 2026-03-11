@@ -8,23 +8,6 @@ import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
 import { CurrentUserId } from '@auth';
 
-/**
- * Admin Invitations Controller
- * 
- * จัดการการเชิญผู้ดูแลระบบ (Admin) โดยเจ้าของระบบ (OWNER) เท่านั้น
- * 
- * Flow การทำงาน:
- * 1. OWNER เชิญ ADMIN ผ่าน POST /api/admin-invitations/invite
- * 2. ระบบสร้าง user ใหม่ status='invited' พร้อม temporary password
- * 3. ระบบสร้าง invitation token และส่งอีเมลเชิญพร้อม link
- * 4. ADMIN กด link และตั้งรหัสผ่านใหม่ผ่าน POST /api/admin-invitations/accept
- * 5. ระบบอัพเดต status='active' และทำเครื่องหมาย token ว่าใช้แล้ว
- * 
- * Security:
- * - ทุก endpoint ยกเว้น /accept ต้องการ JWT token และสิทธิ์ OWNER
- * - /accept เป็น public endpoint สำหรับ admin ที่ได้รับเชิญเท่านั้น
- * - Token มีอายุ 24 ชั่วโมงและใช้ได้ครั้งเดียว
- */
 @ApiTags('Admin Invitations')
 @Controller('admin-invitations')
 export class AdminInvitationsController {
@@ -41,15 +24,6 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
   @ApiResponse({ status: 409, description: 'Conflict. Email already exists or admin already active.' })
   async inviteAdmin(@CurrentUserId() invitedByUserId: string, @Body() dto: InviteAdminDto) {
-    // ตัวอย่างการเรียกใช้:
-    // POST /api/admin-invitations/invite
-    // Headers: Authorization: Bearer <OWNER_JWT_TOKEN>
-    // Body: {
-    //   "email": "admin@example.com",
-    //   "firstName": "สมชาย",
-    //   "lastName": "ใจดี",
-    //   "responsibility": "จัดการคอร์สและผู้ใช้"
-    // }
     return this.adminInvitationsService.inviteAdmin({
       invitedByUserId,
       email: dto.email,
@@ -70,10 +44,6 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
   @ApiResponse({ status: 404, description: 'User not found or not admin.' })
   async resendInvite(@CurrentUserId() invitedByUserId: string, @Param('userId') userId: string) {
-    // ตัวอย่างการเรียกใช้:
-    // PATCH /api/admin-invitations/123e4567-e89b-12d3-a456-426614174000/resend
-    // Headers: Authorization: Bearer <OWNER_JWT_TOKEN>
-    // ระบบจะสร้าง temporary password ใหม่และส่งอีเมลเชิญซ้ำ
     return this.adminInvitationsService.resendInvite(userId, invitedByUserId);
   }
 
@@ -81,32 +51,32 @@ export class AdminInvitationsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @Get('admins')
-  // @ApiOperation({ summary: 'List admins with status (OWNER only)' })
-  // @ApiResponse({ status: 200, description: 'Admins list retrieved.' })
-  // @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  // @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
-  // async listAdmins() {
-  //   // ตัวอย่างการเรียกใช้:
-  //   // GET /api/admin-invitations/admins
-  //   // Headers: Authorization: Bearer <OWNER_JWT_TOKEN>
-  //   // Response: [
-  //   //   {
-  //   //     "id": "123e4567-e89b-12d3-a456-426614174000",
-  //   //     "email": "admin@example.com",
-  //   //     "firstName": "สมชาย",
-  //   //     "lastName": "ใจดี",
-  //   //     "role": "ADMIN",
-  //   //     "status": "invited",
-  //   //     "responsibility": "จัดการคอร์สและผู้ใช้",
-  //   //     "invitedBy": {
-  //   //       "id": "456e7890-e89b-12d3-a456-426614174111",
-  //   //       "email": "owner@example.com"
-  //   //     },
-  //   //     "createdAt": "2025-03-05T10:00:00Z"
-  //   //   }
-  //   // ]
-  //   return this.adminInvitationsService.listAdmins();
-  // }
+  @ApiOperation({ summary: 'List admins with status (OWNER only)' })
+  @ApiResponse({ status: 200, description: 'Admins list retrieved.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
+  async listAdmins() {
+    // ตัวอย่างการเรียกใช้:
+    // GET /api/admin-invitations/admins
+    // Headers: Authorization: Bearer <OWNER_JWT_TOKEN>
+    // Response: [
+    //   {
+    //     "id": "123e4567-e89b-12d3-a456-426614174000",
+    //     "email": "admin@example.com",
+    //     "firstName": "สมชาย",
+    //     "lastName": "ใจดี",
+    //     "role": "ADMIN",
+    //     "status": "invited",
+    //     "responsibility": "จัดการคอร์สและผู้ใช้",
+    //     "invitedBy": {
+    //       "id": "456e7890-e89b-12d3-a456-426614174111",
+    //       "email": "owner@example.com"
+    //     },
+    //     "createdAt": "2025-03-05T10:00:00Z"
+    //   }
+    // ]
+    return this.adminInvitationsService.listAdmins();
+  }
 
   @Post('accept')
   @ApiOperation({ summary: 'Accept admin invitation' })
@@ -114,13 +84,6 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 400, description: 'Bad Request. Invalid token or password.' })
   @ApiResponse({ status: 404, description: 'Invitation not found or expired.' })
   async acceptInvite(@Body() dto: AcceptAdminInviteDto) {
-    // ตัวอย่างการเรียกใช้:
-    // POST /api/admin-invitations/accept
-    // Body: {
-    //   "token": "abc123def456...",
-    //   "newPassword": "MyNewPassword123!"
-    // }
-    // ไม่ต้องการ authentication header เพราะเป็น public endpoint สำหรับ admin ที่ได้รับเชิญ
     return this.adminInvitationsService.acceptInvite(dto.token, dto.newPassword);
   }
 }
