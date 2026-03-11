@@ -195,8 +195,19 @@ export class LearnerHomeService {
     const courses = await this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.course_levels', 'level')
-      .leftJoinAndSelect('level.level_chapters', 'chapter')
-      .leftJoinAndSelect('chapter.lessons', 'lesson')
+      // A) กรองตั้งแต่ query: ใช้เฉพาะ chapter/lesson ที่เผยแพร่แล้วในการคำนวณเปอร์เซ็นต์
+      .leftJoinAndSelect(
+        'level.level_chapters',
+        'chapter',
+        'chapter.isPublished = :chapterPublished',
+        { chapterPublished: true },
+      )
+      .leftJoinAndSelect(
+        'chapter.lessons',
+        'lesson',
+        'lesson.isPublished = :lessonPublished',
+        { lessonPublished: true },
+      )
       .where('course.course_id IN (:...courseIds)', { courseIds })
       .getMany();
 
@@ -215,7 +226,12 @@ export class LearnerHomeService {
 
       for (const level of course.course_levels || []) {
         for (const chapter of level.level_chapters || []) {
+          // B) safe guard เผื่ออนาคต query ถูกแก้ไขแล้วดึง draft กลับมาโดยไม่ตั้งใจ
+          if (!chapter.isPublished) continue;
+
           for (const lesson of chapter.lessons || []) {
+            if (!lesson.isPublished) continue;
+
             totalLessons++;
 
             const progress = progressMap.get(lesson.lesson_id.toString());
