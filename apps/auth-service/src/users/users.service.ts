@@ -1,9 +1,20 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
 import { User } from './entities/user.entity';
@@ -39,7 +50,8 @@ export class UsersService {
     'https://cdn.skllracademy.com/images/a9462080-9d1b-43a1-9910-1a9bef7e3568',
   ] as const;
 
-  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/55de2f89-ee38-449e-8a43-22e6c9146887';
+  private readonly defaultAvatar =
+    'https://cdn.skllracademy.com/images/55de2f89-ee38-449e-8a43-22e6c9146887';
 
   constructor(
     @InjectRepository(User, 'auth')
@@ -63,7 +75,6 @@ export class UsersService {
     private readonly websocketGateway: WebsocketGateway,
 
     private readonly config: ConfigService,
-
   ) {
     this.s3Client = this.createS3Client();
   }
@@ -112,9 +123,7 @@ export class UsersService {
       where: { userId: In(userIds) },
     });
 
-    const streakMap = new Map(
-      streaks.map((s) => [s.userId, s.currentStreak]),
-    );
+    const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
     return users.map((user) => ({
       id: user.id,
@@ -325,7 +334,9 @@ export class UsersService {
     return user;
   }
 
-  private getAvatarKeyFromUrl(avatarUrl: string | null | undefined): string | null {
+  private getAvatarKeyFromUrl(
+    avatarUrl: string | null | undefined,
+  ): string | null {
     if (!avatarUrl) return null;
 
     // Expected URL shape from getAvatarPresignedUrl():
@@ -377,32 +388,48 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const completeCourse = await this.completeCourseRepo.find({
-      where: { userId: userId, progressPercent: 100 },
-      relations: {
-        lesson: {
-          chapter: {
-            level: {
-              course: true,
-            },
-          },
-        },
-      },
-    });
+    const result = await this.completeCourseRepo
+      .createQueryBuilder('lesson_progress')
+      .leftJoin('lesson_progress.lesson', 'lesson')
+      .leftJoin('lesson.chapter', 'chapter')
+      .leftJoin('chapter.level', 'level')
+      .leftJoin('level.course', 'course')
+      .where('lesson_progress.userId = :userId', { userId })
 
-    return {
-      completeCourse:
-        completeCourse?.map((item) => ({
-          lesson_progress_id: item.lessonProgressId,
-          lessong_id: item.lessonId,
-          course_image: item.lesson?.chapter?.level?.course?.course_imageUrl ?? null,
-          lesson: item.lesson?.lesson_title ?? null,
-          lesson_description: item.lesson?.lesson_description ?? null,
-          lesson_type: item.lesson?.lesson_type ?? null,
-          status: item.status,
-          progress_percent: item.progressPercent,
-        })) ?? [],
-    };
+      .select('course.course_id', 'courseId')
+      .addSelect('course.course_title', 'courseTitle')
+
+      .addSelect(
+        `COUNT(DISTINCT CASE 
+        WHEN lesson_progress.status = 'COMPLETED' 
+        THEN chapter.chapter_id 
+     END)`,
+        'completedChapters',
+      )
+
+      .addSelect('COUNT(DISTINCT chapter.chapter_id)', 'totalChapters')
+
+      .addSelect(
+        `ROUND(
+        COUNT(DISTINCT CASE 
+            WHEN lesson_progress.status = 'COMPLETED' 
+            THEN chapter.chapter_id 
+        END) * 100.0 /
+        COUNT(DISTINCT chapter.chapter_id),
+    2)`,
+        'progressPercent',
+      )
+
+      .addSelect('MAX(lesson_progress.updatedAt)', 'lastProgressUpdate')
+
+      .groupBy('course.course_id')
+      .addGroupBy('course.course_title')
+
+      .orderBy('MAX(lesson_progress.updatedAt)', 'DESC')
+
+      .getRawMany();
+
+    return result;
   }
 
   // ดึง URL สำหรับดาวน์โหลด avatar ของผู้ใช้ (ใช้เมื่อแอปต้องการแสดงรูปโปรไฟล์)
