@@ -1,12 +1,6 @@
 import { IsString, IsNotEmpty, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-/**
- * DTO สำหรับยอมรับการเชิญเป็นผู้ดูแลระบบ (Admin)
- * 
- * ใช้สำหรับ POST /api/admin-invitations/accept
- * Public endpoint - ไม่ต้องการ authentication
- */
 export class AcceptAdminInviteDto {
   @ApiProperty({
     description: 'Invitation token ที่ได้รับจากอีเมลเชิญ',

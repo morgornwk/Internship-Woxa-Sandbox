@@ -1,12 +1,6 @@
 import { IsEmail, IsString, IsOptional, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/**
- * DTO สำหรับเชิญผู้ดูแลระบบ (Admin)
- * 
- * ใช้สำหรับ POST /api/admin-invitations/invite
- * ต้องการสิทธิ์ OWNER เท่านั้น
- */
 export class InviteAdminDto {
   @ApiProperty({
     description: 'อีเมลของผู้ที่ต้องการเชิญให้เป็น admin',

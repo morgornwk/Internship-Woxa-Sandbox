@@ -43,21 +43,19 @@ export class AdminInvitationsService {
       throw new ConflictException('Admin already active');
     }
 
-    const user = existing
-      ? await this.usersService.update(existing.id, {
-        firstName: input.firstName ?? existing.firstName,
-        lastName: input.lastName ?? existing.lastName,
-        role: UserRole.ADMIN,  // เปลี่ยน role เป็น ADMIN
-        status: 'invited',     // เปลี่ยน status เป็น invited
-      } as any)
-      : await this.usersService.create({
-        email,
-        firstName: input.firstName,
-        lastName: input.lastName,
-        role: UserRole.ADMIN,
-        status: 'invited',
-        isVerified: false,
-      } as any);
+    const user = existing ? await this.usersService.update(existing.id, {
+      firstName: input.firstName ?? existing.firstName,
+      lastName: input.lastName ?? existing.lastName,
+      role: UserRole.ADMIN,  // เปลี่ยน role เป็น ADMIN
+      status: 'invited',     // เปลี่ยน status เป็น invited
+    } as any) : await this.usersService.create({
+      email,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      role: UserRole.ADMIN,
+      status: 'invited',
+      isVerified: false,
+    } as any);
 
     const temporaryPassword = this.generateTemporaryPassword();
     if (!existing) {
@@ -106,10 +104,7 @@ export class AdminInvitationsService {
 
     await this.usersService.updatePassword(user.id, newPassword);
 
-    await this.usersService.update(user.id, {
-      status: 'active',
-      isVerified: true,
-    } as any);
+    await this.usersService.update(user.id, { status: 'active', isVerified: true } as any);
 
     matched.isUsed = true;
     await this.invitationRepo.save(matched);
