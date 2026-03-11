@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Param, Body, Delete, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Patch, Param, Body, Delete, UseGuards } from '@nestjs/common';
 
 import { UsersService } from './users.service';
 import { UpdateRoleDto } from './dto';
@@ -10,9 +10,9 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagg
 
 @ApiTags('Admin')
 @ApiBearerAuth('access-token')
-@Controller('admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
+@Controller('admin')
 export class UsersAdminController {
     constructor(private readonly usersService: UsersService) { }
 
@@ -24,6 +24,16 @@ export class UsersAdminController {
     @ApiResponse({ status: 500, description: 'Internal Server Error.' })
     async findAll() {
         return this.usersService.findAll();
+    }
+
+    @Get('all')
+    @ApiOperation({ summary: 'Get all users' })
+    @ApiResponse({ status: 200, description: 'List of users retrieved successfully.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden. Owner role required.' })
+    @ApiResponse({ status: 500, description: 'Internal Server Error.' })
+    async ownerFindAll() {
+        return this.usersService.ownerFindAll();
     }
 
     @Get(':id')
@@ -45,11 +55,21 @@ export class UsersAdminController {
     @ApiResponse({ status: 403, description: 'Forbidden. Admin role required.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
     @ApiResponse({ status: 500, description: 'Internal Server Error.' })
-    async updateRole(
-        @Param('id') id: string,
-        @Body() dto: UpdateRoleDto,
-    ) {
+    async updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
         return this.usersService.updateRole(id, dto);
+    }
+
+    @Patch(':id/block')
+    @ApiOperation({ summary: 'Block an Admin or Student user' })
+    @ApiResponse({ status: 200, description: 'User blocked successfully.' })
+    @ApiResponse({ status: 400, description: 'Bad Request.' })
+    @ApiResponse({ status: 401, description: 'Unauthorized.' })
+    @ApiResponse({ status: 403, description: 'Forbidden. Owner role required.' })
+    @ApiResponse({ status: 404, description: 'User not found.' })
+    @ApiResponse({ status: 500, description: 'Internal Server Error.' })
+    @Roles(UserRole.OWNER)
+    async blockUser(@Param('id') id: string) {
+        return this.usersService.blockUser(id);
     }
 
     @Delete(':id')
@@ -59,7 +79,6 @@ export class UsersAdminController {
     @ApiResponse({ status: 403, description: 'Forbidden. Admin role required.' })
     @ApiResponse({ status: 404, description: 'User not found.' })
     @ApiResponse({ status: 500, description: 'Internal Server Error.' })
-    @HttpCode(HttpStatus.NO_CONTENT)
     async remove(@Param('id') id: string) {
         await this.usersService.delete(id);
     }

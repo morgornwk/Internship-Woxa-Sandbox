@@ -15,6 +15,9 @@ import { UserStreak } from 'apps/course-service/src/streaks/entities/user-streak
 import { LessonProgress } from 'apps/course-service/src/progress/entities/progress.entity';
 import { Course } from 'apps/course-service/src/courses/entities/course.entity';
 import { WebsocketGateway } from '../gateway/websocket.gateway';
+import { AdminInvitation } from '../admin-invitations/entities/admin-invitation.entity';
+import { Status } from '@common/enums/status.enum';
+import { UserRole } from '@common/enums';
 
 @Injectable()
 export class UsersService {
@@ -59,6 +62,9 @@ export class UsersService {
 
     @InjectRepository(LessonProgress, 'course')
     private readonly completeCourseRepo: Repository<LessonProgress>,
+
+    @InjectRepository(AdminInvitation, 'auth')
+    private readonly adminInvitationRepo: Repository<AdminInvitation>,
 
     private readonly websocketGateway: WebsocketGateway,
 
@@ -119,13 +125,55 @@ export class UsersService {
     return users.map((user) => ({
       id: user.id,
       email: user.email,
-      avatar: user.avatar || this.defaultAvatar,
+      avatar: user.avatar ?? this.defaultAvatar,
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
       streak: streakMap.get(user.id) ?? 0,
       status: onlineUsers.has(user.id),
     }));
+  }
+
+
+  async ownerFindAll() {
+    const users = await this.userRepo.find();
+    const onlineUsers = this.websocketGateway.getOnlineUserIds();
+    const userIds = users.map((u) => u.id);
+
+    const streaks = await this.userStreakRepo.find({
+      where: { userId: In(userIds) },
+    });
+
+    const streakMap = new Map(
+      streaks.map((s) => [s.userId, s.currentStreak]),
+    );
+
+    return users.map((user) => ({
+      id: user.id,
+      email: user.email,
+      avatar: user.avatar ?? this.defaultAvatar,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      role: user.role,
+      streak: streakMap.get(user.id) ?? 0,
+      status: user.status,
+      isOnline: onlineUsers.has(user.id),
+    }));
+  }
+
+  async blockUser(id: string): Promise<User> {
+    const user = await this.findById(id);
+
+    if (user.role === UserRole.OWNER) {
+      throw new BadRequestException('Cannot block an OWNER user');
+    }
+
+    if (user.role !== UserRole.ADMIN && user.role !== UserRole.STUDENT) {
+      throw new BadRequestException('Can only block ADMIN or STUDENT users');
+    }
+
+    user.status = Status.SUSPEND;
+    return this.userRepo.save(user);
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
@@ -328,7 +376,6 @@ export class UsersService {
   private getAvatarKeyFromUrl(avatarUrl: string | null | undefined): string | null {
     if (!avatarUrl) return null;
 
-    // Expected URL shape from getAvatarPresignedUrl():
     //   https://<cloudfront-domain>/profile/<uuid>
     try {
       const url = new URL(avatarUrl);

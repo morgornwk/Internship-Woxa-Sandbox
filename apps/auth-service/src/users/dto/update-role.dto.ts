@@ -7,4 +7,3 @@ export class UpdateRoleDto {
   @IsEnum(UserRole)
   role: UserRole;
 }
-  

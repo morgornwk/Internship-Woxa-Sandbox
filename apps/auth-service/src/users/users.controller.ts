@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFile, BadRequestException, Param, Headers } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFile, Param, Headers } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
@@ -21,7 +21,6 @@ export class UsersController {
     private readonly configService: ConfigService,
   ) { }
 
-
   // Profile
   @Get('profile')
   @ApiBearerAuth('access-token')
@@ -34,7 +33,7 @@ export class UsersController {
     @Headers('authorization') authorization: string
   ) {
     // console.log('User ID from JWT:', userId);
-    
+
     const user = await this.usersService.getStudentProfile(userId);
 
     return user;
@@ -103,7 +102,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getAvatar(@Param('id') id: string) {
-     const presign = await this.usersService.getAvatarPresignedUrl(id);
-     return { success: true, avatar_url: presign };
+    const presign = await this.usersService.getAvatarPresignedUrl(id);
+    return { success: true, avatar_url: presign };
   }
 }

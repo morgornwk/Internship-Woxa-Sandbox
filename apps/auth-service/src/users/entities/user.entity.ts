@@ -4,6 +4,7 @@ import { UserRole } from '@common/enums';
 import { PasswordResetToken } from './password-reset-token.entity';
 import { Session } from './session.entity';
 import { AuthAccount } from './auth-account.entity';
+import { Status } from '@common/enums/status.enum';
 
 // User Entity
 @Entity('users')
@@ -38,8 +39,8 @@ export class User {
   @Column({ name: 'is_verified', default: false })
   isVerified: boolean;
 
-  @Column({ type: 'varchar', length: 20, default: 'active' })
-  status: string;
+  @Column({ type: 'varchar', enum: Status, default: Status.ACTIVE })
+  status: Status;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
