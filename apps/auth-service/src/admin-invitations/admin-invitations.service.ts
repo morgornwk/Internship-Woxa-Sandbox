@@ -46,8 +46,8 @@ export class AdminInvitationsService {
     const user = existing ? await this.usersService.update(existing.id, {
       firstName: input.firstName ?? existing.firstName,
       lastName: input.lastName ?? existing.lastName,
-      role: UserRole.ADMIN,  // เปลี่ยน role เป็น ADMIN
-      status: 'invited',     // เปลี่ยน status เป็น invited
+      role: UserRole.ADMIN,
+      status: 'invited',
     } as any) : await this.usersService.create({
       email,
       firstName: input.firstName,
