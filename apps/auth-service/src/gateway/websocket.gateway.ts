@@ -83,7 +83,26 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
         this.server.emit('user_offline', userId);
     }
 
+    // ดึงรายชื่อผู้ใช้ออนไลน์
     getOnlineUserIds(): Set<string> {
         return new Set(this.userToSocket.keys());
+    }
+
+    // บังคับตัดการเชื่อมต่อผู้ใช้
+    disconnectUser(userId: string): void {
+        const socketId = this.userToSocket.get(userId);
+
+        if (!socketId) return;
+
+        const socket = this.server.sockets.sockets.get(socketId);
+
+        if (socket) {
+            socket.disconnect(true);
+        }
+
+        this.userToSocket.delete(userId);
+        this.socketToUser.delete(socketId);
+
+        // this.logger.log(`User force disconnected: ${userId}`);
     }
 }

@@ -7,7 +7,7 @@ import { LessonProgress } from '../../../../apps/course-service/src/progress/ent
 import { Course } from '../../../../apps/course-service/src/courses/entities/course.entity';
 import { UserStreak } from '../../../../apps/course-service/src/streaks/entities/user-streak.entity';
 import { WebsocketGateway } from '../gateway/websocket.gateway';
-import { UserRole } from '@common/enums';
+import { UserRole, Status } from '@common/enums';
 import type { AuthUser } from '@auth';
 
 describe('AnalyticsService', () => {
@@ -27,7 +27,7 @@ describe('AnalyticsService', () => {
     lastName: 'User',
     role: UserRole.STUDENT,
     isVerified: true,
-    status: 'active',
+    status: Status.ACTIVE,
     createdAt: new Date('2026-01-01'),
     updatedAt: new Date('2026-01-01'),
     sessions: [],

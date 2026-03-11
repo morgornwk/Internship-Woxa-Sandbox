@@ -173,7 +173,11 @@ export class UsersService {
     }
 
     user.status = Status.SUSPEND;
-    return this.userRepo.save(user);
+    await this.userRepo.save(user);
+
+    this.websocketGateway.disconnectUser(user.id);
+
+    return user;
   }
 
   async update(id: string, dto: UpdateUserDto): Promise<User> {
