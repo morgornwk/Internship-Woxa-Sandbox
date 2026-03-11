@@ -97,6 +97,8 @@ describe('AdminInvitationsService', () => {
             createEmailAuthAccount: jest.fn(),
             updatePassword: jest.fn(),
             findAll: jest.fn(),
+            blockUser: jest.fn(),
+            delete: jest.fn(),
           },
         },
         {
@@ -126,6 +128,7 @@ describe('AdminInvitationsService', () => {
     (crypto.randomBytes as jest.Mock).mockReturnValue({
       toString: jest.fn().mockReturnValue('random-string'),
     });
+    process.env.FRONTEND_URL = 'https://frontend.example.com';
     configService.get.mockReturnValue('https://frontend.example.com');
     emailService.sendAdminInviteEmail.mockResolvedValue(true);
   });
@@ -144,11 +147,25 @@ describe('AdminInvitationsService', () => {
       responsibility: 'จัดการคอร์ส',
     };
 
-    it('throws ConflictException when email exists for non-admin user', async () => {
-      usersService.findByEmail.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));
+    it('upgrades non-admin existing user to admin invitation flow', async () => {
+      const existingUser = makeUser({ role: UserRole.STUDENT });
+      usersService.findByEmail.mockResolvedValue(existingUser);
+      usersService.update.mockResolvedValue(makeUser({ role: UserRole.ADMIN }));
 
-      await expect(service.inviteAdmin(inviteInput)).rejects.toBeInstanceOf(ConflictException);
+      const result = await service.inviteAdmin(inviteInput);
+
       expect(usersService.findByEmail).toHaveBeenCalledWith('admin@example.com');
+      expect(usersService.update).toHaveBeenCalledWith(existingUser.id, {
+        firstName: 'สมชาย',
+        lastName: 'ใจดี',
+        role: UserRole.ADMIN,
+        status: 'invited',
+      });
+      expect(result).toEqual({
+        userId: 'user-1',
+        status: 'invited',
+        emailSent: true,
+      });
     });
 
     it('throws ConflictException when admin already active', async () => {
@@ -176,7 +193,7 @@ describe('AdminInvitationsService', () => {
       expect(invitationRepo.save).toHaveBeenCalled();
       expect(emailService.sendAdminInviteEmail).toHaveBeenCalledWith({
         to: 'admin@example.com',
-        inviteUrl: 'https://frontend.example.com/accept-admin-invite?token=random-string',
+        inviteUrl: 'https://frontend.example.com/set-password?token=random-string',
         responsibility: 'จัดการคอร์ส',
         temporaryPassword: 'random-string',
       });
@@ -197,6 +214,8 @@ describe('AdminInvitationsService', () => {
       expect(usersService.update).toHaveBeenCalledWith(existingUser.id, {
         firstName: 'สมชาย',
         lastName: 'ใจดี',
+        role: UserRole.ADMIN,
+        status: 'invited',
       });
       expect(usersService.updatePassword).toHaveBeenCalledWith(existingUser.id, 'random-string');
       expect(usersService.update).toHaveBeenCalledWith(existingUser.id, {
@@ -320,7 +339,7 @@ describe('AdminInvitationsService', () => {
       expect(invitationRepo.save).toHaveBeenCalled();
       expect(emailService.sendAdminInviteEmail).toHaveBeenCalledWith({
         to: 'admin@example.com',
-        inviteUrl: 'https://frontend.example.com/accept-admin-invite?token=random-string',
+        inviteUrl: 'https://frontend.example.com/set-password?token=random-string',
         temporaryPassword: 'random-string',
       });
       expect(result).toEqual({ emailSent: true });
@@ -367,6 +386,77 @@ describe('AdminInvitationsService', () => {
 
       expect(result[0].responsibility).toBeNull();
       expect(invitationRepo.findOne).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('suspendUser', () => {
+    it('throws BadRequestException when user is not admin', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));
+
+      await expect(service.suspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(usersService.blockUser).not.toHaveBeenCalled();
+    });
+
+    it('delegates suspension to usersService.blockUser for admin', async () => {
+      const adminUser = makeUser({ role: UserRole.ADMIN });
+      usersService.findById.mockResolvedValue(adminUser);
+      usersService.blockUser.mockResolvedValue({ ...adminUser, status: 'suspend' } as any);
+
+      const result = await service.suspendUser('user-1');
+
+      expect(usersService.blockUser).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual({ ...adminUser, status: 'suspend' });
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('throws BadRequestException when user is not admin', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));
+
+      await expect(service.deleteUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(usersService.delete).not.toHaveBeenCalled();
+    });
+
+    it('invalidates pending invitations then deletes admin user', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.ADMIN }));
+      invitationRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await service.deleteUser('user-1');
+
+      expect(invitationRepo.update).toHaveBeenCalledWith(
+        { userId: 'user-1', isUsed: false },
+        { isUsed: true },
+      );
+      expect(usersService.delete).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual({ message: 'User deleted successfully' });
+    });
+  });
+
+  describe('cancelInvitationEmail', () => {
+    it('throws BadRequestException when user is not admin', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));
+
+      await expect(service.cancelInvitationEmail('user-1')).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('throws NotFoundException when no pending invitation found', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.ADMIN }));
+      invitationRepo.update.mockResolvedValue({ affected: 0 } as any);
+
+      await expect(service.cancelInvitationEmail('user-1')).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('marks pending invitation as used when cancel succeeds', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.ADMIN }));
+      invitationRepo.update.mockResolvedValue({ affected: 1 } as any);
+
+      const result = await service.cancelInvitationEmail('user-1');
+
+      expect(invitationRepo.update).toHaveBeenCalledWith(
+        { userId: 'user-1', isUsed: false },
+        { isUsed: true },
+      );
+      expect(result).toEqual({ message: 'Invitation canceled successfully' });
     });
   });
 

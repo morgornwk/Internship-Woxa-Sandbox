@@ -14,6 +14,9 @@ describe('AdminInvitationsController', () => {
       acceptInvite: jest.fn(),
       resendInvite: jest.fn(),
       listAdmins: jest.fn(),
+      suspendUser: jest.fn(),
+      deleteUser: jest.fn(),
+      cancelInvitationEmail: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -28,6 +31,48 @@ describe('AdminInvitationsController', () => {
 
     controller = module.get<AdminInvitationsController>(AdminInvitationsController);
     service = module.get(AdminInvitationsService) as jest.Mocked<AdminInvitationsService>;
+  });
+
+  describe('suspendUser', () => {
+    it('should delegate to service with correct parameters', async () => {
+      const userId = 'user-1';
+      const expectedResult = { id: userId, status: 'suspend' };
+
+      service.suspendUser.mockResolvedValue(expectedResult as any);
+
+      const result = await controller.suspendUser(userId);
+
+      expect(service.suspendUser).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('deleteUser', () => {
+    it('should delegate to service with correct parameters', async () => {
+      const userId = 'user-1';
+      const expectedResult = { message: 'User deleted successfully' };
+
+      service.deleteUser.mockResolvedValue(expectedResult);
+
+      const result = await controller.deleteUser(userId);
+
+      expect(service.deleteUser).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('cancelInvitationEmail', () => {
+    it('should delegate to service with correct parameters', async () => {
+      const userId = 'user-1';
+      const expectedResult = { message: 'Invitation canceled successfully' };
+
+      service.cancelInvitationEmail.mockResolvedValue(expectedResult);
+
+      const result = await controller.cancelInvitationEmail(userId);
+
+      expect(service.cancelInvitationEmail).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expectedResult);
+    });
   });
 
   afterEach(() => {

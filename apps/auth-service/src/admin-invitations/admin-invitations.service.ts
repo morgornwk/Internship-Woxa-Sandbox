@@ -196,6 +196,41 @@ export class AdminInvitationsService {
     return results;
   }
 
+  async suspendUser(userId: string) {
+    const user = await this.usersService.findById(userId);
+    if (user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('User is not admin');
+    }
+
+    return this.usersService.blockUser(userId);
+  }
+
+  async deleteUser(userId: string): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('User is not admin');
+    }
+
+    await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
+    await this.usersService.delete(userId);
+
+    return { message: 'User deleted successfully' };
+  }
+
+  async cancelInvitationEmail(userId: string): Promise<{ message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('User is not admin');
+    }
+
+    const result = await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
+    if (!result.affected) {
+      throw new NotFoundException('No pending invitation found');
+    }
+
+    return { message: 'Invitation canceled successfully' };
+  }
+
   private generateTemporaryPassword(): string {
     return crypto.randomBytes(9).toString('base64url');
   }
