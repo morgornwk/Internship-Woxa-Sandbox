@@ -186,19 +186,4 @@ export class ProgressController {
   ): Promise<ChapterRoadmapDto> {
     return this.progressService.getChapterRoadmap(userId, chapterId);
   }
-
-  @Get('levels/:levelId/chapters')
-  @ApiOperation({ summary: 'ดึง roadmap ของทุกบทใน level' })
-  @ApiParam({ name: 'levelId', type: Number, example: 1 })
-  @ApiOkResponse({ type: [ChapterRoadmapDto] })
-  @ApiResponse({ status: 200, description: 'Level chapter roadmaps retrieved successfully' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  @ApiResponse({ status: 404, description: 'Level not found' })
-  @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  getLevelChapterRoadmaps(
-    @CurrentUserId() userId: string,
-    @Param('levelId', ParseIntPipe) levelId: number,
-  ): Promise<ChapterRoadmapDto[]> {
-    return this.progressService.getLevelChapterRoadmaps(userId, levelId);
-  }
 }

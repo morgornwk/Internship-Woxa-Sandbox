@@ -13,7 +13,6 @@ describe('ProgressController', () => {
     skipLessonAndUnlockNext: jest.fn(),
     getChapterProgress: jest.fn(),
     getChapterRoadmap: jest.fn(),
-    getLevelChapterRoadmaps: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -73,13 +72,6 @@ describe('ProgressController', () => {
 
     await expect(controller.getChapterRoadmap('u1', 1)).resolves.toEqual({ chapterId: 1, items: [] });
     expect(progressService.getChapterRoadmap).toHaveBeenCalledWith('u1', 1);
-  });
-
-  it('getLevelChapterRoadmaps delegates', async () => {
-    progressService.getLevelChapterRoadmaps.mockResolvedValue([{ chapterId: 1 }]);
-
-    await expect(controller.getLevelChapterRoadmaps('u1', 2)).resolves.toEqual([{ chapterId: 1 }]);
-    expect(progressService.getLevelChapterRoadmaps).toHaveBeenCalledWith('u1', 2);
   });
 
   it('propagates errors', async () => {

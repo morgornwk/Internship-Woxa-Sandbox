@@ -820,21 +820,6 @@ export class ProgressService {
     };
   }
 
-  // ดึง roadmap ของบทเรียนทั้งหมดในระดับเดียว พร้อมสถานะของแต่ละบทเรียน
-  async getLevelChapterRoadmaps(userId: string, levelId: number): Promise<ChapterRoadmapDto[]> {
-    const chapters = await this.chapterRepository.find({
-      where: { levelId },
-      order: { chapter_orderIndex: 'ASC' },
-    });
-
-    // ถ้าไม่มีบทเลย ให้คืนค่า roadmap ว่าง
-    if (!chapters || chapters.length === 0) return [];
-
-    // ดึง roadmap ของแต่ละบทในระดับนี้พร้อมกัน
-    const promises = chapters.map((c) => this.getChapterRoadmap(userId, c.chapter_id));
-    return Promise.all(promises);
-  }
-
   // ฟังก์ชันช่วยแปลงแถว progress เป็น DTO สำหรับส่งกลับใน API
   private toResponse(
     row: LessonProgress,

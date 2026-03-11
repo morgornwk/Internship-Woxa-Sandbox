@@ -11,6 +11,9 @@ export class ItemStatusDto {
   @ApiProperty()
   lessonType: string;
 
+  @ApiProperty({ example: true, description: 'สถานะการเผยแพร่ของบทเรียน' })
+  isPublished: boolean;
+
   @ApiProperty({ enum: LessonProgressStatus })
   status: LessonProgressStatus;
 
