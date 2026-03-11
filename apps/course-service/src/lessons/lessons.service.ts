@@ -106,10 +106,10 @@ export class LessonsService {
   }
 
   async findPublishedByChapter(chapterId: number): Promise<LessonResponseDto[]> {
-    const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId, isPublished: true },
+    const lessons = (await this.lessonRepository.find({
+      where: { chapter_id: chapterId },
       order: { orderIndex: 'ASC' },
-    });
+    })).filter((lesson) => this.isLessonPublishedForStudent(lesson));
 
     return Promise.all(lessons.map((l) => this.toResponseDto(l)));
   }
@@ -123,10 +123,9 @@ export class LessonsService {
   }
 
   async findAllPublished(): Promise<LessonResponseDto[]> {
-    const lessons = await this.lessonRepository.find({
-      where: { isPublished: true },
+    const lessons = (await this.lessonRepository.find({
       order: { orderIndex: 'ASC' },
-    });
+    })).filter((lesson) => this.isLessonPublishedForStudent(lesson));
 
     return Promise.all(lessons.map((l) => this.toResponseDto(l)));
   }
@@ -184,10 +183,10 @@ export class LessonsService {
 
   async findOnePublished(id: number): Promise<LessonResponseDto> {
     const lesson = await this.lessonRepository.findOne({
-      where: { lesson_id: id, isPublished: true },
+      where: { lesson_id: id },
     });
 
-    if (!lesson) {
+    if (!lesson || !this.isLessonPublishedForStudent(lesson)) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
     }
 
@@ -390,6 +389,19 @@ export class LessonsService {
         const checkpoint = await this.checkpointRepository.findOne({
           where: { lessonId: lesson.lesson_id },
         });
+        if (checkpoint) {
+          base.checkpoint = {
+            checkpoint_id: checkpoint.checkpointId,
+            checkpoint_score: checkpoint.checkpointScore,
+            checkpoint_type: checkpoint.checkpointType,
+            checkpoint_questions: checkpoint.checkpointQuestions,
+            checkpoint_option: checkpoint.checkpointOption,
+            checkpoint_answer: checkpoint.checkpointAnswer,
+            checkpoint_explanation: checkpoint.checkpointExplanation,
+            createdAt: checkpoint.createdAt,
+            updatedAt: checkpoint.updatedAt,
+          };
+        }
       } catch {
         // Ignore checkpoint enrichment errors and return base lesson data.
       }
@@ -483,5 +495,15 @@ export class LessonsService {
       default:
         return false;
     }
+  }
+
+  private isLessonPublishedForStudent(
+    lesson: Pick<Lesson, 'lesson_type' | 'lesson_videoUrl' | 'isPublished'>,
+  ): boolean {
+    if (lesson.lesson_type === LessonType.VIDEO) {
+      return Boolean(lesson.lesson_videoUrl?.trim());
+    }
+
+    return lesson.isPublished === true;
   }
 }

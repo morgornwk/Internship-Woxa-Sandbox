@@ -301,15 +301,19 @@ describe('LessonsService', () => {
     });
 
     it('findPublishedByChapter filters isPublished', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1, isPublished: true })]);
+      lessonRepo.find!.mockResolvedValue([
+        makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: true }),
+        makeLesson({ lesson_id: 2, lesson_type: LessonType.VIDEO, lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4', isPublished: false }),
+        makeLesson({ lesson_id: 3, lesson_type: LessonType.ARTICLE, isPublished: false }),
+      ]);
       checkpointRepo.findOne!.mockResolvedValue(null);
 
       const result = await service.findPublishedByChapter(10);
       expect(lessonRepo.find).toHaveBeenCalledWith({
-        where: { chapter_id: 10, isPublished: true },
+        where: { chapter_id: 10 },
         order: { orderIndex: 'ASC' },
       });
-      expect(result[0].isPublished).toBe(true);
+      expect(result.map((lesson) => lesson.lesson_id)).toEqual([1, 2]);
     });
   });
 
@@ -322,11 +326,15 @@ describe('LessonsService', () => {
     });
 
     it('findAllPublished filters isPublished', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1, isPublished: true })]);
+      lessonRepo.find!.mockResolvedValue([
+        makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: true }),
+        makeLesson({ lesson_id: 2, lesson_type: LessonType.VIDEO, lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4', isPublished: false }),
+        makeLesson({ lesson_id: 3, lesson_type: LessonType.ARTICLE, isPublished: false }),
+      ]);
       checkpointRepo.findOne!.mockResolvedValue(null);
       const result = await service.findAllPublished();
-      expect(lessonRepo.find).toHaveBeenCalledWith({ where: { isPublished: true }, order: { orderIndex: 'ASC' } });
-      expect(result[0].isPublished).toBe(true);
+      expect(lessonRepo.find).toHaveBeenCalledWith({ order: { orderIndex: 'ASC' } });
+      expect(result.map((lesson) => lesson.lesson_id)).toEqual([1, 2]);
     });
   });
 
@@ -372,7 +380,24 @@ describe('LessonsService', () => {
       lessonRepo.findOne!.mockResolvedValue(null);
       await expect(service.findOnePublished(1)).rejects.toBeInstanceOf(NotFoundException);
 
-      expect(lessonRepo.findOne).toHaveBeenCalledWith({ where: { lesson_id: 1, isPublished: true } });
+      expect(lessonRepo.findOne).toHaveBeenCalledWith({ where: { lesson_id: 1 } });
+    });
+
+    it('findOnePublished returns video lesson when URL exists even if DB flag is false', async () => {
+      lessonRepo.findOne!.mockResolvedValue(
+        makeLesson({
+          lesson_id: 1,
+          lesson_type: LessonType.VIDEO,
+          lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
+          isPublished: false,
+        }),
+      );
+      checkpointRepo.findOne!.mockResolvedValue(null);
+
+      const result = await service.findOnePublished(1);
+
+      expect(result.lesson_id).toBe(1);
+      expect(result.isPublished).toBe(true);
     });
 
     it('findOneAdmin returns dto', async () => {

@@ -49,7 +49,8 @@ describe('ProgressService', () => {
       lesson_id: 10,
       chapter_id: 1,
       lesson_title: 'L',
-      lesson_type: 'video' as any,
+      lesson_type: 'article' as any,
+      isPublished: true,
       orderIndex: 1,
       ...overrides,
     }) as Lesson;
@@ -516,7 +517,7 @@ describe('ProgressService', () => {
     it('returns LOCKED items when chapter locked', async () => {
       chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 2, levelId: 2, chapter_orderIndex: 2 }) as any);
       lessonRepo.find!.mockResolvedValue([
-        makeLesson({ lesson_id: 20, chapter_id: 2, lesson_title: 'A', lesson_type: 'video' as any, orderIndex: 1 }),
+        makeLesson({ lesson_id: 20, chapter_id: 2, lesson_title: 'A', lesson_type: 'article' as any, isPublished: true, orderIndex: 1 }),
       ] as any);
 
       progressRepo.findOne!.mockResolvedValue(null);
@@ -534,8 +535,8 @@ describe('ProgressService', () => {
     it('initializes progress rows when none exist and returns streak fields', async () => {
       chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any);
       lessonRepo.find!.mockResolvedValue([
-        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any }),
-        makeLesson({ lesson_id: 11, chapter_id: 1, orderIndex: 2, lesson_title: 'L2', lesson_type: 'video' as any }),
+        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any, lesson_videoUrl: 'https://cdn.skllracademy.com/videos/10.mp4' }),
+        makeLesson({ lesson_id: 11, chapter_id: 1, orderIndex: 2, lesson_title: 'L2', lesson_type: 'video' as any, lesson_videoUrl: 'https://cdn.skllracademy.com/videos/11.mp4' }),
       ] as any);
 
       // unlocked: existing progress row in this chapter
@@ -563,7 +564,7 @@ describe('ProgressService', () => {
     it('returns streakStatus COMPLETE when flame is on', async () => {
       chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any);
       lessonRepo.find!.mockResolvedValue([
-        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any }),
+        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any, lesson_videoUrl: 'https://cdn.skllracademy.com/videos/10.mp4' }),
       ] as any);
 
       progressRepo.findOne!.mockResolvedValue(makeProgress({ lessonId: 10 }));
@@ -605,7 +606,7 @@ describe('ProgressService', () => {
     it('forces progressPercent=100 for COMPLETED even if stored progressPercent is lower', async () => {
       chapterRepo.findOne!.mockResolvedValue(makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any);
       lessonRepo.find!.mockResolvedValue([
-        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any }),
+        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1, lesson_title: 'L1', lesson_type: 'video' as any, lesson_videoUrl: 'https://cdn.skllracademy.com/videos/10.mp4' }),
       ] as any);
 
       // unlocked

@@ -541,11 +541,11 @@ export class ProgressService {
       throw new NotFoundException(`Chapter with ID ${chapterId} not found`);
     }
 
-    // ดึงบทเรียนทั้งหมดในบทนั้น
-    const lessons = await this.lessonRepository.find({
-      where: { chapter_id: chapterId, isPublished: true },
+    // ดึงบทเรียนทั้งหมดในบทนั้น แล้วคัดเฉพาะที่ควรเห็นใน progress
+    const lessons = (await this.lessonRepository.find({
+      where: { chapter_id: chapterId },
       order: { orderIndex: 'ASC' },
-    });
+    })).filter((lesson) => this.resolveRoadmapLessonPublishedState(lesson));
 
     // ถ้าไม่มีบทเรียนเลย ให้คืนค่า progress เป็น 0%
     if (lessons.length === 0) {
@@ -656,6 +656,19 @@ export class ProgressService {
       percent,
       resumeLessonId,
     };
+  }
+
+  async getLevelChapterRoadmaps(userId: string, levelId: number): Promise<ChapterRoadmapDto[]> {
+    const chapters = await this.chapterRepository.find({
+      where: { levelId },
+      order: { chapter_orderIndex: 'ASC' },
+    });
+
+    if (!chapters.length) {
+      return [];
+    }
+
+    return Promise.all(chapters.map((chapter) => this.getChapterRoadmap(userId, chapter.chapter_id)));
   }
 
   // ดึง roadmap ของบทเรียนทั้งหมดในบทเดียว พร้อมสถานะของแต่ละบทเรียน
