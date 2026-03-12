@@ -13,8 +13,7 @@ import { UserRole } from '@common/enums';
 import { Status } from '@common/enums/status.enum';
 import { ConfigService } from '@nestjs/config';
 
-// Set invite token expiry to 1 minute for testing
-const INVITE_TOKEN_EXPIRY_MINUTES = 1; // 1 minute for testing
+const INVITE_TOKEN_EXPIRY_MINUTES = 1; // 1 minute
 const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
