@@ -1,3 +1,5 @@
+import { Status } from '@common/enums/status.enum';
+
 import { ApiProperty } from '@nestjs/swagger';
 
 export class SuspendUserResponseDto {
@@ -10,7 +12,7 @@ export class SuspendUserResponseDto {
   @ApiProperty({
     description: 'สถานะใหม่ของผู้ใช้',
     example: 'suspend',
-    enum: ['active', 'invited', 'suspend'],
+    enum: Status,
   })
   status: string;
 
@@ -53,7 +55,7 @@ export class UnsuspendUserResponseDto {
   @ApiProperty({
     description: 'สถานะใหม่ของผู้ใช้',
     example: 'active',
-    enum: ['active', 'invited', 'suspend'],
+    enum: Status,
   })
   status: string;
 

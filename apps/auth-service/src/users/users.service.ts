@@ -485,7 +485,10 @@ export class UsersService {
       .leftJoin('chapter.level', 'level')
       .leftJoin('level.course', 'course')
 
+
       .where('lesson_progress.userId = :userId', { userId })
+      .andWhere('chapter.is_published = true')
+      .andWhere('lesson.is_published = true')
 
       .select('course.course_id', 'courseId')
       .addSelect('course.course_title', 'courseTitle')
@@ -494,51 +497,57 @@ export class UsersService {
 
       .addSelect(
         `
+    COUNT(DISTINCT CASE
+      WHEN (
+        SELECT COUNT(*) 
+        FROM lessons l
+        WHERE l.chapter_id = chapter.chapter_id
+        AND l.is_published = true
+      ) =
+      (
+        SELECT COUNT(*) 
+        FROM progress lp2
+        JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
+        WHERE l2.chapter_id = chapter.chapter_id
+        AND l2.is_published = true
+        AND lp2.status = 'COMPLETED'
+        AND lp2.user_id = :userId
+      )
+    THEN chapter.chapter_id
+    END)
+  `,
+        'completedChapters',
+      )
+
+      .addSelect(
+        'COUNT(DISTINCT CASE WHEN chapter.is_published = true THEN chapter.chapter_id END)',
+        'totalChapters',
+      )
+
+      .addSelect(
+        `
+    ROUND(
       COUNT(DISTINCT CASE
         WHEN (
           SELECT COUNT(*) 
           FROM lessons l
           WHERE l.chapter_id = chapter.chapter_id
+          AND l.is_published = true
         ) =
         (
           SELECT COUNT(*) 
           FROM progress lp2
           JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
           WHERE l2.chapter_id = chapter.chapter_id
+          AND l2.is_published = true
           AND lp2.status = 'COMPLETED'
           AND lp2.user_id = :userId
         )
       THEN chapter.chapter_id
-      END)
-    `,
-        'completedChapters',
-      )
-
-      // total chapters
-      .addSelect('COUNT(DISTINCT chapter.chapter_id)', 'totalChapters')
-
-      .addSelect(
-        `
-      ROUND(
-        COUNT(DISTINCT CASE
-          WHEN (
-            SELECT COUNT(*) 
-            FROM lessons l
-            WHERE l.chapter_id = chapter.chapter_id
-          ) =
-          (
-            SELECT COUNT(*) 
-            FROM progress lp2
-            JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
-            WHERE l2.chapter_id = chapter.chapter_id
-            AND lp2.status = 'COMPLETED'
-            AND lp2.user_id = :userId
-          )
-        THEN chapter.chapter_id
-        END) * 100.0 /
-        COUNT(DISTINCT chapter.chapter_id)
-      ,2)
-    `,
+      END) * 100.0 /
+      COUNT(DISTINCT CASE WHEN chapter.is_published = true THEN chapter.chapter_id END)
+    ,2)
+  `,
         'progressPercent',
       )
 
@@ -548,13 +557,16 @@ export class UsersService {
       .addGroupBy('course.course_title')
       .addGroupBy('course.course_imageUrl')
       .addGroupBy('course.course_description')
+      .addGroupBy('course.course_imageUrl')
+      .addGroupBy('course.course_description')
 
       .orderBy('MAX(lesson_progress.updatedAt)', 'DESC')
 
       .setParameter('userId', userId)
 
-      .getRawMany();
+      .setParameter('userId', userId)
 
+      .getRawMany();
     return result;
   }
 
