@@ -36,9 +36,9 @@ describe('QuizAdminController', () => {
   });
 
   it('checkQuizs delegates', async () => {
-    quizService.checkAndSaveAnswer.mockResolvedValue({ isCorrect: true });
+    quizService.checkAndSaveAnswer.mockResolvedValue({ is_correct: true });
 
-    await expect(controller.checkQuizs(10, 'u1', 'a')).resolves.toEqual({ isCorrect: true });
+    await expect(controller.checkQuizs(10, 'u1', 'a')).resolves.toEqual({ is_correct: true });
     expect(quizService.checkAndSaveAnswer).toHaveBeenCalledWith(10, 'u1', 'a');
   });
 

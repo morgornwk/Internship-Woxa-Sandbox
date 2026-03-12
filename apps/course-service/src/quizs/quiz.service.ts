@@ -244,7 +244,7 @@ export class QuizService {
     }
 
     return {
-      isCorrect,
+      is_correct: isCorrect,
       quizs_answer: quiz.quizsAnswer,
       quizs_explanation: quiz.quizsExplanation,
     };
@@ -845,12 +845,21 @@ export class QuizService {
 function normalize(value: any): any {
   if (typeof value === 'string') {
     const trimmed = value.trim();
+    const lowered = trimmed.toLowerCase();
+
+    if (lowered === 'true' || trimmed === 'ถูก') {
+      return true;
+    }
+
+    if (lowered === 'false' || trimmed === 'ผิด') {
+      return false;
+    }
 
     if (!isNaN(Number(trimmed))) {
       return Number(trimmed);
     }
 
-    return trimmed.toLowerCase();
+    return lowered;
   }
 
   if (Array.isArray(value)) {

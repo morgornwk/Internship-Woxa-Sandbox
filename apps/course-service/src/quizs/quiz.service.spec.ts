@@ -296,7 +296,7 @@ describe('QuizService (quiz)', () => {
         status: QuizsStatus.COMPLETED,
         userAnswer: 'a',
       }));
-      expect(res.isCorrect).toBe(true);
+      expect(res.is_correct).toBe(true);
     });
 
     it('updates existing PENDING result when userAnswer is null', async () => {
@@ -312,6 +312,23 @@ describe('QuizService (quiz)', () => {
         status: QuizsStatus.COMPLETED,
       }));
       expect(res.quizs_answer).toBe('A');
+    });
+
+    it('normalizes Thai true answer before checking correctness', async () => {
+      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'true', quizsExplanation: 'E' }));
+      resultRepo.findOne.mockResolvedValue(null);
+      resultRepo.create.mockImplementation((x: any) => x);
+      resultRepo.save.mockImplementation(async (x: any) => x);
+      lessonRepo.findOne.mockResolvedValue(null);
+
+      const res = await service.checkAndSaveAnswer(10, 'u1', 'ถูก');
+
+      expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        userAnswer: 'ถูก',
+        isCorrect: true,
+        status: QuizsStatus.COMPLETED,
+      }));
+      expect(res.is_correct).toBe(true);
     });
 
     it('saves result and syncs userXp when correct', async () => {
@@ -338,7 +355,7 @@ describe('QuizService (quiz)', () => {
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'a');
 
-      expect(res.isCorrect).toBe(true);
+      expect(res.is_correct).toBe(true);
       expect(res.quizs_answer).toBe('A');
       expect(userXpRepo.save).toHaveBeenCalled();
     });
@@ -351,7 +368,7 @@ describe('QuizService (quiz)', () => {
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'b');
 
-      expect(res.isCorrect).toBe(false);
+      expect(res.is_correct).toBe(false);
       expect(userXpRepo.save).not.toHaveBeenCalled();
     });
   });

@@ -535,6 +535,42 @@ describe('QuizService (checkpoint)', () => {
             expect(userXpRepo.save).toHaveBeenCalled();
         });
 
+        it('normalizes Thai false answer before checking correctness', async () => {
+            const cp = makeCheckpoint({ checkpointId: 1, lessonId: 10, checkpointAnswer: 'false', checkpointScore: 10 });
+            checkpointRepo.findOne.mockResolvedValue(cp);
+            resultRepo.findOne.mockResolvedValue(null);
+            resultRepo.create.mockImplementation((x: any) => x);
+            resultRepo.save.mockImplementation(async (x: any) => x);
+            lessonRepo.findOne.mockResolvedValue({ lesson_id: 10, chapter_id: 5 } as any);
+
+            lessonRepo.find.mockResolvedValue([{ lesson_id: 10 }] as any);
+            checkpointRepo.find.mockResolvedValue([cp]);
+            resultRepo.find.mockResolvedValue([
+                makeResult({ type: QuizsResultType.CHECKPOINT, checkpointId: 1, isCorrect: true, userAnswer: 'ผิด' }),
+            ]);
+
+            userXpRepo.findOne.mockResolvedValue(null);
+            const qb: any = {
+                select: jest.fn().mockReturnThis(),
+                where: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                getRawOne: jest.fn().mockResolvedValue({ sum: '0' }),
+            };
+            userXpRepo.createQueryBuilder.mockReturnValue(qb);
+            userXpRepo.create.mockImplementation((x: any) => x);
+            userXpRepo.save.mockImplementation(async (x) => x as any);
+
+            const res = await service.checkCheckpointAnswer(1, 'u1', 'ผิด');
+
+            expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+                userAnswer: 'ผิด',
+                isCorrect: true,
+                status: QuizsStatus.COMPLETED,
+            }));
+            expect(res.is_correct).toBe(true);
+            expect(res.score).toBe(10);
+        });
+
         it('returns PENDING and zero score when incorrect', async () => {
             const cp = makeCheckpoint({ checkpointId: 1, lessonId: 10, checkpointAnswer: 'a', checkpointScore: 10 });
             checkpointRepo.findOne.mockResolvedValue(cp);
