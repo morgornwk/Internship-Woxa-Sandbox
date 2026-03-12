@@ -14,7 +14,8 @@ export class EmailService {
 
   constructor(private readonly configService: ConfigService) {
     const resendKey = this.configService.get<string>('RESEND_API_KEY');
-    this.fromEmail = this.configService.get<string>('MAIL_FROM') ?? 'no-reply@skillracademy.com';
+    // บังคับใช้ Resend default domain
+    this.fromEmail = 'onboarding@resend.dev';
     this.isResendConfigured = !!resendKey;
     this.resend = this.isResendConfigured ? new Resend(resendKey as string) : null;
 
@@ -185,6 +186,118 @@ export class EmailService {
     `;
     const text = 'รหัสผ่านของคุณถูกเปลี่ยนเรียบร้อยแล้ว';
     return this.sendEmail(to, subject, html, text);
+  }
+
+  async sendInvitationCanceledEmail(input: {
+    to: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<boolean> {
+    const subject = 'คำเชิญให้เป็นผู้ดูแลระบบถูกยกเลิก';
+    const fullName = `${input.firstName} ${input.lastName}`.trim();
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="th">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8f9fa; padding: 40px 20px;">
+          <tr>
+            <td align="center">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);">
+                <!-- Header -->
+                <tr>
+                  <td style="background-color: #dc3545; padding: 32px 24px; text-align: center;">
+                    <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">
+                      คำเชิญถูกยกเลิก
+                    </h1>
+                  </td>
+                </tr>
+                
+                <!-- Content -->
+                <tr>
+                  <td style="padding: 32px 24px;">
+                    <p style="margin: 0 0 16px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;">
+                      เรียน <strong>${fullName}</strong>
+                    </p>
+                    
+                    <p style="margin: 0 0 20px 0; color: #1a1a1a; font-size: 16px; line-height: 1.6;">
+                      คำเชิญให้คุณเป็นผู้ดูแลระบบของ Skllr Academy ได้ถูกยกเลิกไปแล้ว
+                    </p>
+                    
+                    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 16px; border-radius: 8px; margin: 0 0 24px 0;">
+                      <p style="margin: 0; color: #856404; font-size: 14px; line-height: 1.5;">
+                        <strong>หมายเหตุ:</strong> หากคุณคิดว่านี่เป็นข้อผิดพลาด กรุณาติดต่อผู้ดูแลระบบ
+                      </p>
+                    </div>
+                    
+                    <p style="margin: 0 0 16px 0; color: #666666; font-size: 14px; line-height: 1.5;">
+                      ขอบคุณที่สนใจร่วมงานกับเรา
+                    </p>
+                    
+                    <p style="margin: 0; color: #666666; font-size: 14px; line-height: 1.5;">
+                      ด้วยความเคารพ,<br>
+                      ทีมงาน Skllr Academy
+                    </p>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #f8f9fa; padding: 20px 24px; text-align: center; border-top: 1px solid #e9ecef;">
+                    <p style="margin: 0; color: #666666; font-size: 12px; line-height: 1.4;">
+                      © 2026 Skllr Academy. All rights reserved.
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </body>
+      </html>
+    `;
+
+    try {
+      console.log(`Sending invitation cancellation email to: ${input.to}`);
+      console.log(`Email service configured - Resend: ${this.isResendConfigured}, SMTP: ${this.smtpConfigured}`);
+      console.log(`From email: ${this.fromEmail}`);
+      
+      if (this.isResendConfigured && this.resend) {
+        const result = await this.resend.emails.send({
+          from: this.fromEmail,
+          to: input.to,
+          subject,
+          html,
+        });
+        console.log(`Resend API response:`, result);
+        this.logger.log(`Invitation cancellation email sent via Resend to ${input.to}`);
+        return true;
+      }
+
+      if (this.smtpConfigured && this.transporter) {
+        const result = await this.transporter.sendMail({
+          from: this.fromEmail,
+          to: input.to,
+          subject,
+          html,
+        });
+        console.log(`SMTP response:`, result);
+        this.logger.log(`Invitation cancellation email sent via SMTP to ${input.to}`);
+        return true;
+      }
+
+      console.warn(`No email service configured. Attempted to send invitation cancellation to ${input.to}`);
+      this.logger.warn(`No email service configured. Attempted to send invitation cancellation to ${input.to}`);
+      return false;
+    } catch (error) {
+      console.error(`Failed to send invitation cancellation email to ${input.to}:`, error);
+      this.logger.error(`Failed to send invitation cancellation email to ${input.to}:`, error);
+      return false;
+    }
   }
 
   async sendAdminInviteEmail(input: {

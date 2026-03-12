@@ -74,8 +74,8 @@ export class DeleteUserResponseDto {
 
 export class CancelInvitationResponseDto {
   @ApiProperty({
-    description: 'ข้อความยืนยันการยกเลิกคำเชิญ',
-    example: 'Invitation canceled successfully',
+    description: 'ข้อความยืนยันการลบคำเชิญ',
+    example: 'Invitation deleted successfully',
   })
   message: string;
 }

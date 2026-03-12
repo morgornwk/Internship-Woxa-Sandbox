@@ -252,12 +252,36 @@ export class AdminInvitationsService {
       throw new BadRequestException('User is not admin');
     }
 
-    const result = await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
+    // Delete all pending invitations from database
+    const result = await this.invitationRepo.delete({ userId, isUsed: false });
     if (!result.affected) {
       throw new NotFoundException('No pending invitation found');
     }
 
-    return { message: 'Invitation canceled successfully' };
+    // Send notification email about invitation cancellation
+    if (user.email) {
+      console.log(`User email: ${user.email}`);
+      console.log(`User firstName: ${user.firstName}`);
+      console.log(`User lastName: ${user.lastName}`);
+      console.log(`User role: ${user.role}`);
+      console.log(`User status: ${user.status}`);
+      
+      try {
+        const emailSent = await this.emailService.sendInvitationCanceledEmail({
+          to: user.email,
+          firstName: user.firstName || 'ผู้ใช้',
+          lastName: user.lastName || '',
+        });
+        console.log(`Invitation cancellation email sent result: ${emailSent}`);
+      } catch (error) {
+        console.error(`Failed to send invitation cancellation email to ${user.email}:`, error);
+        this.logger.warn(`Failed to send invitation cancellation email to ${user.email}: ${error.message}`);
+      }
+    } else {
+      console.log(`User ${userId} has no email address, skipping email notification`);
+    }
+
+    return { message: 'Invitation deleted successfully' };
   }
 
   private generateTemporaryPassword(): string {
