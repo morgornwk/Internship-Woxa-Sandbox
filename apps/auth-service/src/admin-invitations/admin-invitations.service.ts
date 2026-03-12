@@ -13,7 +13,8 @@ import { UserRole } from '@common/enums';
 import { Status } from '@common/enums/status.enum';
 import { ConfigService } from '@nestjs/config';
 
-const INVITE_TOKEN_EXPIRY_MINUTES = 60 * 24 * 3; // 3 days
+// Set invite token expiry to 1 minute for testing
+const INVITE_TOKEN_EXPIRY_MINUTES = 1; // 1 minute for testing
 const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
@@ -119,15 +120,13 @@ export class AdminInvitationsService {
       throw new BadRequestException('User is not admin');
     }
 
-    if (String(user.status ?? '').toLowerCase() === 'active') {
-      throw new BadRequestException('Admin already active');
-    }
-
     const temporaryPassword = this.generateTemporaryPassword();
     await this.usersService.updatePassword(user.id, temporaryPassword);
+    
+    await this.usersService.update(user.id, { status: 'invited' } as any);
 
     const { tokenPlain, tokenHash, expiresAt } = await this.generateInviteToken();
-    await this.invitationRepo.update({ userId: user.id, isUsed: false }, { isUsed: true });
+    await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
     await this.invitationRepo.save(
       this.invitationRepo.create({
         userId: user.id,
@@ -258,27 +257,16 @@ export class AdminInvitationsService {
       throw new NotFoundException('No pending invitation found');
     }
 
-    // Send notification email about invitation cancellation
     if (user.email) {
-      console.log(`User email: ${user.email}`);
-      console.log(`User firstName: ${user.firstName}`);
-      console.log(`User lastName: ${user.lastName}`);
-      console.log(`User role: ${user.role}`);
-      console.log(`User status: ${user.status}`);
-      
       try {
-        const emailSent = await this.emailService.sendInvitationCanceledEmail({
+        await this.emailService.sendInvitationCanceledEmail({
           to: user.email,
           firstName: user.firstName || 'ผู้ใช้',
           lastName: user.lastName || '',
         });
-        console.log(`Invitation cancellation email sent result: ${emailSent}`);
       } catch (error) {
-        console.error(`Failed to send invitation cancellation email to ${user.email}:`, error);
         this.logger.warn(`Failed to send invitation cancellation email to ${user.email}: ${error.message}`);
       }
-    } else {
-      console.log(`User ${userId} has no email address, skipping email notification`);
     }
 
     return { message: 'Invitation deleted successfully' };
