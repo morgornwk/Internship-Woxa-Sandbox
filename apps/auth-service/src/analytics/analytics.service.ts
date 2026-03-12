@@ -89,12 +89,12 @@ export class AnalyticsService {
       this.getStreaksOverview(),                // สรุป streaks
     ]);
 
-    // User Activity Active = มีการเข้ามาใช้งาน, Inactive = ไม่ได้ใช้งาน
-    const activeUsers = await this.getActiveLearnerCount(); // คนที่มี lesson progress
+    // User Activity: Active = ใช้งานใน 7 วันล่าสุด, Inactive = ไม่ได้ใช้งาน 7 วัน
+    const activeUsers = await this.getActiveUsersInLast7Days();
 
     const userActivity: UserActivitySummaryDto = {
-      active: activeUsers,                    // เคยเข้ามาใช้งานในระบบ
-      inactive: Math.max(totalUsers - activeUsers, 0),  // ไม่เคยเข้ามาใช้งาน
+      active: activeUsers,                    // ใช้งานใน 7 วันล่าสุด
+      inactive: Math.max(totalUsers - activeUsers, 0),  // ไม่ได้ใช้งาน 7 วัน
     };
 
     return {
@@ -113,6 +113,23 @@ export class AnalyticsService {
       .createQueryBuilder('lp')
       .select('COUNT(DISTINCT lp.userId)', 'count')
       .where('lp.status != :status', { status: 'LOCKED' })
+      .getRawOne<{ count: string }>();
+
+    return Number(result?.count ?? 0);
+  }
+
+  // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้ที่ใช้งานใน 7 วันล่าสุด (สำหรับ OWNER)
+  private async getActiveUsersInLast7Days(): Promise<number> {
+    const { start, end } = this.getBangkokDayRange();
+    
+    // คำนวณวันที่ 7 วันก่อนหน้า (Bangkok timezone)
+    const sevenDaysAgo = new Date(start.getTime() - (7 * 24 * 60 * 60 * 1000));
+
+    const result = await this.lessonProgressRepo
+      .createQueryBuilder('lp')
+      .select('COUNT(DISTINCT lp.userId)', 'count')
+      .where('lp.updatedAt >= :sevenDaysAgo', { sevenDaysAgo: sevenDaysAgo.toISOString() })
+      .andWhere('lp.updatedAt < :endDate', { endDate: end.toISOString() })
       .getRawOne<{ count: string }>();
 
     return Number(result?.count ?? 0);

@@ -337,22 +337,30 @@ export class LearnerHomeService {
   }
 
   private async getRecommendationsWithoutCache(isNewUser: boolean) {
-    const take = 3;
+    const take = 4;  
 
-    const recommendedCourses = await this.courseRepository.find({
-      where: { isPublished: true },
-      order: isNewUser ? { createdAt: 'DESC' } : { updatedAt: 'DESC' },
-      take,
+    const recommendedCourses = await this.courseRepository
+      .createQueryBuilder('course')
+      .leftJoinAndSelect('course.course_levels', 'level')
+      .leftJoinAndSelect('level.level_chapters', 'chapter', 'chapter.isPublished = :published', { published: true })
+      .where('course.isPublished = :published', { published: true })
+      .orderBy(isNewUser ? 'course.createdAt' : 'course.updatedAt', 'DESC')
+      .take(take)
+      .getMany();
+
+    const courses = recommendedCourses.map((course) => {
+      const totalChapters = course.course_levels?.reduce((sum, level) => 
+        sum + (level.level_chapters?.length || 0), 0) || 0;
+
+      return {
+        course_id: course.course_id,
+        course_title: course.course_title,
+        reason: isNewUser ? 'คอร์สใหม่ล่าสุด' : 'คอร์สยอดนิยม',
+        course_imageUrl: course.course_imageUrl ?? null,
+        level_name: 'ระดับพื้นฐาน',
+        course_totalChapter: totalChapters,  
+      };
     });
-
-    const courses = recommendedCourses.map((course) => ({
-      course_id: course.course_id,
-      course_title: course.course_title,
-      reason: isNewUser ? 'คอร์สใหม่ล่าสุด' : 'คอร์สยอดนิยม',
-      course_imageUrl: course.course_imageUrl ?? null,
-      level_name: 'ระดับพื้นฐาน',
-      course_totalChapter: 6,
-    }));
 
     return { courses };
   }

@@ -194,19 +194,20 @@ describe('AnalyticsService', () => {
     });
   });
 
-  describe('getActiveLearnerCount', () => {
-    it('should return count of active learners', async () => {
+  describe('getActiveUsersInLast7Days', () => {
+    it('should return count of active users in last 7 days', async () => {
       const mockQueryBuilder = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
-        getRawOne: jest.fn().mockResolvedValue({ count: '25' }),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ count: '45' }),
       };
 
       lessonProgressRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
-      const result = await service['getActiveLearnerCount']();
+      const result = await service['getActiveUsersInLast7Days']();
 
-      expect(result).toBe(25);
+      expect(result).toBe(45);
       expect(lessonProgressRepo.createQueryBuilder).toHaveBeenCalledWith('lp');
     });
   });
