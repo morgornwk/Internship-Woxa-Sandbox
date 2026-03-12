@@ -143,7 +143,6 @@ export class UsersService {
     }));
   }
 
-
   async ownerFindAll() {
     const users = await this.userRepo.find();
     const onlineUsers = this.websocketGateway.getOnlineUserIds();
@@ -153,9 +152,7 @@ export class UsersService {
       where: { userId: In(userIds) },
     });
 
-    const streakMap = new Map(
-      streaks.map((s) => [s.userId, s.currentStreak]),
-    );
+    const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
     return users.map((user) => ({
       id: user.id,
@@ -445,7 +442,10 @@ export class UsersService {
       .leftJoin('lesson.chapter', 'chapter')
       .leftJoin('chapter.level', 'level')
       .leftJoin('level.course', 'course')
+
       .where('lesson_progress.userId = :userId', { userId })
+      .andWhere('chapter.is_published = true')
+      .andWhere('lesson.is_published = true')
 
       .select('course.course_id', 'courseId')
       .addSelect('course.course_title', 'courseTitle')
@@ -453,23 +453,58 @@ export class UsersService {
       .addSelect('course.course_description', 'courseDescription')
 
       .addSelect(
-        `COUNT(DISTINCT CASE 
-        WHEN lesson_progress.status = 'COMPLETED' 
-        THEN chapter.chapter_id 
-     END)`,
+        `
+    COUNT(DISTINCT CASE
+      WHEN (
+        SELECT COUNT(*) 
+        FROM lessons l
+        WHERE l.chapter_id = chapter.chapter_id
+        AND l.is_published = true
+      ) =
+      (
+        SELECT COUNT(*) 
+        FROM progress lp2
+        JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
+        WHERE l2.chapter_id = chapter.chapter_id
+        AND l2.is_published = true
+        AND lp2.status = 'COMPLETED'
+        AND lp2.user_id = :userId
+      )
+    THEN chapter.chapter_id
+    END)
+  `,
         'completedChapters',
       )
 
-      .addSelect('COUNT(DISTINCT chapter.chapter_id)', 'totalChapters')
+      .addSelect(
+        'COUNT(DISTINCT CASE WHEN chapter.is_published = true THEN chapter.chapter_id END)',
+        'totalChapters',
+      )
 
       .addSelect(
-        `ROUND(
-        COUNT(DISTINCT CASE 
-            WHEN lesson_progress.status = 'COMPLETED' 
-            THEN chapter.chapter_id 
-        END) * 100.0 /
-        COUNT(DISTINCT chapter.chapter_id),
-    2)`,
+        `
+    ROUND(
+      COUNT(DISTINCT CASE
+        WHEN (
+          SELECT COUNT(*) 
+          FROM lessons l
+          WHERE l.chapter_id = chapter.chapter_id
+          AND l.is_published = true
+        ) =
+        (
+          SELECT COUNT(*) 
+          FROM progress lp2
+          JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
+          WHERE l2.chapter_id = chapter.chapter_id
+          AND l2.is_published = true
+          AND lp2.status = 'COMPLETED'
+          AND lp2.user_id = :userId
+        )
+      THEN chapter.chapter_id
+      END) * 100.0 /
+      COUNT(DISTINCT CASE WHEN chapter.is_published = true THEN chapter.chapter_id END)
+    ,2)
+  `,
         'progressPercent',
       )
 
@@ -477,11 +512,14 @@ export class UsersService {
 
       .groupBy('course.course_id')
       .addGroupBy('course.course_title')
+      .addGroupBy('course.course_imageUrl')
+      .addGroupBy('course.course_description')
 
       .orderBy('MAX(lesson_progress.updatedAt)', 'DESC')
 
-      .getRawMany();
+      .setParameter('userId', userId)
 
+      .getRawMany();
     return result;
   }
 
