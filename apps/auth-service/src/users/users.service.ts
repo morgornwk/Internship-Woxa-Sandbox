@@ -153,7 +153,6 @@ export class UsersService {
     });
 
     const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
-    const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
     return users.map((user) => ({
       id: user.id,
