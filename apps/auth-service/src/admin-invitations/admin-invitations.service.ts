@@ -165,14 +165,11 @@ export class AdminInvitationsService {
           where: { userId: u.id, isUsed: false },
           order: { createdAt: 'DESC' },
         });
-        console.log('latest', latest);
         
         if (latest?.expiresAt) {
           expiresAt = latest.expiresAt.toISOString();
           const bangkokExpiresAt = new Date(latest.expiresAt.getTime() + bangkokOffset);
           hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
-          console.log('expiresAt', expiresAt);
-          console.log('hoursUntilExpiry', hoursUntilExpiry);
           if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
         } else {
           // ถ้าไม่มี invitation pending ให้ดู invitation ล่าสุดทั้งหมด (รวมที่ใช้ไปแล้ว)
@@ -202,7 +199,6 @@ export class AdminInvitationsService {
       });
     }
 
-    console.log('test :' + results)
 
     return results;
   }
