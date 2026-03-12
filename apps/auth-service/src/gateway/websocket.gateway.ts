@@ -61,7 +61,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
             this.userToSocket.set(userId, socket.id);
             this.socketToUser.set(socket.id, userId);
-            this.logger.log(`User connected: ${userId}`);
+            // this.logger.log(`User connected: ${userId}`);
 
             // แจ้งให้ client ทั้งหมดทราบว่ามีผู้ใช้ออนไลน์
             this.server.emit('user_online', userId);
@@ -79,7 +79,7 @@ export class WebsocketGateway implements OnGatewayConnection, OnGatewayDisconnec
 
         this.userToSocket.delete(userId);
         this.socketToUser.delete(socket.id);
-        this.logger.log(`User disconnected: ${userId}`);
+        // this.logger.log(`User disconnected: ${userId}`);
         this.server.emit('user_offline', userId);
     }
 
