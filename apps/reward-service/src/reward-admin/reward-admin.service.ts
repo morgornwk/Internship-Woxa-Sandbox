@@ -11,6 +11,17 @@ import { serializeReward } from '../reward/reward-response.util';
 
 @Injectable()
 export class RewardAdminService {
+  private readonly bangkokFormatter = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'Asia/Bangkok',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+
   constructor(
     private readonly aws: AwsS3StorageService,
     private readonly rewardStatusService: RewardStatusService,
@@ -38,12 +49,15 @@ export class RewardAdminService {
   }
 
   async createReward(createRewardDto: CreateRewardAdminDto, imageUrl: string) {
-    const { redeem_start_date, redeem_end_date } = createRewardDto;
+    const redeem_start_date = this.normalizeIncomingRewardDate(createRewardDto.redeem_start_date);
+    const redeem_end_date = this.normalizeIncomingRewardDate(createRewardDto.redeem_end_date);
 
     this.ensureValidRedeemPeriod(redeem_start_date, redeem_end_date);
 
     const rewardCreated = this.rewardRepo.create({
       ...createRewardDto,
+      redeem_start_date,
+      redeem_end_date,
       image_url: imageUrl,
       remain: createRewardDto.total_limit,
       is_active: this.rewardStatusService.resolveActiveStatus(
@@ -88,12 +102,23 @@ export class RewardAdminService {
       reward.image_url = imageUrl;
     }
 
-    const nextRedeemStartDate = dto.redeem_start_date ?? reward.redeem_start_date;
-    const nextRedeemEndDate = dto.redeem_end_date ?? reward.redeem_end_date;
+    const normalizedRedeemStartDate = dto.redeem_start_date !== undefined
+      ? this.normalizeIncomingRewardDate(dto.redeem_start_date)
+      : undefined;
+    const normalizedRedeemEndDate = dto.redeem_end_date !== undefined
+      ? this.normalizeIncomingRewardDate(dto.redeem_end_date)
+      : undefined;
+
+    const nextRedeemStartDate = normalizedRedeemStartDate ?? reward.redeem_start_date;
+    const nextRedeemEndDate = normalizedRedeemEndDate ?? reward.redeem_end_date;
 
     this.ensureValidRedeemPeriod(nextRedeemStartDate, nextRedeemEndDate);
 
-    Object.assign(reward, dto);
+    Object.assign(reward, {
+      ...dto,
+      ...(normalizedRedeemStartDate !== undefined ? { redeem_start_date: normalizedRedeemStartDate } : {}),
+      ...(normalizedRedeemEndDate !== undefined ? { redeem_end_date: normalizedRedeemEndDate } : {}),
+    });
     reward.is_active = this.rewardStatusService.resolveActiveStatus(
       dto.is_active ?? reward.is_active,
       nextRedeemEndDate,
@@ -127,6 +152,59 @@ export class RewardAdminService {
         'Redeem end date must be greater than start date',
       );
     }
+  }
+
+  private normalizeIncomingRewardDate(value: Date | string): Date {
+    if (value instanceof Date) {
+      return this.convertInstantToBangkokWallClock(value);
+    }
+
+    const raw = value.trim();
+    const wallClockMatch = raw.match(
+      /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
+    );
+
+    if (wallClockMatch) {
+      const [, year, month, day, hour, minute, second = '00', milliseconds = '0'] = wallClockMatch;
+      const normalizedMilliseconds = milliseconds.padEnd(3, '0');
+
+      return new Date(
+        Date.UTC(
+          Number(year),
+          Number(month) - 1,
+          Number(day),
+          Number(hour),
+          Number(minute),
+          Number(second),
+          Number(normalizedMilliseconds),
+        ),
+      );
+    }
+
+    const parsed = new Date(raw);
+
+    if (Number.isNaN(parsed.getTime())) {
+      throw new BadRequestException('Invalid reward date');
+    }
+
+    return this.convertInstantToBangkokWallClock(parsed);
+  }
+
+  private convertInstantToBangkokWallClock(value: Date): Date {
+    const parts = this.bangkokFormatter.formatToParts(value);
+    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '0';
+
+    return new Date(
+      Date.UTC(
+        Number(getPart('year')),
+        Number(getPart('month')) - 1,
+        Number(getPart('day')),
+        Number(getPart('hour')),
+        Number(getPart('minute')),
+        Number(getPart('second')),
+        value.getUTCMilliseconds(),
+      ),
+    );
   }
 
   // ตรวจสอบ MIME type ของไฟล์ภาพที่อัพโหลดเข้ามา (รองรับ jpg/jpeg/png/webp)

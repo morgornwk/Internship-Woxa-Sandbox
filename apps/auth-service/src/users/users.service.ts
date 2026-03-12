@@ -43,7 +43,7 @@ export class UsersService {
     'https://cdn.skllracademy.com/images/a9462080-9d1b-43a1-9910-1a9bef7e3568',
   ] as const;
 
-  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/6c4dd042-3ac9-49a3-9986-00b3a4fac92a';
+  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/13e6581e-07b7-4d41-aa44-6de674a4e513';
 
   constructor(
     @InjectRepository(User, 'auth')

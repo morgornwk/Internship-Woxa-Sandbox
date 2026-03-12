@@ -44,9 +44,33 @@ function formatBangkokTimestamp(value?: Date | string | null): string | null {
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
 }
 
+function formatDateToBangkokWallClock(date: Date): string | null {
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = bangkokFormatter.formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => {
+    return parts.find((part) => part.type === type)?.value ?? '';
+  };
+
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
+}
+
 function formatStoredTimestamp(value?: Date | string | null): string | null {
   if (!value) {
     return null;
+  }
+
+  if (typeof value === 'string') {
+    const wallClockMatch = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
+    );
+
+    if (wallClockMatch) {
+      const [, year, month, day, hour, minute, second = '00', milliseconds = '0'] = wallClockMatch;
+      return `${year}-${month}-${day}T${hour}:${minute}:${second}.${milliseconds.padEnd(3, '0')}+07:00`;
+    }
   }
 
   const date = value instanceof Date ? value : new Date(value);
@@ -55,7 +79,7 @@ function formatStoredTimestamp(value?: Date | string | null): string | null {
     return null;
   }
 
-  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}T${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())}:${pad(date.getUTCSeconds())}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
+  return formatDateToBangkokWallClock(date);
 }
 
 export function serializeReward(reward: Reward) {
