@@ -440,6 +440,40 @@ describe('AdminInvitationsService', () => {
     });
   });
 
+  describe('unsuspendUser', () => {
+    it('throws BadRequestException when user is not admin', async () => {
+      usersService.findById.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));
+
+      await expect(service.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(usersService.update).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when user is not suspended', async () => {
+      const activeAdmin = makeUser({ role: UserRole.ADMIN, status: 'active' });
+      usersService.findById.mockResolvedValue(activeAdmin);
+
+      await expect(service.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(usersService.update).not.toHaveBeenCalled();
+    });
+
+    it('unsuspends admin user successfully', async () => {
+      const suspendedAdmin = makeUser({ role: UserRole.ADMIN, status: 'suspend' });
+      const reactivatedAdmin = { ...suspendedAdmin, status: 'active' };
+      
+      usersService.findById.mockResolvedValue(suspendedAdmin);
+      usersService.update.mockResolvedValue(reactivatedAdmin);
+
+      const result = await service.unsuspendUser('user-1');
+
+      expect(usersService.update).toHaveBeenCalledWith('user-1', { status: 'active' });
+      expect(result).toEqual({
+        id: 'user-1',
+        status: 'active',
+        message: 'User unsuspended successfully',
+      });
+    });
+  });
+
   describe('deleteUser', () => {
     it('throws BadRequestException when user is not admin', async () => {
       usersService.findById.mockResolvedValue(makeUser({ role: UserRole.STUDENT }));

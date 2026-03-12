@@ -1,14 +1,17 @@
 import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { randomBytes } from 'crypto';
+
 import { AdminInvitation } from './entities/admin-invitation.entity';
+import { InviteAdminDto } from './dto/invite-admin.dto';
+import { AdminListDto } from './dto/admin-list.dto';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../auth/email.service';
 import { UserRole } from '@common/enums';
-import { AdminListDto } from './dto/admin-list.dto';
-import * as bcrypt from 'bcrypt';
-import * as crypto from 'crypto';
+import { Status } from '@common/enums/status.enum';
+import { ConfigService } from '@nestjs/config';
 
 const INVITE_TOKEN_EXPIRY_MINUTES = 60 * 24 * 3; // 3 days
 const BCRYPT_SALT_ROUNDS = 10;
@@ -212,6 +215,25 @@ export class AdminInvitationsService {
     return this.usersService.blockUser(userId);
   }
 
+  async unsuspendUser(userId: string): Promise<{ id: string; status: string; message: string }> {
+    const user = await this.usersService.findById(userId);
+    if (user.role !== UserRole.ADMIN) {
+      throw new BadRequestException('User is not admin');
+    }
+
+    if (user.status !== Status.SUSPEND) {
+      throw new BadRequestException('User is not suspended');
+    }
+
+    const updatedUser = await this.usersService.update(userId, { status: Status.ACTIVE });
+    
+    return {
+      id: updatedUser.id,
+      status: updatedUser.status,
+      message: 'User unsuspended successfully',
+    };
+  }
+
   async deleteUser(userId: string): Promise<{ message: string }> {
     const user = await this.usersService.findById(userId);
     if (user.role !== UserRole.ADMIN) {
@@ -239,11 +261,11 @@ export class AdminInvitationsService {
   }
 
   private generateTemporaryPassword(): string {
-    return crypto.randomBytes(9).toString('base64url');
+    return randomBytes(9).toString('base64url');
   }
 
   private async generateInviteToken(): Promise<{ tokenPlain: string; tokenHash: string; expiresAt: Date }> {
-    const tokenPlain = crypto.randomBytes(32).toString('hex');
+    const tokenPlain = randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(tokenPlain, BCRYPT_SALT_ROUNDS);
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + INVITE_TOKEN_EXPIRY_MINUTES);

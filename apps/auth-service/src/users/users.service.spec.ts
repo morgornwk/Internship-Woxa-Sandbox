@@ -23,6 +23,8 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { AuthAccount } from './entities/auth-account.entity';
 import { AuthProvider } from '@common/enums';
+import { WebsocketGateway } from '../gateway/websocket.gateway';
+import { AdminInvitation } from '../admin-invitations/entities/admin-invitation.entity';
 
 // course entities used for injection tokens
 import { Course } from 'apps/course-service/src/courses/entities/course.entity';
@@ -99,6 +101,18 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(LessonProgress, 'course'), useValue: { find: jest.fn() } },
         { provide: getRepositoryToken(Chapter, 'course'), useValue: {} },
         { provide: getRepositoryToken(Level, 'course'), useValue: {} },
+        { 
+          provide: getRepositoryToken(AdminInvitation, 'auth'),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: WebsocketGateway,
+          useValue: {
+            getOnlineUserIds: jest.fn(() => new Set()),
+          },
+        },
         {
           provide: ConfigService,
           useValue: makeConfig({
@@ -364,7 +378,7 @@ describe('UsersService', () => {
       ]);
 
       const result = await service.getAllCompleteCourse('u1');
-      expect(result.completeCourse[0]).toEqual(
+      expect(result[0]).toEqual(
         expect.objectContaining({
           lesson_progress_id: 1,
           lessong_id: 10,

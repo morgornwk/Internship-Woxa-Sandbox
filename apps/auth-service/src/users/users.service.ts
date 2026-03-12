@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
 import { User } from './entities/user.entity';
 import { AuthAccount } from './entities/auth-account.entity';
 import { CreateUserDto, UpdateUserDto, UpdateRoleDto } from './dto';
+import { AdminUserListDto } from './dto/admin-user-list.dto';
 import { AuthProvider } from '@common/enums';
 import { UserXp } from 'apps/course-service/src/quizs/entities/user-xp.entity';
 import { UserStreak } from 'apps/course-service/src/streaks/entities/user-streak.entity';
@@ -120,7 +121,7 @@ export class UsersService {
   }
 
   // Get all users (สำหรับ admin ดูรายชื่อผู้ใช้ทั้งหมด)
-  async findAll() {
+  async findAll(): Promise<AdminUserListDto[]> {
     const users = await this.userRepo.find();
     const onlineUsers = this.websocketGateway.getOnlineUserIds();
     const userIds = users.map((u) => u.id);
@@ -131,16 +132,57 @@ export class UsersService {
 
     const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
-    return users.map((user) => ({
-      id: user.id,
-      email: user.email,
-      avatar: user.avatar ?? this.defaultAvatar,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      role: user.role,
-      streak: streakMap.get(user.id) ?? 0,
-      status: onlineUsers.has(user.id),
-    }));
+    // Get admin invitations for expiry info
+    const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
+    const adminUserIds = adminUsers.map(u => u.id);
+    
+    const invitations = await this.adminInvitationRepo.find({
+      where: { userId: In(adminUserIds) },
+      order: { createdAt: 'DESC' },
+    });
+
+    // Group invitations by userId and get latest for each admin
+    const latestInvitations = new Map();
+    invitations.forEach(invitation => {
+      if (!latestInvitations.has(invitation.userId)) {
+        latestInvitations.set(invitation.userId, invitation);
+      }
+    });
+
+    // Calculate expiry info using Bangkok time
+    const now = new Date();
+    const bangkokOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+    const bangkokNow = new Date(now.getTime() + bangkokOffset);
+
+    return users.map((user) => {
+      let expiresAt: string | null = null;
+      let hoursUntilExpiry: number | null = null;
+
+      // Add expiry info for admin users
+      if (user.role === UserRole.ADMIN) {
+        const latestInvitation = latestInvitations.get(user.id);
+        
+        if (latestInvitation?.expiresAt) {
+          expiresAt = latestInvitation.expiresAt.toISOString();
+          const bangkokExpiresAt = new Date(latestInvitation.expiresAt.getTime() + bangkokOffset);
+          hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+          if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
+        }
+      }
+
+      return {
+        id: user.id,
+        email: user.email,
+        avatar: user.avatar ?? this.defaultAvatar,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        streak: streakMap.get(user.id) ?? 0,
+        status: onlineUsers.has(user.id),
+        expiresAt,
+        hoursUntilExpiry,
+      };
+    });
   }
 
   async ownerFindAll() {

@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { AdminInvitationsService } from './admin-invitations.service';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { AcceptAdminInviteDto } from './dto/accept-admin-invite.dto';
-import { SuspendUserResponseDto, DeleteUserResponseDto, CancelInvitationResponseDto } from './dto/admin-management-response.dto';
+import { SuspendUserResponseDto, DeleteUserResponseDto, CancelInvitationResponseDto, UnsuspendUserResponseDto } from './dto/admin-management-response.dto';
 import { AdminListDto } from './dto/admin-list.dto';
 import { UserRole } from '@common/enums';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
@@ -77,10 +77,23 @@ export class AdminInvitationsController {
   @ApiResponse({ status: 200, description: 'Admin suspended.', type: SuspendUserResponseDto })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Owner role required.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
+  @Roles(UserRole.OWNER)
   async suspendUser(@Param('userId') userId: string): Promise<SuspendUserResponseDto> {
     return this.adminInvitationsService.suspendUser(userId);
+  }
+
+  @Patch(':userId/unsuspend')
+  @ApiOperation({ summary: 'Unsuspend admin user (OWNER only)' })
+  @ApiResponse({ status: 200, description: 'Admin unsuspended.', type: UnsuspendUserResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad Request.' })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Owner role required.' })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Roles(UserRole.OWNER)
+  async unsuspendUser(@Param('userId') userId: string): Promise<UnsuspendUserResponseDto> {
+    return this.adminInvitationsService.unsuspendUser(userId);
   }
 
   @ApiBearerAuth('access-token')

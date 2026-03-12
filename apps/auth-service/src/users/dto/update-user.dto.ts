@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Status } from '@common/enums/status.enum';
 
 export class UpdateUserDto {
   @ApiProperty({ example: 'skllr' })
@@ -21,4 +22,13 @@ export class UpdateUserDto {
   @IsBoolean()
   @IsOptional()
   isVerified?: boolean;
+
+  @ApiProperty({ 
+    example: 'active',
+    enum: Status,
+    required: false
+  })
+  @IsEnum(Status)
+  @IsOptional()
+  status?: Status;
 }

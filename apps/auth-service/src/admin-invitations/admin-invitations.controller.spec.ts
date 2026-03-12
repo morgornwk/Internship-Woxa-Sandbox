@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { AdminInvitationsController } from './admin-invitations.controller';
 import { AdminInvitationsService } from './admin-invitations.service';
 import { InviteAdminDto } from './dto/invite-admin.dto';
@@ -15,6 +16,7 @@ describe('AdminInvitationsController', () => {
       resendInvite: jest.fn(),
       listAdmins: jest.fn(),
       suspendUser: jest.fn(),
+      unsuspendUser: jest.fn(),
       deleteUser: jest.fn(),
       cancelInvitationEmail: jest.fn(),
     };
@@ -43,6 +45,36 @@ describe('AdminInvitationsController', () => {
       const result = await controller.suspendUser(userId);
 
       expect(service.suspendUser).toHaveBeenCalledWith(userId);
+      expect(result).toEqual(expectedResult);
+    });
+  });
+
+  describe('unsuspendUser', () => {
+    it('throws BadRequestException when user is not admin', async () => {
+      service.unsuspendUser.mockRejectedValue(new BadRequestException('User is not admin'));
+
+      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(service.unsuspendUser).toHaveBeenCalledWith('user-1');
+    });
+
+    it('throws BadRequestException when user is not suspended', async () => {
+      service.unsuspendUser.mockRejectedValue(new BadRequestException('User is not suspended'));
+
+      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      expect(service.unsuspendUser).toHaveBeenCalledWith('user-1');
+    });
+
+    it('unsuspends admin user successfully', async () => {
+      const expectedResult = { 
+        id: 'user-1', 
+        status: 'active', 
+        message: 'User unsuspended successfully' 
+      };
+      service.unsuspendUser.mockResolvedValue(expectedResult);
+
+      const result = await controller.unsuspendUser('user-1');
+
+      expect(service.unsuspendUser).toHaveBeenCalledWith('user-1');
       expect(result).toEqual(expectedResult);
     });
   });
@@ -128,7 +160,6 @@ describe('AdminInvitationsController', () => {
         email: dto.email,
         firstName: undefined,
         lastName: undefined,
-        responsibility: undefined,
       });
       expect(result).toEqual(expectedResult);
     });
@@ -162,7 +193,8 @@ describe('AdminInvitationsController', () => {
           lastName: 'ใจดี',
           role: 'ADMIN',
           status: 'invited',
-          responsibility: 'จัดการคอร์ส',
+          expiresAt: '2026-03-15T10:30:00.000Z',
+          hoursUntilExpiry: 48,
         },
         {
           id: 'owner-1',
@@ -171,7 +203,8 @@ describe('AdminInvitationsController', () => {
           lastName: 'ระบบ',
           role: 'OWNER',
           status: 'active',
-          responsibility: null,
+          expiresAt: null,
+          hoursUntilExpiry: null,
         },
       ];
 

@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Param, Body, Delete, UseGuards } from '@nestjs/
 
 import { UsersService } from './users.service';
 import { UpdateRoleDto } from './dto';
+import { AdminUserListDto } from './dto/admin-user-list.dto';
 
 import { JwtAuthGuard, RolesGuard, Roles } from '@auth';
 import { UserRole } from '@common/enums';
@@ -18,11 +19,15 @@ export class UsersAdminController {
 
     @Get()
     @ApiOperation({ summary: 'Get all users' })
-    @ApiResponse({ status: 200, description: 'List of users retrieved successfully.' })
+    @ApiResponse({ 
+      status: 200, 
+      description: 'List of users retrieved successfully.',
+      type: [AdminUserListDto]
+    })
     @ApiResponse({ status: 401, description: 'Unauthorized.' })
     @ApiResponse({ status: 403, description: 'Forbidden. Admin role required.' })
     @ApiResponse({ status: 500, description: 'Internal Server Error.' })
-    async findAll() {
+    async findAll(): Promise<AdminUserListDto[]> {
         return this.usersService.findAll();
     }
 
