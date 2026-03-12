@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  HttpException,
-  NotFoundException,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { BadRequestException, HttpException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import axios from 'axios';
@@ -13,6 +8,7 @@ import { AiQuizService } from './ai-quiz.service';
 import { AiQuizGeneration } from './entities/ai-analyzer-entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { Quizs } from '../quizs/entities/quizs.entity';
+import { Article } from '../articles/entities/article.entity';
 
 jest.mock('axios', () => {
   const post = jest.fn();
@@ -29,6 +25,7 @@ describe('AiQuizService', () => {
   let aiRepo: jest.Mocked<Partial<Repository<AiQuizGeneration>>>;
   let lessonRepo: jest.Mocked<Partial<Repository<Lesson>>>;
   let quizRepo: jest.Mocked<Partial<Repository<Quizs>>>;
+  let articleRepo: jest.Mocked<Partial<Repository<Article>>>;
   let axiosPostMock: jest.Mock;
 
   const envBackup = { ...process.env };
@@ -63,6 +60,18 @@ describe('AiQuizService', () => {
             save: jest.fn(),
           },
         },
+        {
+          provide: getRepositoryToken(Article),
+          useValue: {
+            createQueryBuilder: jest.fn(() => ({
+              select: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              limit: jest.fn().mockReturnThis(),
+              getOne: jest.fn().mockResolvedValue(null),
+            })),
+          },
+        },
       ],
     }).compile();
 
@@ -70,6 +79,7 @@ describe('AiQuizService', () => {
     aiRepo = module.get(getRepositoryToken(AiQuizGeneration));
     lessonRepo = module.get(getRepositoryToken(Lesson));
     quizRepo = module.get(getRepositoryToken(Quizs));
+    articleRepo = module.get(getRepositoryToken(Article));
 
     jest.clearAllMocks();
     axiosPostMock.mockReset();

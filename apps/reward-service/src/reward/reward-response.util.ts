@@ -1,5 +1,6 @@
 import { RewardRedemption } from './entities/reward-redemption';
 import { Reward } from './entities/rewards.entity';
+import { formatStoredRewardTimestamp } from './reward-timestamp.util';
 
 const bangkokFormatter = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Asia/Bangkok',
@@ -44,6 +45,23 @@ function formatBangkokTimestamp(value?: Date | string | null): string | null {
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
 }
 
+function formatDateToBangkokWallClock(date: Date): string | null {
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  const parts = bangkokFormatter.formatToParts(date);
+  const getPart = (type: Intl.DateTimeFormatPartTypes) => {
+    return parts.find((part) => part.type === type)?.value ?? '';
+  };
+
+  return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
+}
+
+function formatStoredTimestamp(value?: Date | string | null): string | null {
+  return formatStoredRewardTimestamp(value);
+}
+
 export function serializeReward(reward: Reward) {
   return {
     id: reward.id,
@@ -52,8 +70,8 @@ export function serializeReward(reward: Reward) {
     remain: toNumberOrNull(reward.remain),
     image_url: reward.image_url,
     required_points: toNumberOrNull(reward.required_points),
-    redeem_start_date: formatBangkokTimestamp(reward.redeem_start_date),
-    redeem_end_date: formatBangkokTimestamp(reward.redeem_end_date),
+    redeem_start_date: formatStoredTimestamp(reward.redeem_start_date),
+    redeem_end_date: formatStoredTimestamp(reward.redeem_end_date),
     limit_per_user: reward.limit_per_user ?? null,
     total_limit: reward.total_limit ?? null,
     is_active: reward.is_active,
@@ -69,7 +87,7 @@ export function serializeRewardRedemption(redemption: RewardRedemption) {
     userId: redemption.userId,
     reward: redemption.reward ? serializeReward(redemption.reward) : null,
     used_points: toNumberOrNull(redemption.used_points),
-    expire_at: formatBangkokTimestamp(redemption.expire_at),
+    expire_at: formatStoredTimestamp(redemption.expire_at),
     redeem_token: redemption.redeem_token,
     isUsed: redemption.isUsed,
     redeemed_at: formatBangkokTimestamp(redemption.redeemed_at),

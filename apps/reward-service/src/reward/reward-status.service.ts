@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Reward } from './entities/rewards.entity';
+import { compareStoredRewardTimestampToBangkokNow } from './reward-timestamp.util';
 
 @Injectable()
 export class RewardStatusService {
@@ -39,7 +40,19 @@ export class RewardStatusService {
       return false;
     }
 
-    return new Date(redeemEndDate).getTime() < now.getTime();
+    const comparison = compareStoredRewardTimestampToBangkokNow(redeemEndDate, now);
+
+    return comparison !== null && comparison < 0;
+  }
+
+  hasStarted(redeemStartDate?: Date | string | null, now: Date = new Date()): boolean {
+    if (!redeemStartDate) {
+      return true;
+    }
+
+    const comparison = compareStoredRewardTimestampToBangkokNow(redeemStartDate, now);
+
+    return comparison !== null && comparison <= 0;
   }
 
   resolveActiveStatus(

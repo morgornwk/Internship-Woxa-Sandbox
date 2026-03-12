@@ -1,5 +1,11 @@
 import { Controller, Get, Headers, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOkResponse, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { JwtAuthGuard } from '@auth';
 import { CurrentUserId } from './decorators/current-user-id.decorator';
@@ -11,12 +17,14 @@ import { LearnerHomeResponseDto } from './dto/learner-home-response.dto';
 @UseGuards(JwtAuthGuard)
 @Controller('learner-home')
 export class LearnerHomeController {
-  constructor(
-    private readonly learnerHomeService: LearnerHomeService,
-  ) { }
+  constructor(private readonly learnerHomeService: LearnerHomeService) {}
 
   @Get()
-  @ApiOperation({ summary: 'payload หน้าแรกของผู้เรียน', description: 'ดึงข้อมูลหน้าแรกของผู้เรียน ประกอบด้วย header, continue learning, my courses, notifications และ recommendations' })
+  @ApiOperation({
+    summary: 'payload หน้าแรกของผู้เรียน',
+    description:
+      'ดึงข้อมูลหน้าแรกของผู้เรียน ประกอบด้วย header, continue learning, my courses, notifications และ recommendations',
+  })
   @ApiOkResponse({
     type: LearnerHomeResponseDto,
     description: 'Learner homepage data successfully retrieved',
@@ -55,7 +63,8 @@ export class LearnerHomeController {
             course_id: 4,
             course_title: 'JavaScript Fundamentals',
             reason: 'เหมาะสำหรับผู้เริ่มต้น',
-            course_imageUrl: 'https://cdn.example.com/courses/js-fundamentals.jpg',
+            course_imageUrl:
+              'https://cdn.example.com/courses/js-fundamentals.jpg',
             level_name: 'ระดับพื้นฐาน',
             course_totalChapter: 6,
           },
@@ -63,7 +72,8 @@ export class LearnerHomeController {
             course_id: 5,
             course_title: 'React Advanced',
             reason: 'เหมาะสำหรับผู้มีพื้นฐาน',
-            course_imageUrl: 'https://cdn.example.com/courses/react-advanced.jpg',
+            course_imageUrl:
+              'https://cdn.example.com/courses/react-advanced.jpg',
             level_name: 'ระดับปานกลาง',
             course_totalChapter: 8,
           },
@@ -71,7 +81,8 @@ export class LearnerHomeController {
             course_id: 6,
             course_title: 'Node.js Mastery',
             reason: 'คอร์สยอดนิยม',
-            course_imageUrl: 'https://cdn.example.com/courses/nodejs-mastery.jpg',
+            course_imageUrl:
+              'https://cdn.example.com/courses/nodejs-mastery.jpg',
             level_name: 'ระดับยาก',
             course_totalChapter: 10,
           },
@@ -79,7 +90,11 @@ export class LearnerHomeController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: 'Learner homepage data successfully retrieved', type: LearnerHomeResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Learner homepage data successfully retrieved',
+    type: LearnerHomeResponseDto,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 500, description: 'Internal server error' })
@@ -89,5 +104,11 @@ export class LearnerHomeController {
     @Headers('x-internal-call') internalCall?: string,
   ): Promise<LearnerHomeResponseDto> {
     return this.learnerHomeService.getHome(userId, authorization, internalCall);
+  }
+
+  @Get('test')
+  async getTest(@CurrentUserId() userId: string) {
+    // return 'test';
+    return this.learnerHomeService.getLatestLearn(userId);
   }
 }

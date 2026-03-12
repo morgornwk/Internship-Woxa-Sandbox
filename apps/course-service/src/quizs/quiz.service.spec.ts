@@ -284,11 +284,19 @@ describe('QuizService (quiz)', () => {
       await expect(service.checkAndSaveAnswer(10, 'u1', 'a')).rejects.toBeInstanceOf(ConflictException);
     });
 
-    it('throws conflict when result already final (SKIPPED) even if no answer stored', async () => {
+    it('allows answering again when previous result was SKIPPED', async () => {
       quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10 }));
       resultRepo.findOne.mockResolvedValue(makeResult({ status: QuizsStatus.SKIPPED, userAnswer: null }));
+      resultRepo.save.mockImplementation(async (r) => r as any);
+      lessonRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.checkAndSaveAnswer(10, 'u1', 'a')).rejects.toBeInstanceOf(ConflictException);
+      const res = await service.checkAndSaveAnswer(10, 'u1', 'a');
+
+      expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+        status: QuizsStatus.COMPLETED,
+        userAnswer: 'a',
+      }));
+      expect(res.isCorrect).toBe(true);
     });
 
     it('updates existing PENDING result when userAnswer is null', async () => {

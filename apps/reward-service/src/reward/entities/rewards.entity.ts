@@ -1,13 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-  OneToMany,
-  Index,
-  DeleteDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index, DeleteDateColumn } from 'typeorm';
 import { RewardRedemption } from './reward-redemption';
 
 
@@ -31,25 +22,25 @@ export class Reward {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 100 , nullable: false })
+  @Column({ length: 100, nullable: false })
   name: string;
 
   @Column({ type: 'text', nullable: false })
   description: string;
 
-  @Column({ type: 'decimal',  precision: 6 , nullable: true })
+  @Column({ type: 'decimal', precision: 6, nullable: true })
   remain: number;
 
   @Column({ nullable: false })
   image_url: string;
 
-  @Column({ type: 'decimal', precision: 6 , nullable: false})
+  @Column({ type: 'decimal', precision: 6, nullable: false })
   required_points: number;
 
-  @Column({ type: 'timestamp' , nullable: false})
+  @Column({ type: 'timestamp', nullable: false })
   redeem_start_date: Date;
 
-  @Column({ type: 'timestamp' , nullable: false})
+  @Column({ type: 'timestamp', nullable: false })
   redeem_end_date: Date;
 
   // @Column({ nullable: true })

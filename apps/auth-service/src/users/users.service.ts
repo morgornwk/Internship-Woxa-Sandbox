@@ -1,20 +1,9 @@
-import {
-  Injectable,
-  ConflictException,
-  NotFoundException,
-  BadRequestException,
-  Logger,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
-import {
-  S3Client,
-  PutObjectCommand,
-  DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
 import { User } from './entities/user.entity';
@@ -54,8 +43,7 @@ export class UsersService {
     'https://cdn.skllracademy.com/images/a9462080-9d1b-43a1-9910-1a9bef7e3568',
   ] as const;
 
-  private readonly defaultAvatar =
-    'https://cdn.skllracademy.com/images/55de2f89-ee38-449e-8a43-22e6c9146887';
+  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/13e6581e-07b7-4d41-aa44-6de674a4e513';
 
   constructor(
     @InjectRepository(User, 'auth')
@@ -135,7 +123,7 @@ export class UsersService {
     // Get admin invitations for expiry info
     const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
     const adminUserIds = adminUsers.map(u => u.id);
-    
+
     const invitations = await this.adminInvitationRepo.find({
       where: { userId: In(adminUserIds) },
       order: { createdAt: 'DESC' },
@@ -161,7 +149,7 @@ export class UsersService {
       // Add expiry info for admin users
       if (user.role === UserRole.ADMIN) {
         const latestInvitation = latestInvitations.get(user.id);
-        
+
         if (latestInvitation?.expiresAt) {
           expiresAt = latestInvitation.expiresAt.toISOString();
           const bangkokExpiresAt = new Date(latestInvitation.expiresAt.getTime() + bangkokOffset);

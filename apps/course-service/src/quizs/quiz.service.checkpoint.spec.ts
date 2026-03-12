@@ -459,13 +459,38 @@ describe('QuizService (checkpoint)', () => {
             await expect(service.checkCheckpointAnswer(1, 'u1', 'a')).rejects.toBeInstanceOf(NotFoundException);
         });
 
-        it('throws when checkpoint already skipped', async () => {
+        it('allows answering again when checkpoint was previously skipped', async () => {
             checkpointRepo.findOne.mockResolvedValue(makeCheckpoint({ checkpointId: 1 }));
             resultRepo.findOne.mockResolvedValue(
                 makeResult({ type: QuizsResultType.CHECKPOINT, checkpointId: 1, status: QuizsStatus.SKIPPED }),
             );
+            resultRepo.save.mockImplementation(async (x: any) => x);
+            lessonRepo.findOne.mockResolvedValue({ lesson_id: 10, chapter_id: 5 } as any);
 
-            await expect(service.checkCheckpointAnswer(1, 'u1', 'a')).rejects.toBeInstanceOf(ConflictException);
+            lessonRepo.find.mockResolvedValue([{ lesson_id: 10 }] as any);
+            checkpointRepo.find.mockResolvedValue([makeCheckpoint({ checkpointId: 1, lessonId: 10, checkpointScore: 5, checkpointAnswer: 'a' })]);
+            resultRepo.find.mockResolvedValue([
+                makeResult({ type: QuizsResultType.CHECKPOINT, checkpointId: 1, userAnswer: 'a', isCorrect: true, status: QuizsStatus.COMPLETED }),
+            ]);
+            userXpRepo.findOne.mockResolvedValue(null);
+            const qb: any = {
+                select: jest.fn().mockReturnThis(),
+                where: jest.fn().mockReturnThis(),
+                andWhere: jest.fn().mockReturnThis(),
+                getRawOne: jest.fn().mockResolvedValue({ sum: '0' }),
+            };
+            userXpRepo.createQueryBuilder.mockReturnValue(qb);
+            userXpRepo.create.mockImplementation((x: any) => x);
+            userXpRepo.save.mockImplementation(async (x) => x as any);
+
+            const res = await service.checkCheckpointAnswer(1, 'u1', 'a');
+
+            expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
+                status: QuizsStatus.COMPLETED,
+                userAnswer: 'a',
+                isCorrect: true,
+            }));
+            expect(res.checkpoint_status).toBe('COMPLETED');
         });
 
         it('throws when checkpoint already completed', async () => {

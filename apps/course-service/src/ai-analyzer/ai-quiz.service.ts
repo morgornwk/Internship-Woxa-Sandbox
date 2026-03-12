@@ -223,7 +223,6 @@ export class AiQuizService {
             .limit(1)
             .getOne();
 
-        // extract text จาก article_content
         let content = '';
 
         if (Array.isArray(article?.article_content)) {
@@ -479,23 +478,27 @@ export class AiQuizService {
                 - Do NOT invent information outside the Lesson Content
                 - Use facts from the Lesson Content
                 - Provide realistic wrong answers
+                - Write the question, all choices, and the explanation in ${options?.language ?? 'the opposite language of the Lesson Content'}
+                - Use natural, grammatically correct wording in the output language
+                - Do not mix Thai and English in the same sentence unless the lesson content requires a proper noun or technical term
+                - If the Lesson Content is in English, translate the quiz output into Thai
+                - If the Lesson Content is in Thai, translate the quiz output into English
 
                 Return format:
 
                 {
-                "questions": [
-                {
-                "type": "multiple_choice" | "true_false",
-                "question": "",
-                "choices": ["", "", "", ""],
-                "answerIndex": 0,
-                "explanation": ""
-                }
-                ]
+                    "questions": [
+                        {
+                        "type": "multiple_choice" | "true_false",
+                        "question": "",
+                        "choices": ["", "", "", ""],
+                        "answerIndex": 0,
+                        "explanation": ""
+                        }
+                    ]
                 }
 
-                Lesson Content:
-                ${content}
+                Lesson Content:${content}
                 `;
     }
 }

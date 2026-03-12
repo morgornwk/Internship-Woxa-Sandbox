@@ -148,7 +148,7 @@ export class QuizService {
     // เช็คว่าตอบคำถามนี้ไปแล้วหรือยัง ถ้าตอบไปแล้วไม่ว่าจะถูกหรือผิดก็ไม่ให้ตอบซ้ำอีก (single attempt) และถ้าตอบไปแล้วจะไม่ให้แก้ไขคำตอบ
     if (existingResult) {
       const alreadyAttempted = existingResult.userAnswer != null;
-      const alreadyFinal = existingResult.status === QuizsStatus.COMPLETED || existingResult.status === QuizsStatus.SKIPPED;
+      const alreadyFinal = existingResult.status === QuizsStatus.COMPLETED;
 
       if (alreadyAttempted || alreadyFinal) {
         throw new ConflictException('This quiz has already been attempted and cannot be answered again.');
@@ -777,13 +777,6 @@ export class QuizService {
         checkpointId,
       },
     });
-
-    // ถ้าข้ามไปแล้วไม่ว่าจะถูกหรือผิดก็ไม่ให้ข้ามซ้ำอีก (single attempt) และถ้าข้ามไปแล้วจะไม่ให้แก้ไขคำตอบ
-    if (existing?.status === QuizsStatus.SKIPPED) {
-      throw new ConflictException(
-        'This checkpoint has been skipped and cannot be answered.',
-      );
-    }
 
     // ถ้าตอบถูกไปแล้วไม่ว่าจะถูกหรือผิดก็ไม่ให้ตอบอีก และถ้าตอบไปแล้วจะไม่ให้แก้ไขคำตอบ
     if (existing?.isCorrect === true && existing.userAnswer != null) {

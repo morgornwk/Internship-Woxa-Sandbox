@@ -17,6 +17,8 @@ describe('RewardService', () => {
 
   const mockRewardStatusService = {
     syncExpiredRewards: jest.fn(),
+    isExpired: jest.fn(),
+    hasStarted: jest.fn(),
   };
 
   const mockManager = {
@@ -87,6 +89,8 @@ describe('RewardService', () => {
 
     jest.clearAllMocks();
     mockRewardStatusService.syncExpiredRewards.mockResolvedValue(0);
+    mockRewardStatusService.isExpired.mockReturnValue(false);
+    mockRewardStatusService.hasStarted.mockReturnValue(true);
   });
 
   describe('getAllReward', () => {
@@ -212,6 +216,8 @@ describe('RewardService', () => {
         redeem_end_date: new Date(Date.now() - 1_000),
       };
 
+      mockRewardStatusService.isExpired.mockReturnValue(true);
+
       (mockManager.findOne as jest.Mock).mockResolvedValueOnce(expiredReward);
 
       await expect(service.redeemReward('user1', 1))
@@ -221,6 +227,25 @@ describe('RewardService', () => {
       expect(mockManager.save).toHaveBeenCalledWith(
         expect.objectContaining({ is_active: false }),
       );
+      expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    });
+
+    it('should reject reward before redeem start date', async () => {
+      const upcomingReward: Partial<Reward> = {
+        id: 1,
+        is_active: true,
+        redeem_start_date: new Date('2026-03-13T00:48:00.000Z'),
+        redeem_end_date: new Date('2026-03-31T01:18:00.000Z'),
+      };
+
+      mockRewardStatusService.hasStarted.mockReturnValue(false);
+      (mockManager.findOne as jest.Mock).mockResolvedValueOnce(upcomingReward);
+
+      await expect(service.redeemReward('user1', 1))
+        .rejects
+        .toThrow(new BadRequestException('Reward not in redeem period'));
+
+      expect(mockManager.save).not.toHaveBeenCalled();
       expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
     });
   });
