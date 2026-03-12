@@ -54,8 +54,7 @@ export class UsersService {
     'https://cdn.skllracademy.com/images/a9462080-9d1b-43a1-9910-1a9bef7e3568',
   ] as const;
 
-  private readonly defaultAvatar =
-    'https://cdn.skllracademy.com/images/55de2f89-ee38-449e-8a43-22e6c9146887';
+  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/6c4dd042-3ac9-49a3-9986-00b3a4fac92a';
 
   constructor(
     @InjectRepository(User, 'auth')
@@ -135,7 +134,7 @@ export class UsersService {
     // Get admin invitations for expiry info
     const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
     const adminUserIds = adminUsers.map(u => u.id);
-    
+
     const invitations = await this.adminInvitationRepo.find({
       where: { userId: In(adminUserIds) },
       order: { createdAt: 'DESC' },
@@ -161,7 +160,7 @@ export class UsersService {
       // Add expiry info for admin users
       if (user.role === UserRole.ADMIN) {
         const latestInvitation = latestInvitations.get(user.id);
-        
+
         if (latestInvitation?.expiresAt) {
           expiresAt = latestInvitation.expiresAt.toISOString();
           const bangkokExpiresAt = new Date(latestInvitation.expiresAt.getTime() + bangkokOffset);
