@@ -6,6 +6,7 @@ import { AdminInvitation } from './entities/admin-invitation.entity';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../auth/email.service';
 import { UserRole } from '@common/enums';
+import { AdminListDto } from './dto/admin-list.dto';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 
@@ -29,7 +30,6 @@ export class AdminInvitationsService {
     email: string;
     firstName?: string;
     lastName?: string;
-    responsibility?: string;
   }): Promise<{ userId: string; status: string; emailSent: boolean }> {
     const email = input.email.trim().toLowerCase();
 
@@ -73,7 +73,6 @@ export class AdminInvitationsService {
         userId: user.id,
         invitedByUserId: input.invitedByUserId,
         tokenHash,
-        responsibility: input.responsibility ?? null,
         expiresAt,
         isUsed: false,
       }),
@@ -83,7 +82,6 @@ export class AdminInvitationsService {
     const emailSent = await this.emailService.sendAdminInviteEmail({
       to: email,
       inviteUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}` : '',
-      responsibility: input.responsibility,
       temporaryPassword,
     });
 
@@ -132,7 +130,6 @@ export class AdminInvitationsService {
         userId: user.id,
         invitedByUserId,
         tokenHash,
-        responsibility: null,
         expiresAt,
         isUsed: false,
       }),
@@ -147,39 +144,50 @@ export class AdminInvitationsService {
     return { emailSent };
   }
 
-  async listAdmins(): Promise<
-    Array<{
-      id: string;
-      email: string | null;
-      firstName: string | null;
-      lastName: string | null;
-      status: string | null;
-      role: UserRole;
-      responsibility: string | null;
-    }>
-  > {
+  async listAdmins(): Promise<AdminListDto[]> {
     const users = await this.usersService.findAll();
     const admins = users.filter((u) => u.role === UserRole.ADMIN || u.role === UserRole.OWNER);
 
-    const results: Array<{
-      id: string;
-      email: string | null;
-      firstName: string | null;
-      lastName: string | null;
-      status: string | null;
-      role: UserRole;
-      responsibility: string | null;
-    }> = [];
+    const results: AdminListDto[] = [];
+
+    // Use Bangkok time (UTC+7)
+    const now = new Date();
+    const bangkokOffset = 7 * 60 * 60 * 1000; // 7 hours in milliseconds
+    const bangkokNow = new Date(now.getTime() + bangkokOffset);
 
     for (const u of admins) {
-      let responsibility: string | null = null;
+      let expiresAt: string | null = null;
+      let hoursUntilExpiry: number | null = null;
 
-      if (u.role === UserRole.ADMIN && String(u.status ?? '').toLowerCase() === 'invited') {
+      // หา invitation ล่าสุดของ admin (ทุกสถานะ)
+      if (u.role === UserRole.ADMIN) {
         const latest = await this.invitationRepo.findOne({
           where: { userId: u.id, isUsed: false },
           order: { createdAt: 'DESC' },
         });
-        responsibility = latest?.responsibility ?? null;
+        console.log('latest', latest);
+        
+        if (latest?.expiresAt) {
+          expiresAt = latest.expiresAt.toISOString();
+          const bangkokExpiresAt = new Date(latest.expiresAt.getTime() + bangkokOffset);
+          hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+          console.log('expiresAt', expiresAt);
+          console.log('hoursUntilExpiry', hoursUntilExpiry);
+          if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
+        } else {
+          // ถ้าไม่มี invitation pending ให้ดู invitation ล่าสุดทั้งหมด (รวมที่ใช้ไปแล้ว)
+          const anyInvitation = await this.invitationRepo.findOne({
+            where: { userId: u.id },
+            order: { createdAt: 'DESC' },
+          });
+          
+          if (anyInvitation?.expiresAt) {
+            expiresAt = anyInvitation.expiresAt.toISOString();
+            const bangkokExpiresAt = new Date(anyInvitation.expiresAt.getTime() + bangkokOffset);
+            hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+            if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
+          }
+        }
       }
 
       results.push({
@@ -189,9 +197,12 @@ export class AdminInvitationsService {
         lastName: (u.lastName as any) ?? null,
         status: (u.status as any) ?? null,
         role: u.role,
-        responsibility,
+        expiresAt,
+        hoursUntilExpiry,
       });
     }
+
+    console.log('test :' + results)
 
     return results;
   }

@@ -4,6 +4,7 @@ import { AdminInvitationsService } from './admin-invitations.service';
 import { InviteAdminDto } from './dto/invite-admin.dto';
 import { AcceptAdminInviteDto } from './dto/accept-admin-invite.dto';
 import { SuspendUserResponseDto, DeleteUserResponseDto, CancelInvitationResponseDto } from './dto/admin-management-response.dto';
+import { AdminListDto } from './dto/admin-list.dto';
 import { UserRole } from '@common/enums';
 import { JwtAuthGuard, RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
@@ -30,7 +31,6 @@ export class AdminInvitationsController {
       email: dto.email,
       firstName: dto.firstName,
       lastName: dto.lastName,
-      responsibility: dto.responsibility,
     });
   }
 
@@ -53,10 +53,10 @@ export class AdminInvitationsController {
   @Roles(UserRole.OWNER)
   @Get('admins')
   @ApiOperation({ summary: 'List admins with status (OWNER only)' })
-  @ApiResponse({ status: 200, description: 'Admins list retrieved.' })
+  @ApiResponse({ status: 200, description: 'Admins list retrieved.', type: [AdminListDto] })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 403, description: 'Forbidden. OWNER role required.' })
-  async listAdmins() {
+  async listAdmins(): Promise<AdminListDto[]> {
     return this.adminInvitationsService.listAdmins();
   }
 
