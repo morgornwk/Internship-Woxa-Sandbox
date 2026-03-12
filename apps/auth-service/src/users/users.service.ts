@@ -153,6 +153,7 @@ export class UsersService {
     });
 
     const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
+    const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
     return users.map((user) => ({
       id: user.id,
@@ -443,6 +444,7 @@ export class UsersService {
       .leftJoin('chapter.level', 'level')
       .leftJoin('level.course', 'course')
 
+
       .where('lesson_progress.userId = :userId', { userId })
       .andWhere('chapter.is_published = true')
       .andWhere('lesson.is_published = true')
@@ -514,8 +516,12 @@ export class UsersService {
       .addGroupBy('course.course_title')
       .addGroupBy('course.course_imageUrl')
       .addGroupBy('course.course_description')
+      .addGroupBy('course.course_imageUrl')
+      .addGroupBy('course.course_description')
 
       .orderBy('MAX(lesson_progress.updatedAt)', 'DESC')
+
+      .setParameter('userId', userId)
 
       .setParameter('userId', userId)
 
