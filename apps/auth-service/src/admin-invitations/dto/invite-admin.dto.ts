@@ -26,14 +26,4 @@ export class InviteAdminDto {
   @IsOptional()
   @MaxLength(100)
   lastName?: string;
-
-  @ApiPropertyOptional({
-    description: 'ความรับผิดชอบของ admin (แสดงในอีเมลเชิญ)',
-    example: 'จัดการคอร์สและผู้ใช้',
-    maxLength: 100,
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(100)
-  responsibility?: string;
 }

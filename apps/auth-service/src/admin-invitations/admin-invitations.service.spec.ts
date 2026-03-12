@@ -60,7 +60,6 @@ describe('AdminInvitationsService', () => {
   const makeInvitation = (overrides: Partial<AdminInvitation> = {}): AdminInvitation => ({
     id: 1,
     tokenHash: 'hashed-token',
-    responsibility: 'จัดการคอร์ส',
     userId: 'user-1',
     invitedByUserId: 'owner-1',
     expiresAt: new Date('2026-03-08T00:00:00.000Z'),
@@ -194,7 +193,6 @@ describe('AdminInvitationsService', () => {
       expect(emailService.sendAdminInviteEmail).toHaveBeenCalledWith({
         to: 'admin@example.com',
         inviteUrl: 'https://frontend.example.com/set-password?token=random-string',
-        responsibility: 'จัดการคอร์ส',
         temporaryPassword: 'random-string',
       });
       expect(result).toEqual({
@@ -347,7 +345,7 @@ describe('AdminInvitationsService', () => {
   });
 
   describe('listAdmins', () => {
-    it('returns list of admins and owners with responsibilities', async () => {
+    it('returns list of admins and owners with expiry info (Bangkok time)', async () => {
       const adminUser = makeUser({ role: UserRole.ADMIN, status: 'invited' });
       const ownerUser = makeUser({ id: 'owner-1', role: UserRole.OWNER, status: 'active' });
       const studentUser = makeUser({ id: 'student-1', role: UserRole.STUDENT });
@@ -365,7 +363,8 @@ describe('AdminInvitationsService', () => {
         lastName: 'ใจดี',
         status: 'invited',
         role: UserRole.ADMIN,
-        responsibility: 'จัดการคอร์ส',
+        expiresAt: '2026-03-08T00:00:00.000Z',
+        hoursUntilExpiry: 72, // Bangkok time calculation
       });
       expect(result[1]).toEqual({
         id: 'owner-1',
@@ -374,18 +373,50 @@ describe('AdminInvitationsService', () => {
         lastName: 'ใจดี',
         status: 'active',
         role: UserRole.OWNER,
-        responsibility: null,
+        expiresAt: null,
+        hoursUntilExpiry: null,
       });
     });
 
-    it('returns null responsibility for active admins', async () => {
+    it('returns null expiry for active admins', async () => {
       const activeAdmin = makeUser({ status: 'active' });
       usersService.findAll.mockResolvedValue([activeAdmin]);
 
       const result = await service.listAdmins();
 
-      expect(result[0].responsibility).toBeNull();
-      expect(invitationRepo.findOne).not.toHaveBeenCalled();
+      expect(result[0].expiresAt).toBeNull();
+      expect(result[0].hoursUntilExpiry).toBeNull();
+      expect(invitationRepo.findOne).toHaveBeenCalledTimes(2); // Once for pending, once for any invitation
+    });
+
+    it('calculates hours until expiry correctly using Bangkok time', async () => {
+      const adminUser = makeUser({ role: UserRole.ADMIN, status: 'invited' });
+      usersService.findAll.mockResolvedValue([adminUser]);
+
+      // Mock invitation expiring in 24 hours (Bangkok time)
+      const expiringInvitation = makeInvitation({
+        expiresAt: new Date('2026-03-06T00:00:00.000Z'), // 24 hours from fixedNow in Bangkok time
+      });
+      invitationRepo.findOne.mockResolvedValue(expiringInvitation);
+
+      const result = await service.listAdmins();
+
+      expect(result[0].hoursUntilExpiry).toBe(24);
+    });
+
+    it('sets hoursUntilExpiry to 0 for expired invitations (Bangkok time)', async () => {
+      const adminUser = makeUser({ role: UserRole.ADMIN, status: 'invited' });
+      usersService.findAll.mockResolvedValue([adminUser]);
+      
+      // Mock expired invitation
+      const expiredInvitation = makeInvitation({
+        expiresAt: new Date('2026-03-04T00:00:00.000Z'), // 24 hours before fixedNow in Bangkok time
+      });
+      invitationRepo.findOne.mockResolvedValue(expiredInvitation);
+
+      const result = await service.listAdmins();
+
+      expect(result[0].hoursUntilExpiry).toBe(0);
     });
   });
 
