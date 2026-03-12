@@ -11,10 +11,6 @@ export class AdminInvitation {
   @Column({ name: 'token_hash', unique: true })
   tokenHash: string;
 
-  // ความรับผิดชอบของ admin ที่ถูกเชิญ (เช่น "จัดการผู้ใช้", "ดูรายงาน", etc.)
-  @Column({ name: 'responsibility', type: 'varchar', length: 100, nullable: true })
-  responsibility?: string | null;
-
   @Column({ name: 'user_id', type: 'uuid' })
   userId: string;
 

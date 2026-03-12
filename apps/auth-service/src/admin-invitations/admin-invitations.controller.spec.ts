@@ -86,7 +86,6 @@ describe('AdminInvitationsController', () => {
         email: 'admin@example.com',
         firstName: 'สมชาย',
         lastName: 'ใจดี',
-        responsibility: 'จัดการคอร์ส',
       };
 
       const expectedResult = {
@@ -104,7 +103,6 @@ describe('AdminInvitationsController', () => {
         email: dto.email,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        responsibility: dto.responsibility,
       });
       expect(result).toEqual(expectedResult);
     });
@@ -240,7 +238,6 @@ describe('AdminInvitationsController', () => {
         email: 'newadmin@example.com',
         firstName: 'ผู้ดูแล',
         lastName: 'ใหม่',
-        responsibility: 'ทดสอบระบบ',
       };
 
       service.inviteAdmin.mockResolvedValue({
