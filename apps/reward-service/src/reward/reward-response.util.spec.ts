@@ -3,7 +3,7 @@ import { Reward } from './entities/rewards.entity';
 import { RewardRedemption } from './entities/reward-redemption';
 
 describe('reward-response.util', () => {
-  it('keeps redeem_start_date wall-clock time from Date values returned by the db driver', () => {
+  it('keeps stored redeem dates unchanged when they come back as Date objects', () => {
     const reward = {
       id: 1,
       name: 'Reward',
@@ -11,8 +11,8 @@ describe('reward-response.util', () => {
       remain: 10,
       image_url: 'https://example.com/reward.png',
       required_points: 100,
-      redeem_start_date: new Date('2026-03-12T08:47:00.000Z'),
-      redeem_end_date: new Date('2026-03-12T08:50:00.000Z'),
+      redeem_start_date: new Date('2026-03-13T00:48:00.000Z'),
+      redeem_end_date: new Date('2026-03-31T01:18:00.000Z'),
       limit_per_user: 1,
       total_limit: 10,
       is_active: true,
@@ -23,9 +23,9 @@ describe('reward-response.util', () => {
 
     const serialized = serializeReward(reward);
 
-    expect(serialized.redeem_start_date).toBe('2026-03-12T15:47:00.000+07:00');
-    expect(serialized.redeem_end_date).toBe('2026-03-12T15:50:00.000+07:00');
-    expect(serialized.redeem_start_date).not.toBe('2026-03-12T22:47:00.000+07:00');
+    expect(serialized.redeem_start_date).toBe('2026-03-13T00:48:00.000+07:00');
+    expect(serialized.redeem_end_date).toBe('2026-03-31T01:18:00.000+07:00');
+    expect(serialized.redeem_start_date).not.toBe('2026-03-13T07:48:00.000+07:00');
   });
 
   it('keeps wall-clock strings unchanged when serializing rewards', () => {
@@ -58,7 +58,7 @@ describe('reward-response.util', () => {
       userId: '4b7f5f7f-4d8b-4b34-8e61-c7c70d8ec001',
       reward: null,
       used_points: 50,
-      expire_at: new Date('2026-03-12T08:47:00.000Z'),
+      expire_at: new Date('2026-03-13T00:48:00.000Z'),
       redeem_token: 'token-123',
       isUsed: false,
       redeemed_at: new Date('2026-03-12T01:28:18.805Z'),
@@ -69,7 +69,7 @@ describe('reward-response.util', () => {
 
     const serialized = serializeRewardRedemption(redemption);
 
-    expect(serialized.expire_at).toBe('2026-03-12T15:47:00.000+07:00');
-    expect(serialized.expire_at).not.toBe('2026-03-12T22:47:00.000+07:00');
+    expect(serialized.expire_at).toBe('2026-03-13T00:48:00.000+07:00');
+    expect(serialized.expire_at).not.toBe('2026-03-13T07:48:00.000+07:00');
   });
 });

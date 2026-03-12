@@ -1,5 +1,6 @@
 import { RewardRedemption } from './entities/reward-redemption';
 import { Reward } from './entities/rewards.entity';
+import { formatStoredRewardTimestamp } from './reward-timestamp.util';
 
 const bangkokFormatter = new Intl.DateTimeFormat('sv-SE', {
   timeZone: 'Asia/Bangkok',
@@ -58,28 +59,7 @@ function formatDateToBangkokWallClock(date: Date): string | null {
 }
 
 function formatStoredTimestamp(value?: Date | string | null): string | null {
-  if (!value) {
-    return null;
-  }
-
-  if (typeof value === 'string') {
-    const wallClockMatch = value.match(
-      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?$/,
-    );
-
-    if (wallClockMatch) {
-      const [, year, month, day, hour, minute, second = '00', milliseconds = '0'] = wallClockMatch;
-      return `${year}-${month}-${day}T${hour}:${minute}:${second}.${milliseconds.padEnd(3, '0')}+07:00`;
-    }
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  return formatDateToBangkokWallClock(date);
+  return formatStoredRewardTimestamp(value);
 }
 
 export function serializeReward(reward: Reward) {

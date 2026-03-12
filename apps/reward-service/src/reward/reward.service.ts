@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { CreateRewardDto } from './dto/create-reward.dto';
 import { UpdateRewardDto } from './dto/update-reward.dto';
 import { Reward } from './entities/rewards.entity';
-import { DataSource, MoreThan, QueryRunner, Repository } from 'typeorm';
+import { DataSource, QueryRunner, Raw, Repository } from 'typeorm';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { RewardRedemption } from './entities/reward-redemption';
 import { User } from 'apps/auth-service/src/users/entities';
@@ -72,8 +72,12 @@ export class RewardService {
 
   async getRedeemCount(userId: string) {
     const count = await this.redeemRepository.count({
-      where: { userId: userId, isUsed: false, expire_at: MoreThan(new Date()) }
-    })
+      where: {
+        userId,
+        isUsed: false,
+        expire_at: Raw((alias) => `${alias} > (NOW() AT TIME ZONE 'Asia/Bangkok')`),
+      },
+    });
 
     return { countUserRedeem: count };
   }
@@ -185,16 +189,13 @@ export class RewardService {
       throw new BadRequestException('Reward not found');
     }
 
-    if (reward.redeem_end_date && now > reward.redeem_end_date) {
+    if (this.rewardStatusService.isExpired(reward.redeem_end_date, now)) {
       reward.is_active = false;
       await runner.manager.save(reward);
       throw new BadRequestException('Reward not in redeem period');
     }
 
-    if (
-      reward.redeem_start_date &&
-      now < reward.redeem_start_date
-    ) {
+    if (!this.rewardStatusService.hasStarted(reward.redeem_start_date, now)) {
       throw new BadRequestException('Reward not in redeem period');
     }
 

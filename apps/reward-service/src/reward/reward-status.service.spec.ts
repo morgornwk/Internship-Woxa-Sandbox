@@ -59,6 +59,20 @@ describe('RewardStatusService', () => {
     expect(service.resolveActiveStatus(false, futureEndDate, now)).toBe(false);
   });
 
+  it('treats stored Date values as Bangkok wall-clock timestamps when resolving status', () => {
+    const now = new Date('2026-03-30T17:49:00.000Z');
+    const futureEndDate = new Date('2026-03-31T01:18:00.000Z');
+
+    expect(service.resolveActiveStatus(true, futureEndDate, now)).toBe(true);
+  });
+
+  it('treats stored Date values as not started before Bangkok redeem_start_date', () => {
+    const now = new Date('2026-03-12T17:40:00.000Z');
+    const redeemStartDate = new Date('2026-03-13T00:48:00.000Z');
+
+    expect(service.hasStarted(redeemStartDate, now)).toBe(false);
+  });
+
   it('updates expired rewards to is_active false during sync', async () => {
     const affected = await service.syncExpiredRewards();
 

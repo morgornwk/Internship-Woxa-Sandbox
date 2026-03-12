@@ -8,20 +8,10 @@ import { randomUUID } from 'crypto';
 import { AwsS3StorageService } from 'apps/course-service/src/storage/aws.service';
 import { RewardStatusService } from '../reward/reward-status.service';
 import { serializeReward } from '../reward/reward-response.util';
+import { convertInstantToBangkokWallClock } from '../reward/reward-timestamp.util';
 
 @Injectable()
 export class RewardAdminService {
-  private readonly bangkokFormatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23',
-  });
-
   constructor(
     private readonly aws: AwsS3StorageService,
     private readonly rewardStatusService: RewardStatusService,
@@ -156,7 +146,7 @@ export class RewardAdminService {
 
   private normalizeIncomingRewardDate(value: Date | string): Date {
     if (value instanceof Date) {
-      return this.convertInstantToBangkokWallClock(value);
+      return convertInstantToBangkokWallClock(value);
     }
 
     const raw = value.trim();
@@ -187,24 +177,7 @@ export class RewardAdminService {
       throw new BadRequestException('Invalid reward date');
     }
 
-    return this.convertInstantToBangkokWallClock(parsed);
-  }
-
-  private convertInstantToBangkokWallClock(value: Date): Date {
-    const parts = this.bangkokFormatter.formatToParts(value);
-    const getPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? '0';
-
-    return new Date(
-      Date.UTC(
-        Number(getPart('year')),
-        Number(getPart('month')) - 1,
-        Number(getPart('day')),
-        Number(getPart('hour')),
-        Number(getPart('minute')),
-        Number(getPart('second')),
-        value.getUTCMilliseconds(),
-      ),
-    );
+    return convertInstantToBangkokWallClock(parsed);
   }
 
   // ตรวจสอบ MIME type ของไฟล์ภาพที่อัพโหลดเข้ามา (รองรับ jpg/jpeg/png/webp)
