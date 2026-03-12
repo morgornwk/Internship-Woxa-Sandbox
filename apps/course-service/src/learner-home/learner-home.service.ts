@@ -41,7 +41,7 @@ export class LearnerHomeService {
 
     @Optional()
     private readonly redisCacheService?: RedisCacheService,
-  ) { }
+  ) {}
 
   async getHome(
     userId: string,
@@ -55,11 +55,14 @@ export class LearnerHomeService {
     const shouldSkipProfile = internalCall === 'true';
     const cacheKey = `learner-home:user:${userId}:profile:${shouldSkipProfile ? 'off' : 'on'}`;
 
-    return this.redisCacheService?.wrap(
-      cacheKey,
-      LearnerHomeService.HOME_TTL_SECONDS,
-      async () => this.buildHomeResponse(userId, authorization, shouldSkipProfile),
-    ) ?? this.buildHomeResponse(userId, authorization, shouldSkipProfile);
+    return (
+      this.redisCacheService?.wrap(
+        cacheKey,
+        LearnerHomeService.HOME_TTL_SECONDS,
+        async () =>
+          this.buildHomeResponse(userId, authorization, shouldSkipProfile),
+      ) ?? this.buildHomeResponse(userId, authorization, shouldSkipProfile)
+    );
   }
 
   // ดึง profile ผ่าน Auth Service แบบ internal call (ส่ง X-Internal-Call header กัน loop)
@@ -121,7 +124,9 @@ export class LearnerHomeService {
       .orderBy('lp.lastViewedAt', 'DESC')
       .getMany();
 
-    const latest = progressList.find((progress) => this.hasStartedLearning(progress));
+    const latest = progressList.find((progress) =>
+      this.hasStartedLearning(progress),
+    );
 
     // ถ้าไม่มีบทเรียนที่กำลังเรียนอยู่เลย หรือข้อมูลไม่ครบถ้วน ให้คืนค่า null เพื่อให้ frontend แสดงผลแบบไม่มีบทเรียนที่กำลังเรียนอยู่
     if (!latest?.lesson?.chapter?.level?.course) return null;
@@ -133,14 +138,21 @@ export class LearnerHomeService {
     const course = level.course;
 
     // คำนวณ progress ของ chapter ปัจจุบัน
-    const chapterProgress = await this.getChapterProgress(chapter.chapter_id, progressList);
+    const chapterProgress = await this.getChapterProgress(
+      chapter.chapter_id,
+      progressList,
+    );
 
     // ถ้า chapter ยังไม่ 100% ให้ progressPercent = 0
     // ถ้า chapter 100% แล้ว ให้คำนวณจากทั้งคอร์ส
     let progressPercent = 0;
     if (chapterProgress >= 100) {
-      const courseProgressMap = await this.getCourseProgressMap([latest], progressList);
-      progressPercent = courseProgressMap.get(course.course_id)?.progressPercent ?? 0;
+      const courseProgressMap = await this.getCourseProgressMap(
+        [latest],
+        progressList,
+      );
+      progressPercent =
+        courseProgressMap.get(course.course_id)?.progressPercent ?? 0;
     }
 
     return {
@@ -164,12 +176,17 @@ export class LearnerHomeService {
       .where('lp.userId = :userId', { userId })
       .getMany();
 
-    const startedProgressList = progressList.filter((progress) => this.hasStartedLearning(progress));
+    const startedProgressList = progressList.filter((progress) =>
+      this.hasStartedLearning(progress),
+    );
 
     // ถ้าไม่มีบทเรียนที่กำลังเรียนอยู่เลย หรือข้อมูลไม่ครบถ้วน ให้คืนค่าเป็น array ว่างเพื่อให้ frontend แสดงผลแบบไม่มีคอร์สที่กำลังเรียนอยู่
     if (!startedProgressList.length) return [];
 
-    const courseProgressMap = await this.getCourseProgressMap(startedProgressList, progressList);
+    const courseProgressMap = await this.getCourseProgressMap(
+      startedProgressList,
+      progressList,
+    );
 
     return Array.from(courseProgressMap.entries()).map(([courseId, data]) => ({
       course_id: courseId,
@@ -186,11 +203,14 @@ export class LearnerHomeService {
       ...new Set(
         relevantProgressList
           .map((progress) => progress.lesson?.chapter?.level?.course?.course_id)
-          .filter((courseId): courseId is number => typeof courseId === 'number'),
+          .filter(
+            (courseId): courseId is number => typeof courseId === 'number',
+          ),
       ),
     ];
 
-    if (!courseIds.length) return new Map<number, { title: string; progressPercent: number }>();
+    if (!courseIds.length)
+      return new Map<number, { title: string; progressPercent: number }>();
 
     const courses = await this.courseRepository
       .createQueryBuilder('course')
@@ -218,7 +238,10 @@ export class LearnerHomeService {
       }
     });
 
-    const courseProgressMap = new Map<number, { title: string; progressPercent: number }>();
+    const courseProgressMap = new Map<
+      number,
+      { title: string; progressPercent: number }
+    >();
 
     for (const course of courses) {
       let totalLessons = 0;
@@ -235,7 +258,10 @@ export class LearnerHomeService {
             totalLessons++;
 
             const progress = progressMap.get(lesson.lesson_id.toString());
-            if (progress && (progress.status === 'COMPLETED' || progress.status === 'SKIPPED')) {
+            if (
+              progress &&
+              (progress.status === 'COMPLETED' || progress.status === 'SKIPPED')
+            ) {
               completedLessons++;
             }
           }
@@ -253,17 +279,21 @@ export class LearnerHomeService {
     return courseProgressMap;
   }
 
-  private async getChapterProgress(chapterId: number, progressList: LessonProgress[]) {
+  private async getChapterProgress(
+    chapterId: number,
+    progressList: LessonProgress[],
+  ) {
     // หา progress records ทั้งหมดใน chapter นี้
     const chapterProgressRecords = progressList.filter(
-      (progress) => progress.lesson?.chapter?.chapter_id === chapterId
+      (progress) => progress.lesson?.chapter?.chapter_id === chapterId,
     );
 
     if (!chapterProgressRecords.length) return 0;
 
     // นับ completed/skipped lessons ใน chapter
     const completedLessons = chapterProgressRecords.filter(
-      (progress) => progress.status === 'COMPLETED' || progress.status === 'SKIPPED'
+      (progress) =>
+        progress.status === 'COMPLETED' || progress.status === 'SKIPPED',
     ).length;
 
     // คำนวณ percent ของ chapter
@@ -280,8 +310,7 @@ export class LearnerHomeService {
 
   // ดึงข้อมูล Notifications-Service เพื่อแสดงในส่วนการแจ้งเตือนของหน้าแรก
   private async getNotifications(userId: string) {
-    const unreadCount =
-      await this.notificationsService.getUnreadCount(userId);
+    const unreadCount = await this.notificationsService.getUnreadCount(userId);
     return { unreadCount };
   }
 
@@ -289,11 +318,13 @@ export class LearnerHomeService {
   private async getRecommendations(isNewUser = false) {
     const cacheKey = `learner-home:recommendations:${isNewUser ? 'new' : 'active'}`;
 
-    return this.redisCacheService?.wrap(
-      cacheKey,
-      LearnerHomeService.RECOMMENDATIONS_TTL_SECONDS,
-      async () => this.getRecommendationsWithoutCache(isNewUser),
-    ) ?? this.getRecommendationsWithoutCache(isNewUser);
+    return (
+      this.redisCacheService?.wrap(
+        cacheKey,
+        LearnerHomeService.RECOMMENDATIONS_TTL_SECONDS,
+        async () => this.getRecommendationsWithoutCache(isNewUser),
+      ) ?? this.getRecommendationsWithoutCache(isNewUser)
+    );
   }
 
   private async buildHomeResponse(
@@ -311,10 +342,12 @@ export class LearnerHomeService {
     ] = await Promise.all([
       this.getStreak(userId).catch(() => ({ currentStreak: 0 })),
       this.getTotalXp(userId).catch(() => 0),
-      this.getContinueLearning(userId).catch(() => null),
+      this.getLatestLearn(userId).catch(() => null),
       this.getMyCourses(userId).catch(() => []),
       this.getNotifications(userId).catch(() => ({ unreadCount: 0 })),
-      !shouldSkipProfile ? this.getUserProfileFromAuth(authorization).catch(() => null) : null,
+      !shouldSkipProfile
+        ? this.getUserProfileFromAuth(authorization).catch(() => null)
+        : null,
     ]);
 
     const isNewUser = continueLearning === null && myCourses.length === 0;
@@ -355,5 +388,61 @@ export class LearnerHomeService {
     }));
 
     return { courses };
+  }
+
+  async getLatestLearn(userId: string) {
+    const result = await this.lessonProgressRepository
+      .createQueryBuilder('lesson_progress')
+      .leftJoin('lesson_progress.lesson', 'lesson')
+      .leftJoin('lesson.chapter', 'chapter')
+      .leftJoin('chapter.level', 'level')
+      .leftJoin('level.course', 'course')
+
+      .where('lesson_progress.userId = :userId', { userId })
+      .andWhere('lesson.is_published = true')
+      .andWhere('chapter.is_published = true')
+
+      .select('course.course_id', 'course_id')
+      .addSelect('course.course_title', 'course_title')
+      .addSelect('chapter.chapter_title', 'chapter_title')
+      .addSelect('level.level_title', 'level_name')
+
+      .addSelect(
+        `
+      ROUND(
+        (
+          SELECT COUNT(*)
+          FROM progress lp2
+          JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
+          WHERE l2.chapter_id = chapter.chapter_id
+          AND lp2.user_id = :userId
+          AND lp2.status = 'COMPLETED'
+        ) * 100.0 /
+        (
+          SELECT COUNT(*)
+          FROM lessons l
+          WHERE l.chapter_id = chapter.chapter_id
+          AND l.is_published = true
+        )
+      ,2)
+    `,
+        'progressPercent',
+      )
+
+      .groupBy('course.course_id')
+      .addGroupBy('course.course_title')
+      .addGroupBy('chapter.chapter_title')
+      .addGroupBy('chapter.chapter_id')
+      .addGroupBy('level.level_title')
+
+      .orderBy('MAX(lesson_progress.updated_at)', 'DESC')
+
+      .setParameter('userId', userId)
+
+      .limit(1)
+
+      .getRawOne();
+
+    return result;
   }
 }
