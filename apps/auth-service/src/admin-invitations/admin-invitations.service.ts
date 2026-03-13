@@ -5,7 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { randomBytes } from 'crypto';
 
 import { AdminInvitation } from './entities/admin-invitation.entity';
-import { InviteAdminDto } from './dto/invite-admin.dto';
+// import { InviteAdminDto } from './dto/invite-admin.dto';
 import { AdminListDto } from './dto/admin-list.dto';
 import { UsersService } from '../users/users.service';
 import { EmailService } from '../auth/email.service';
@@ -13,7 +13,7 @@ import { UserRole } from '@common/enums';
 import { Status } from '@common/enums/status.enum';
 import { ConfigService } from '@nestjs/config';
 
-const INVITE_TOKEN_EXPIRY_MINUTES = 1; // 1 minute
+const INVITE_TOKEN_EXPIRY_MINUTES = 1440; // 1 day
 const BCRYPT_SALT_ROUNDS = 10;
 
 @Injectable()
@@ -28,17 +28,11 @@ export class AdminInvitationsService {
     private readonly configService: ConfigService,
   ) { }
 
-  async inviteAdmin(input: {
-    invitedByUserId: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-  }): Promise<{ userId: string; status: string; emailSent: boolean }> {
+  async inviteAdmin(input: { invitedByUserId: string; email: string; firstName?: string; lastName?: string }): Promise<{ userId: string; status: string; emailSent: boolean }> {
     const email = input.email.trim().toLowerCase();
 
     const existing = await this.usersService.findByEmail(email);
     if (existing && existing.role !== UserRole.ADMIN) {
-      // Allow upgrading non-admin users to admin role
       console.log(`Upgrading user from ${existing.role} to ADMIN`);
     }
 
@@ -121,7 +115,7 @@ export class AdminInvitationsService {
 
     const temporaryPassword = this.generateTemporaryPassword();
     await this.usersService.updatePassword(user.id, temporaryPassword);
-    
+
     await this.usersService.update(user.id, { status: 'invited' } as any);
 
     const { tokenPlain, tokenHash, expiresAt } = await this.generateInviteToken();
@@ -166,7 +160,7 @@ export class AdminInvitationsService {
           where: { userId: u.id, isUsed: false },
           order: { createdAt: 'DESC' },
         });
-        
+
         if (latest?.expiresAt) {
           expiresAt = latest.expiresAt.toISOString();
           const bangkokExpiresAt = new Date(latest.expiresAt.getTime() + bangkokOffset);
@@ -178,7 +172,7 @@ export class AdminInvitationsService {
             where: { userId: u.id },
             order: { createdAt: 'DESC' },
           });
-          
+
           if (anyInvitation?.expiresAt) {
             expiresAt = anyInvitation.expiresAt.toISOString();
             const bangkokExpiresAt = new Date(anyInvitation.expiresAt.getTime() + bangkokOffset);
@@ -224,7 +218,7 @@ export class AdminInvitationsService {
     }
 
     const updatedUser = await this.usersService.update(userId, { status: Status.ACTIVE });
-    
+
     return {
       id: updatedUser.id,
       status: updatedUser.status,

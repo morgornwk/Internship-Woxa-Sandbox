@@ -89,12 +89,26 @@ export class AnalyticsService {
       this.getStreaksOverview(),                // สรุป streaks
     ]);
 
-    // User Activity: Active = ใช้งานใน 7 วันล่าสุด, Inactive = ไม่ได้ใช้งาน 7 วัน
+    // นับผู้ใช้ที่ใช้งานใน 7 วันล่าสุด
     const activeUsers = await this.getActiveUsersInLast7Days();
+    
+    // นับผู้ใช้ที่เคยเรียน (เคยมี LessonProgress ที่ไม่ใช่ LOCKED)
+    const usersWhoEverStudied = await this.lessonProgressRepo
+      .createQueryBuilder('lp')
+      .select('COUNT(DISTINCT lp.userId)', 'count')
+      .where('lp.status IN (:...statuses)', { statuses: ['IN_PROGRESS', 'COMPLETED', 'SKIPPED'] })
+      .getRawOne<{ count: string }>();
+
+    const totalEverStudied = Number(usersWhoEverStudied?.count ?? 0);
+    const inactiveUsers = Math.max(totalEverStudied - activeUsers, 0);
+    // const neverStartedUsers = Math.max(totalUsers - totalEverStudied, 0);
+
+    // Log สำหรับตรวจสอบข้อมูลจริง
+    // this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
 
     const userActivity: UserActivitySummaryDto = {
       active: activeUsers,                    // ใช้งานใน 7 วันล่าสุด
-      inactive: Math.max(totalUsers - activeUsers, 0),  // ไม่ได้ใช้งาน 7 วัน
+      inactive: inactiveUsers,                // เคยเรียนแต่ไม่ได้ทำ 7 วัน
     };
 
     return {
@@ -130,6 +144,9 @@ export class AnalyticsService {
       .select('COUNT(DISTINCT lp.userId)', 'count')
       .where('lp.updatedAt >= :sevenDaysAgo', { sevenDaysAgo: sevenDaysAgo.toISOString() })
       .andWhere('lp.updatedAt < :endDate', { endDate: end.toISOString() })
+      .andWhere('lp.status IN (:...statuses)', { 
+        statuses: ['IN_PROGRESS', 'COMPLETED', 'SKIPPED'] // นับเฉพาะคนที่เริ่มเรียนจริง
+      })
       .getRawOne<{ count: string }>();
 
     return Number(result?.count ?? 0);
