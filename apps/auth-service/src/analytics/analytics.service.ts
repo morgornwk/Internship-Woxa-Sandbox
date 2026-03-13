@@ -92,11 +92,11 @@ export class AnalyticsService {
     // นับผู้ใช้ที่ใช้งานใน 7 วันล่าสุด
     const activeUsers = await this.getActiveUsersInLast7Days();
     
-    // นับผู้ใช้ที่เคยเรียน (เคยมี LessonProgress ที่ไม่ใช่ LOCKED)
+    // นับผู้ใช้ที่เคยเรียน (เคยมี UserStreak > 0)
     const usersWhoEverStudied = await this.userStreakRepo
       .createQueryBuilder('us')
       .select('COUNT(DISTINCT us.userId)', 'count')
-      .where('us.currentStreak > 0')
+      .where('us.currentStreak >= 1')
       .getRawOne<{ count: string }>();
 
     const totalEverStudied = Number(usersWhoEverStudied?.count ?? 0);
@@ -134,21 +134,13 @@ export class AnalyticsService {
 
   // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้ที่ใช้งานใน 7 วันล่าสุด (สำหรับ OWNER)
   private async getActiveUsersInLast7Days(): Promise<number> {
-    const { start, end } = this.getBangkokDayRange();
-    
-    // คำนวณวันที่ 7 วันก่อนหน้า (Bangkok timezone)
-    const sevenDaysAgo = new Date(start.getTime() - (7 * 24 * 60 * 60 * 1000));
-
-    const result = await this.lessonProgressRepo
-      .createQueryBuilder('lp')
-      .select('COUNT(DISTINCT lp.userId)', 'count')
-      .where('lp.updatedAt >= :sevenDaysAgo', { sevenDaysAgo: sevenDaysAgo.toISOString() })
-      .andWhere('lp.updatedAt < :endDate', { endDate: end.toISOString() })
-      .andWhere('lp.status IN (:...statuses)', { 
-        statuses: ['IN_PROGRESS', 'COMPLETED', 'SKIPPED'] // นับเฉพาะคนที่เริ่มเรียนจริง
-      })
+    const result = await this.userStreakRepo
+      .createQueryBuilder('us')
+      .select('COUNT(DISTINCT us.userId)', 'count')
+      .where('us.updatedAt < CURRENT_DATE - interval \'7 days\'')  
       .getRawOne<{ count: string }>();
 
+      // console.log('Active users in last 7 days:', result);
     return Number(result?.count ?? 0);
   }
 
@@ -163,6 +155,7 @@ export class AnalyticsService {
       .andWhere('lp.updatedAt < :endDate', { endDate: end.toISOString() })
       .getRawOne<{ count: string }>();
 
+      // console.log(result)
     return Number(result?.count ?? 0);
   }
 
