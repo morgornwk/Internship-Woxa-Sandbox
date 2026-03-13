@@ -479,7 +479,10 @@ export class AiQuizService {
                 - Provide realistic wrong answers
                 - Write the question, all choices, and the explanation in ${targetLanguage}
                 - Use natural, grammatically correct wording in ${targetLanguage}
-                - Do not mix languages unless the lesson content requires a proper noun or technical term
+                - Do NOT use words or phrases from the Lesson Content in their original language
+                - First understand the Lesson Content, then create questions in ${targetLanguage} about the concepts
+                - Translate all concepts and examples into ${targetLanguage} before creating the quiz
+                - Do not mix languages unless absolutely necessary for proper nouns
 
                 Return format:
 
