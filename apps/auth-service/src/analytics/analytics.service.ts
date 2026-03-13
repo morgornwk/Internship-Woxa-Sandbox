@@ -101,10 +101,10 @@ export class AnalyticsService {
 
     const totalEverStudied = Number(usersWhoEverStudied?.count ?? 0);
     const inactiveUsers = Math.max(totalEverStudied - activeUsers, 0);
-    const neverStartedUsers = Math.max(totalUsers - totalEverStudied, 0);
+    // const neverStartedUsers = Math.max(totalUsers - totalEverStudied, 0);
 
     // Log สำหรับตรวจสอบข้อมูลจริง
-    this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
+    // this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
 
     const userActivity: UserActivitySummaryDto = {
       active: activeUsers,                    // ใช้งานใน 7 วันล่าสุด
