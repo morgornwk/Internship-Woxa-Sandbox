@@ -93,18 +93,18 @@ export class AnalyticsService {
     const activeUsers = await this.getActiveUsersInLast7Days();
     
     // นับผู้ใช้ที่เคยเรียน (เคยมี LessonProgress ที่ไม่ใช่ LOCKED)
-    const usersWhoEverStudied = await this.lessonProgressRepo
-      .createQueryBuilder('lp')
-      .select('COUNT(DISTINCT lp.userId)', 'count')
-      .where('lp.status IN (:...statuses)', { statuses: ['IN_PROGRESS', 'COMPLETED', 'SKIPPED'] })
+    const usersWhoEverStudied = await this.userStreakRepo
+      .createQueryBuilder('us')
+      .select('COUNT(DISTINCT us.userId)', 'count')
+      .where('us.currentStreak > 0')
       .getRawOne<{ count: string }>();
 
     const totalEverStudied = Number(usersWhoEverStudied?.count ?? 0);
     const inactiveUsers = Math.max(totalEverStudied - activeUsers, 0);
-    // const neverStartedUsers = Math.max(totalUsers - totalEverStudied, 0);
+    const neverStartedUsers = Math.max(totalUsers - totalEverStudied, 0);
 
     // Log สำหรับตรวจสอบข้อมูลจริง
-    // this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
+    this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
 
     const userActivity: UserActivitySummaryDto = {
       active: activeUsers,                    // ใช้งานใน 7 วันล่าสุด

@@ -136,8 +136,8 @@ describe('AnalyticsService', () => {
       // Mock course count
       courseRepo.count.mockResolvedValue(12);
 
-      // Mock lesson progress queries
-      const mockQueryBuilder = {
+      // Mock lesson progress queries (for active learners, daily active, course progress)
+      const mockLessonQueryBuilder = {
         select: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -150,9 +150,23 @@ describe('AnalyticsService', () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       };
 
-      lessonProgressRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
-      userRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
-      userStreakRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      // Mock user streak queries (for ever studied and streaks)
+      const mockStreakQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        leftJoin: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ count: '70' }), // users who ever studied
+        getRawMany: jest.fn().mockResolvedValue([]),
+      };
+
+      lessonProgressRepo.createQueryBuilder.mockReturnValue(mockLessonQueryBuilder as any);
+      userRepo.createQueryBuilder.mockReturnValue(mockLessonQueryBuilder as any);
+      userStreakRepo.createQueryBuilder.mockReturnValue(mockStreakQueryBuilder as any);
 
       const result = await service.getDashboardAnalytics(mockAuthUser);
 
@@ -209,6 +223,45 @@ describe('AnalyticsService', () => {
 
       expect(result).toBe(45);
       expect(lessonProgressRepo.createQueryBuilder).toHaveBeenCalledWith('lp');
+    });
+  });
+
+  describe('User Activity Calculation', () => {
+    it('should correctly calculate user activity stats using UserStreak', async () => {
+      // Mock data
+      userRepo.count.mockResolvedValue(100); // total users
+      userStreakRepo.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ count: '70' }), // users who ever studied
+      } as any);
+      
+      lessonProgressRepo.createQueryBuilder.mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getRawOne: jest.fn().mockResolvedValue({ count: '20' }), // active users in 7 days
+      } as any);
+
+      // Mock other required methods
+      courseRepo.count.mockResolvedValue(10);
+      jest.spyOn(service as any, 'getUsersByTimeRange').mockResolvedValue([]);
+      jest.spyOn(service as any, 'getAdminStatusSummary').mockResolvedValue({ total: 5, active: 4, invited: 1 });
+      jest.spyOn(service as any, 'getStreaksOverview').mockResolvedValue({ buckets: [] });
+
+      const loggerSpy = jest.spyOn(service['logger'], 'log');
+
+      const result = await service['getOwnerOverview']();
+
+      // Verify calculations
+      expect(result.totalUsers).toBe(100);
+      expect(result.userActivity.active).toBe(20); // active users
+      expect(result.userActivity.inactive).toBe(50); // 70 - 20 = 50 (ever studied but not active)
+      
+      // Verify log was called with correct stats
+      expect(loggerSpy).toHaveBeenCalledWith(
+        'User Activity Stats - Total: 100, Ever Studied: 70, Active: 20, Inactive: 50, Never Started: 30'
+      );
     });
   });
 
