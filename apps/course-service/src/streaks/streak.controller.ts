@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@auth';
+import { JwtAuthGuard, Roles, RolesGuard } from '@auth';
+import { UserRole } from '@common/enums';
 import { CurrentUserId } from './decorators/current-user-id.decorator';
 import { StreakService } from './streak.service';
 import { StreakResponseDto } from './dto/streak-response.dto';
@@ -149,6 +150,9 @@ export class StreakController {
   @Post('debug/bump')
   @ApiOperation({ summary: '[DEBUG] Bump streak with detailed log' })
   @ApiBody({ schema: { type: 'object', properties: { date: { type: 'string', example: '2025-01-01T16:50:00.000Z' } } } })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   async debugBump(
     @CurrentUserId() userId: string,
     @Body() body: { date: string },
@@ -156,7 +160,7 @@ export class StreakController {
     const testDate = new Date(body.date);
 
     if (isNaN(testDate.getTime())) {
-      throw new Error('Invalid ISO date format. Example: 2025-01-01T16:50:00.000Z');
+      throw new BadRequestException('Invalid date format');
     }
 
     const result = await this.streakService.bumpStreak(userId, testDate);
