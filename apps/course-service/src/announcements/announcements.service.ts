@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
@@ -11,6 +11,8 @@ import { AnnouncementResponseDto } from './dto/announcement-response.dto';
 
 @Injectable()
 export class AnnouncementsService {
+  private readonly logger = new Logger(AnnouncementsService.name);
+
   constructor(
     private readonly mediaImagesService: MediaImagesService,
     @InjectRepository(Announcement)
@@ -75,7 +77,7 @@ export class AnnouncementsService {
       .execute();
 
     if (activatedResult.affected && activatedResult.affected > 0) {
-      console.log(`✅ Activated ${activatedResult.affected} announcement(s)`);
+      this.logger.log(`Activated ${activatedResult.affected} announcement(s)`);
       return;
     }
 
@@ -94,7 +96,7 @@ export class AnnouncementsService {
       .execute();
 
     if (deactivatedResult.affected && deactivatedResult.affected > 0) {
-      console.log(`❌ Deactivated ${deactivatedResult.affected} announcement(s)`);
+      this.logger.log(`Deactivated ${deactivatedResult.affected} announcement(s)`);
       return;
     }
   }

@@ -9,7 +9,7 @@ import { CurrentUserId } from '../notifications/decorators/current-user-id.decor
 @ApiTags('Admin | Quiz Checkpoint')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/checkpoint')
 export class CheckpointAdminController {
     constructor(private readonly quizService: QuizService) { }

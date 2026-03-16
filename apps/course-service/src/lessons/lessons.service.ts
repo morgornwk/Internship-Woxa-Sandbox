@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson, LessonType } from './entities/lesson.entity';
@@ -13,6 +13,8 @@ import { CoursesService } from '../courses/courses.service';
 
 @Injectable()
 export class LessonsService {
+  private readonly logger = new Logger(LessonsService.name);
+
   constructor(
     @InjectRepository(Lesson)
     private readonly lessonRepository: Repository<Lesson>,
@@ -259,7 +261,7 @@ export class LessonsService {
         }
 
         // ย้าย lesson นี้ไปท้ายสุดเสมอ
-        lesson.orderIndex = lessons.length - 1;
+        lesson.orderIndex = lessons.length; // index เริ่มจาก 0
       }
 
       lesson.lesson_type = updateLessonDto.lesson_type;
@@ -402,8 +404,9 @@ export class LessonsService {
             updatedAt: checkpoint.updatedAt,
           };
         }
-      } catch {
-        // Ignore checkpoint enrichment errors and return base lesson data.
+      } catch (error) {
+        // Log checkpoint enrichment errors but return base lesson data
+        this.logger.warn(`Failed to enrich checkpoint data for lesson ID ${lesson.lesson_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
 

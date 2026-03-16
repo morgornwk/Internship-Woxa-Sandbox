@@ -12,7 +12,7 @@ import { UpdateRewardAdminDto } from './dto/update-reward-admin.dto';
 @ApiTags('Reward Admin')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin')
 export class AdminController {
   constructor(private readonly RewardAdminService: RewardAdminService) { }

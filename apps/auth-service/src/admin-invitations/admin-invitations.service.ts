@@ -33,7 +33,7 @@ export class AdminInvitationsService {
 
     const existing = await this.usersService.findByEmail(email);
     if (existing && existing.role !== UserRole.ADMIN) {
-      console.log(`Upgrading user from ${existing.role} to ADMIN`);
+      this.logger.log(`Upgrading user from ${existing.role} to ADMIN`);
     }
 
     if (existing && String(existing.status ?? '').toLowerCase() === 'active' && existing.role === UserRole.ADMIN) {

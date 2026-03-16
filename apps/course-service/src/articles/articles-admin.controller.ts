@@ -10,7 +10,7 @@ import { UserRole } from '@common/enums/user-role.enum';
 @ApiTags('Admin | Article')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/article')
 export class ArticlesAdminController {
     constructor(private readonly svc: ArticlesService) { }
@@ -58,8 +58,6 @@ export class ArticlesAdminController {
     async findAll(): Promise<ArticleResponseDto[]> {
         return this.svc.findAll();
     }
-
-    
 
     @Get(':id')
     @ApiOperation({ summary: 'ดึงบทความตาม ID' })

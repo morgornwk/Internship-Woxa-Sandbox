@@ -11,7 +11,7 @@ import { CreateAssetVideoDto, UpdateAssetImageDto, UpdateAssetVideoDto } from '.
 @ApiTags('Asset Library')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('asset-library')
 export class AssetLibraryController {
     constructor(private readonly svc: AssetLibraryService) { }

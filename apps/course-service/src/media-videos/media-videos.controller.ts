@@ -9,7 +9,7 @@ import { UserRole } from '@common/enums/user-role.enum';
 @ApiTags('Upload | Video')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('media/video')
 export class MediaVideosController {
   constructor(private readonly svc: MediaVideosService) { }

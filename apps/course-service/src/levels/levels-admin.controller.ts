@@ -8,7 +8,7 @@ import { UserRole } from '@common/enums/user-role.enum';
 @ApiTags('Admin | Level')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/level')
 export class LevelsAdminController {
     constructor(private readonly levelsService: LevelsService) { }

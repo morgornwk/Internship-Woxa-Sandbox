@@ -9,7 +9,7 @@ import { GenerateAiQuizDto } from './dto/generate-ai-quiz.dto';
 @ApiTags('Admin | Ai Analyzer - Quiz')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/ai-quiz')
 export class AiQuizAdminController {
   constructor(private readonly aiQuizService: AiQuizService) {}

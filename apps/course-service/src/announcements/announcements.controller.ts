@@ -72,7 +72,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Post()
   @ApiOperation({
     summary: 'สร้างป้ายประกาศใหม่ (Admin Only)',
@@ -88,7 +88,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Get()
   @ApiOperation({ summary: 'ดึงป้ายประกาศทั้งหมด', description: 'Admin เท่านั้นสามารถดึงป้ายประกาศทั้งหมดได้ รวมทั้งที่ไม่ active' })
   @ApiResponse({ status: 200, description: 'ดึงป้ายประกาศทั้งหมด (Admin เท่านั้น)', type: AnnouncementResponseDto, isArray: true })
@@ -102,7 +102,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Get(':id')
   @ApiOperation({ summary: 'ดึงป้ายประกาศตาม ID', description: 'Admin เท่านั้นสามารถดึงรายละเอียดป้ายประกาศตาม ID ที่ระบุได้' })
   @ApiResponse({ status: 200, description: 'ดึงป้ายประกาศตาม ID (Admin เท่านั้น)', type: AnnouncementResponseDto, })
@@ -114,7 +114,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Patch(':id')
   @ApiOperation({ summary: 'อัปเดตป้ายประกาศ', description: 'Admin เท่านั้นสามารถแก้ไขข้อมูลป้ายประกาศได้ เช่น หัวข้อ รูปภาพ ลิงก์ หรือสถานะ' })
   @ApiResponse({ status: 200, description: 'อัปเดตป้ายประกาศ (Admin เท่านั้น)', type: AnnouncementResponseDto })
@@ -129,7 +129,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Post(':id/upload-image')
   @ApiOperation({
     summary: 'อัปโหลดรูปภาพป้ายประกาศ',
@@ -157,7 +157,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: multer.memoryStorage(),
@@ -174,7 +174,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Post('sync-active')
   @ApiOperation({
     summary: 'บังคับประกาศสถานะการทำงาน (สำหรับผู้ดูแลระบบเท่านั้น)',
@@ -207,7 +207,7 @@ export class AnnouncementsController {
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.ADMIN, UserRole.OWNER)
   @Delete(':id')
   @ApiOperation({ summary: 'ลบป้ายประกาศ', description: 'Admin เท่านั้นสามารถลบป้ายประกาศตาม ID ที่ระบุได้ การลบจะถาวรและไม่สามารถกู้คืนได้' })
   @ApiResponse({ status: 200, description: 'ลบป้ายประกาศ (Admin เท่านั้น)' })

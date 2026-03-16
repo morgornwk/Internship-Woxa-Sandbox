@@ -9,8 +9,22 @@ async function bootstrap() {
     logger: ['log', 'error', 'warn'],
   });
 
+  const corsOriginsEnv = process.env.CORS_ORIGINS;
+  const corsOrigins = corsOriginsEnv
+    ? corsOriginsEnv
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+    : undefined;
+
+  const corsOrigin = corsOrigins
+    ? corsOrigins
+    : process.env.NODE_ENV === 'production'
+      ? false
+      : true;
+
   app.enableCors({
-    origin: '*',
+    origin: corsOrigin,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: '*',
     credentials: false,

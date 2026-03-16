@@ -11,7 +11,7 @@ import { UserRole } from '@common/enums';
 @ApiTags('Upload | Image')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('media/image')
 export class MediaImagesController {
   constructor(private readonly svc: MediaImagesService) { }

@@ -8,7 +8,7 @@ import { UserRole } from '@common/enums/user-role.enum';
 @ApiTags('Admin | Chapter')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/chapter')
 export class ChaptersAdminController {
     constructor(private readonly chaptersService: ChaptersService) { }
