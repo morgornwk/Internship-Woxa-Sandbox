@@ -563,8 +563,6 @@ export class UsersService {
     const key = `profile/${mediaId}`;
     const presign_url = `https://${process.env.AWS_CLOUDFRONT_DOMAIN}/${key}`;
 
-    // console.log('presigned URL : ', presign_url);
-
     return presign_url;
   }
 

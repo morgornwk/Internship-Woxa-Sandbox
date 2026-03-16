@@ -83,7 +83,7 @@ export class QuizAdminController {
     checkQuizs(
         @Param('lessonId', ParseIntPipe) lessonId: number,
         @CurrentUserId() userId: string,
-        @Body('answer') answer: any,
+        @Body('answer') answer: unknown,
     ) {
         return this.quizService.checkAndSaveAnswer(lessonId, userId, answer);
     }

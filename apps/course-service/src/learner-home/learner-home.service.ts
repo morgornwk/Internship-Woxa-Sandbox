@@ -461,13 +461,9 @@ export class LearnerHomeService {
       .addGroupBy('chapter.chapter_title')
       .addGroupBy('chapter.chapter_id')
       .addGroupBy('level.level_title')
-
       .orderBy('MAX(lesson_progress.updated_at)', 'DESC')
-
       .setParameter('userId', userId)
-
       .limit(1)
-
       .getRawOne();
 
     return result;

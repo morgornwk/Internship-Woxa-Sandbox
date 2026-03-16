@@ -120,7 +120,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '123' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -132,6 +132,7 @@ describe('LearnerHomeService', () => {
           progressPercent: 40,
           lesson: {
             chapter: {
+              chapter_id: 1,
               chapter_title: 'Ch1',
               level: {
                 level_title: 'L1',
@@ -280,7 +281,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -326,7 +327,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -389,7 +390,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -438,7 +439,7 @@ describe('LearnerHomeService', () => {
       getMany: jest.fn().mockResolvedValue([]),
     });
 
-    courseRepo.find!.mockResolvedValue([]);
+    courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u3', 'Bearer x', 'true');
 
@@ -451,7 +452,7 @@ describe('LearnerHomeService', () => {
     (streakService.getStreak as jest.Mock).mockRejectedValue(new Error('boom'));
     (notificationsService.getUnreadCount as jest.Mock).mockRejectedValue(new Error('boom'));
 
-    userXpRepo.createQueryBuilder!.mockImplementation(() => {
+    userXpRepo.createQueryBuilder.mockImplementation(() => {
       throw new Error('boom');
     });
 
@@ -463,7 +464,7 @@ describe('LearnerHomeService', () => {
       throw new Error('boom');
     });
 
-    courseRepo.find!.mockRejectedValue(new Error('boom'));
+    courseRepo.find.mockRejectedValue(new Error('boom'));
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
@@ -484,7 +485,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     // Mock progress data: includes both published and draft lessons
     const continueLearningQb: any = {
@@ -661,7 +662,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     // Mock progress data for draft content only
     const continueLearningQb: any = {
@@ -745,7 +746,7 @@ describe('LearnerHomeService', () => {
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(courseStructureQb);
 
-    courseRepo.find!.mockResolvedValue([]);
+    courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
@@ -764,7 +765,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getRawOne: jest.fn().mockResolvedValue({ total: '0' }),
     };
-    userXpRepo.createQueryBuilder!.mockReturnValue(userXpQb);
+    userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     // Mock progress where user completed lessons in both published and draft chapters
     const continueLearningQb: any = {
@@ -892,7 +893,7 @@ describe('LearnerHomeService', () => {
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(courseStructureQb);
 
-    courseRepo.find!.mockResolvedValue([]);
+    courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 

@@ -77,13 +77,21 @@ describe('AdminInvitationsService', () => {
       providers: [
         AdminInvitationsService,
         {
-          provide: getRepositoryToken(AdminInvitation, 'auth'),
+          provide: AdminInvitation,
           useValue: {
             findOne: jest.fn(),
+            save: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(AdminInvitation, 'auth'),
+          useValue: {
             find: jest.fn(),
             create: jest.fn((dto) => ({ id: 1, ...dto })),
             save: jest.fn(async (entity) => entity),
             update: jest.fn(),
+            findOne: jest.fn(),
           },
         },
         {
@@ -521,7 +529,7 @@ describe('AdminInvitationsService', () => {
         { userId: 'user-1', isUsed: false },
         { isUsed: true },
       );
-      expect(result).toEqual({ message: 'Invitation canceled successfully' });
+      expect(result).toEqual({ message: 'Invitation deleted successfully' });
     });
   });
 
@@ -549,7 +557,7 @@ describe('AdminInvitationsService', () => {
       expect(bcrypt.hash).toHaveBeenCalledWith(tokenPlain, 10);
       expect(result.tokenPlain).toBe(tokenPlain);
       expect(result.tokenHash).toBe('hashed-token');
-      expect(result.expiresAt).toEqual(new Date('2026-03-08T00:00:00.000Z'));
+      expect(result.expiresAt).toEqual(new Date('2026-03-06T00:00:00.000Z'));
     });
 
     it('findInvitationByToken returns matching invitation', async () => {

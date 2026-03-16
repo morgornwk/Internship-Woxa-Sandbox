@@ -123,8 +123,8 @@ describe('AssetLibraryService', () => {
         buffer: Buffer.from('x'),
       } as any;
 
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(makeAsset({ assetMediaId: 99, type: AssetMediaType.IMAGE }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(makeAsset({ assetMediaId: 99, type: AssetMediaType.IMAGE }));
 
       await expect(service.uploadAssetImage('a1', file)).resolves.toEqual(
         expect.objectContaining({ assetMediaId: 99, type: AssetMediaType.IMAGE }),
@@ -150,8 +150,8 @@ describe('AssetLibraryService', () => {
         buffer: Buffer.from('x'),
       } as any;
 
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(makeAsset({ assetMediaId: 99, type: AssetMediaType.IMAGE }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(makeAsset({ assetMediaId: 99, type: AssetMediaType.IMAGE }));
 
       const res = await service.uploadAssetImage('a1', file);
 
@@ -177,8 +177,8 @@ describe('AssetLibraryService', () => {
     });
 
     it('allows empty mime when extension allowlisted', async () => {
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(
         makeAsset({ assetMediaId: 88, type: AssetMediaType.VIDEO, status: AssetMediaStatus.UPLOADING }),
       );
 
@@ -202,8 +202,8 @@ describe('AssetLibraryService', () => {
     });
 
     it('creates presign and saves UPLOADING asset', async () => {
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(makeAsset({ assetMediaId: 88, type: AssetMediaType.VIDEO, status: AssetMediaStatus.UPLOADING }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(makeAsset({ assetMediaId: 88, type: AssetMediaType.VIDEO, status: AssetMediaStatus.UPLOADING }));
 
       const res = await service.createAssetVideoPresign('a1', { mime_type: 'video/mp4', size_bytes: 10, original_filename: 'x.mp4' } as any);
 
@@ -215,20 +215,20 @@ describe('AssetLibraryService', () => {
 
   describe('confirmAssetVideo', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.confirmAssetVideo(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws when status not UPLOADING', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO, status: AssetMediaStatus.READY }));
+      repo.findOne.mockResolvedValue(makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO, status: AssetMediaStatus.READY }));
       await expect(service.confirmAssetVideo(1)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('marks READY when file exists', async () => {
       const asset = makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO, status: AssetMediaStatus.UPLOADING, publicUrl: 'https://cdn/bucket1/library-videos/k' });
-      repo.findOne!.mockResolvedValue(asset);
+      repo.findOne.mockResolvedValue(asset);
       (aws.fileExists as jest.Mock).mockResolvedValue(true);
-      repo.save!.mockResolvedValue(asset);
+      repo.save.mockResolvedValue(asset);
 
       const res = await service.confirmAssetVideo(1);
       expect(res.success).toBe(true);
@@ -236,7 +236,7 @@ describe('AssetLibraryService', () => {
     });
 
     it('throws when missing publicUrl', async () => {
-      repo.findOne!.mockResolvedValue(
+      repo.findOne.mockResolvedValue(
         makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO, status: AssetMediaStatus.UPLOADING, publicUrl: null as any }),
       );
 
@@ -250,7 +250,7 @@ describe('AssetLibraryService', () => {
         status: AssetMediaStatus.UPLOADING,
         publicUrl: 'https://cdn/bucket1/library-videos/k',
       });
-      repo.findOne!.mockResolvedValue(asset);
+      repo.findOne.mockResolvedValue(asset);
       (aws.fileExists as jest.Mock).mockResolvedValue(false);
 
       await expect(service.confirmAssetVideo(1)).rejects.toBeInstanceOf(BadRequestException);
@@ -259,18 +259,18 @@ describe('AssetLibraryService', () => {
 
   describe('getAssetLibraryAll', () => {
     it('throws when no assets', async () => {
-      repo.find!.mockResolvedValue([]);
+      repo.find.mockResolvedValue([]);
       await expect(service.getAssetLibraryAll()).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('returns list', async () => {
-      repo.find!.mockResolvedValue([makeAsset({ assetMediaId: 1 })]);
+      repo.find.mockResolvedValue([makeAsset({ assetMediaId: 1 })]);
       const res = await service.getAssetLibraryAll();
       expect(res).toHaveLength(1);
     });
 
     it('applies type filter when provided', async () => {
-      repo.find!.mockResolvedValue([makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO })]);
+      repo.find.mockResolvedValue([makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO })]);
       await service.getAssetLibraryAll(AssetMediaType.VIDEO);
 
       expect(repo.find).toHaveBeenCalledWith(
@@ -281,31 +281,31 @@ describe('AssetLibraryService', () => {
 
   describe('getAssetById', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.getAssetById(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('returns asset when found', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ assetMediaId: 1 }));
+      repo.findOne.mockResolvedValue(makeAsset({ assetMediaId: 1 }));
       await expect(service.getAssetById(1)).resolves.toEqual(expect.objectContaining({ assetMediaId: 1 }));
     });
   });
 
   describe('updateAssetImage / updateAssetVideo', () => {
     it('updateAssetImage throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.updateAssetImage(1, { original_filename: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updateAssetVideo throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.updateAssetVideo(1, { original_filename: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updateAssetImage updates fields and saves', async () => {
       const asset = makeAsset({ assetMediaId: 1, type: AssetMediaType.IMAGE, originalFilename: 'old.png' });
-      repo.findOne!.mockResolvedValue(asset);
-      repo.save!.mockImplementation(async (x: any) => x);
+      repo.findOne.mockResolvedValue(asset);
+      repo.save.mockImplementation(async (x: any) => x);
 
       const updated = await service.updateAssetImage(1, {
         original_filename: 'new.png',
@@ -320,8 +320,8 @@ describe('AssetLibraryService', () => {
 
     it('updateAssetVideo updates fields and saves', async () => {
       const asset = makeAsset({ assetMediaId: 1, type: AssetMediaType.VIDEO, originalFilename: 'old.mp4' });
-      repo.findOne!.mockResolvedValue(asset);
-      repo.save!.mockImplementation(async (x: any) => x);
+      repo.findOne.mockResolvedValue(asset);
+      repo.save.mockImplementation(async (x: any) => x);
 
       const updated = await service.updateAssetVideo(1, {
         original_filename: 'new.mp4',
@@ -339,18 +339,18 @@ describe('AssetLibraryService', () => {
 
   describe('deleteAssetById', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.deleteAssetById(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws when missing publicUrl', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: null as any }));
+      repo.findOne.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: null as any }));
       await expect(service.deleteAssetById(1)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('deletes from s3 and deletes record', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: 'https://cdn/bucket1/library-images/k' }));
-      repo.delete!.mockResolvedValue({} as any);
+      repo.findOne.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: 'https://cdn/bucket1/library-images/k' }));
+      repo.delete.mockResolvedValue({} as any);
 
       const res = await service.deleteAssetById(1);
 
@@ -360,9 +360,9 @@ describe('AssetLibraryService', () => {
     });
 
     it('continues deleting record even when S3 delete fails', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: 'https://cdn/bucket1/library-images/k' }));
+      repo.findOne.mockResolvedValue(makeAsset({ assetMediaId: 1, publicUrl: 'https://cdn/bucket1/library-images/k' }));
       (aws.deleteObject as jest.Mock).mockRejectedValue(new Error('s3 down'));
-      repo.delete!.mockResolvedValue({} as any);
+      repo.delete.mockResolvedValue({} as any);
 
       const res = await service.deleteAssetById(1);
 

@@ -142,16 +142,16 @@ describe('LessonsService', () => {
     jest.clearAllMocks();
 
     // default syncChapterIsPublished path
-    lessonRepo.exist!.mockResolvedValue(false);
-    chapterRepo.update!.mockResolvedValue({} as any);
-    chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10, levelId: 99 } as any);
-    levelRepo.findOne!.mockResolvedValue({ level_id: 99, course_id: 123 } as any);
+    lessonRepo.exist.mockResolvedValue(false);
+    chapterRepo.update.mockResolvedValue({} as any);
+    chapterRepo.findOne.mockResolvedValue({ chapter_id: 10, levelId: 99 } as any);
+    levelRepo.findOne.mockResolvedValue({ level_id: 99, course_id: 123 } as any);
     coursesServiceMock.invalidateCourseCaches.mockResolvedValue(undefined);
   });
 
   describe('create', () => {
     it('throws when chapter not found', async () => {
-      chapterRepo.findOne!.mockResolvedValue(null);
+      chapterRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.create({ chapter_id: 999, lesson_title: 'x', lesson_type: LessonType.ARTICLE } as any),
@@ -159,15 +159,15 @@ describe('LessonsService', () => {
     });
 
     it('inserts non-checkpoint before existing checkpoint and shifts checkpoint down', async () => {
-      chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10 } as any);
+      chapterRepo.findOne.mockResolvedValue({ chapter_id: 10 } as any);
 
       const existingCheckpoint = makeLesson({ lesson_id: 2, lesson_type: LessonType.CHECKPOINT, orderIndex: 1 });
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 }), existingCheckpoint]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 }), existingCheckpoint]);
 
-      lessonRepo.save!.mockImplementation(async (l: any) => l);
+      lessonRepo.save.mockImplementation(async (l: any) => l);
 
       const newLesson = makeLesson({ lesson_id: 3, lesson_type: LessonType.ARTICLE, orderIndex: 1, isPublished: true });
-      lessonRepo.create!.mockReturnValue(newLesson);
+      lessonRepo.create.mockReturnValue(newLesson);
 
       (lessonRepo.save as jest.Mock)
         .mockResolvedValueOnce(existingCheckpoint) // save shifted checkpoint
@@ -186,16 +186,16 @@ describe('LessonsService', () => {
     });
 
     it('replaces existing checkpoint when creating checkpoint (removes old, puts at end)', async () => {
-      chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10 } as any);
+      chapterRepo.findOne.mockResolvedValue({ chapter_id: 10 } as any);
 
       const existingCheckpoint = makeLesson({ lesson_id: 2, lesson_type: LessonType.CHECKPOINT, orderIndex: 1 });
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 }), existingCheckpoint]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 }), existingCheckpoint]);
 
-      lessonRepo.remove!.mockResolvedValue(existingCheckpoint);
+      lessonRepo.remove.mockResolvedValue(existingCheckpoint);
 
       const checkpointLesson = makeLesson({ lesson_id: 3, lesson_type: LessonType.CHECKPOINT, orderIndex: 1, isPublished: false });
-      lessonRepo.create!.mockReturnValue(checkpointLesson);
-      lessonRepo.save!.mockResolvedValue(checkpointLesson);
+      lessonRepo.create.mockReturnValue(checkpointLesson);
+      lessonRepo.save.mockResolvedValue(checkpointLesson);
 
       const result = await service.create({
         chapter_id: 10,
@@ -209,9 +209,9 @@ describe('LessonsService', () => {
     });
 
     it('creates checkpoint as last lesson when no existing checkpoint', async () => {
-      chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10 } as any);
+      chapterRepo.findOne.mockResolvedValue({ chapter_id: 10 } as any);
 
-      lessonRepo.find!.mockResolvedValue([
+      lessonRepo.find.mockResolvedValue([
         makeLesson({ lesson_id: 1, orderIndex: 0, lesson_type: LessonType.ARTICLE }),
         makeLesson({ lesson_id: 2, orderIndex: 1, lesson_type: LessonType.QUIZ }),
       ]);
@@ -222,8 +222,8 @@ describe('LessonsService', () => {
         orderIndex: 2,
         isPublished: false,
       });
-      lessonRepo.create!.mockReturnValue(checkpointLesson);
-      lessonRepo.save!.mockResolvedValue(checkpointLesson);
+      lessonRepo.create.mockReturnValue(checkpointLesson);
+      lessonRepo.save.mockResolvedValue(checkpointLesson);
 
       const result = await service.create({
         chapter_id: 10,
@@ -237,10 +237,10 @@ describe('LessonsService', () => {
     });
 
     it('creates non-checkpoint as last when no existing checkpoint', async () => {
-      chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10 } as any);
+      chapterRepo.findOne.mockResolvedValue({ chapter_id: 10 } as any);
 
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 })]);
-      lessonRepo.save!.mockImplementation(async (l: any) => l);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1, orderIndex: 0 })]);
+      lessonRepo.save.mockImplementation(async (l: any) => l);
 
       const newLesson = makeLesson({
         lesson_id: 2,
@@ -248,8 +248,8 @@ describe('LessonsService', () => {
         orderIndex: 1,
         isPublished: false,
       });
-      lessonRepo.create!.mockReturnValue(newLesson);
-      lessonRepo.save!.mockResolvedValue(newLesson);
+      lessonRepo.create.mockReturnValue(newLesson);
+      lessonRepo.save.mockResolvedValue(newLesson);
 
       const result = await service.create({
         chapter_id: 10,
@@ -263,10 +263,10 @@ describe('LessonsService', () => {
     });
 
     it('syncChapterIsPublished sets chapter.isPublished true when published lesson exists', async () => {
-      chapterRepo.findOne!.mockResolvedValue({ chapter_id: 10 } as any);
+      chapterRepo.findOne.mockResolvedValue({ chapter_id: 10 } as any);
 
-      lessonRepo.find!.mockResolvedValue([]);
-      lessonRepo.exist!.mockResolvedValue(true);
+      lessonRepo.find.mockResolvedValue([]);
+      lessonRepo.exist.mockResolvedValue(true);
 
       const newLesson = makeLesson({
         lesson_id: 1,
@@ -275,8 +275,8 @@ describe('LessonsService', () => {
         isPublished: true,
         lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
       });
-      lessonRepo.create!.mockReturnValue(newLesson);
-      lessonRepo.save!.mockResolvedValue(newLesson);
+      lessonRepo.create.mockReturnValue(newLesson);
+      lessonRepo.save.mockResolvedValue(newLesson);
 
       await service.create({
         chapter_id: 10,
@@ -292,8 +292,8 @@ describe('LessonsService', () => {
 
   describe('findByChapter / findPublishedByChapter', () => {
     it('findByChapter maps list', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       const result = await service.findByChapter(10);
       expect(lessonRepo.find).toHaveBeenCalledWith({ where: { chapter_id: 10 }, order: { orderIndex: 'ASC' } });
@@ -301,12 +301,12 @@ describe('LessonsService', () => {
     });
 
     it('findPublishedByChapter filters isPublished', async () => {
-      lessonRepo.find!.mockResolvedValue([
+      lessonRepo.find.mockResolvedValue([
         makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: true }),
         makeLesson({ lesson_id: 2, lesson_type: LessonType.VIDEO, lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4', isPublished: false }),
         makeLesson({ lesson_id: 3, lesson_type: LessonType.ARTICLE, isPublished: false }),
       ]);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       const result = await service.findPublishedByChapter(10);
       expect(lessonRepo.find).toHaveBeenCalledWith({
@@ -319,19 +319,19 @@ describe('LessonsService', () => {
 
   describe('findAll / findAllPublished', () => {
     it('findAll returns list', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
+      checkpointRepo.findOne.mockResolvedValue(null);
       const result = await service.findAll();
       expect(result).toHaveLength(1);
     });
 
     it('findAllPublished filters isPublished', async () => {
-      lessonRepo.find!.mockResolvedValue([
+      lessonRepo.find.mockResolvedValue([
         makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: true }),
         makeLesson({ lesson_id: 2, lesson_type: LessonType.VIDEO, lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4', isPublished: false }),
         makeLesson({ lesson_id: 3, lesson_type: LessonType.ARTICLE, isPublished: false }),
       ]);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      checkpointRepo.findOne.mockResolvedValue(null);
       const result = await service.findAllPublished();
       expect(lessonRepo.find).toHaveBeenCalledWith({ order: { orderIndex: 'ASC' } });
       expect(result.map((lesson) => lesson.lesson_id)).toEqual([1, 2]);
@@ -340,51 +340,51 @@ describe('LessonsService', () => {
 
   describe('findOne / findOnePublished / findOneAdmin', () => {
     it('findOne throws when lesson not found', async () => {
-      lessonRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(null);
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('findOne throws when draft ARTICLE has no content', async () => {
-      lessonRepo.findOne!.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false }));
-      articleRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false }));
+      articleRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('findOne throws when draft QUIZ has no content', async () => {
-      lessonRepo.findOne!.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.QUIZ, isPublished: false }));
-      quizRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.QUIZ, isPublished: false }));
+      quizRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('findOne throws when draft CHECKPOINT has no content', async () => {
-      lessonRepo.findOne!.mockResolvedValue(
+      lessonRepo.findOne.mockResolvedValue(
         makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT, isPublished: false }),
       );
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('findOne returns dto for draft ARTICLE when content exists', async () => {
-      lessonRepo.findOne!.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false }));
-      articleRepo.findOne!.mockResolvedValue({ article_id: 1 } as any);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false }));
+      articleRepo.findOne.mockResolvedValue({ article_id: 1 } as any);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       const result = await service.findOne(1);
       expect(result.lesson_id).toBe(1);
     });
 
     it('findOnePublished throws when not found', async () => {
-      lessonRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(null);
       await expect(service.findOnePublished(1)).rejects.toBeInstanceOf(NotFoundException);
 
       expect(lessonRepo.findOne).toHaveBeenCalledWith({ where: { lesson_id: 1 } });
     });
 
     it('findOnePublished returns video lesson when URL exists even if DB flag is false', async () => {
-      lessonRepo.findOne!.mockResolvedValue(
+      lessonRepo.findOne.mockResolvedValue(
         makeLesson({
           lesson_id: 1,
           lesson_type: LessonType.VIDEO,
@@ -392,7 +392,7 @@ describe('LessonsService', () => {
           isPublished: false,
         }),
       );
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       const result = await service.findOnePublished(1);
 
@@ -401,16 +401,16 @@ describe('LessonsService', () => {
     });
 
     it('findOneAdmin returns dto', async () => {
-      lessonRepo.findOne!.mockResolvedValue(makeLesson({ lesson_id: 1 }));
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(makeLesson({ lesson_id: 1 }));
+      checkpointRepo.findOne.mockResolvedValue(null);
       const result = await service.findOneAdmin(1);
       expect(result.lesson_id).toBe(1);
     });
 
     it('findOne does not validate content when published', async () => {
-      lessonRepo.findOne!.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.QUIZ, isPublished: true }));
-      quizRepo.findOne!.mockResolvedValue(null);
-      checkpointRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(makeLesson({ lesson_id: 1, lesson_type: LessonType.QUIZ, isPublished: true }));
+      quizRepo.findOne.mockResolvedValue(null);
+      checkpointRepo.findOne.mockResolvedValue(null);
 
       const result = await service.findOne(1);
 
@@ -421,13 +421,13 @@ describe('LessonsService', () => {
 
   describe('update', () => {
     it('throws when not found', async () => {
-      lessonRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(null);
       await expect(service.update(1, { lesson_title: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws when trying to publish checkpoint without content', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT, isPublished: false });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
+      lessonRepo.findOne.mockResolvedValue(lesson);
       (checkpointRepo.exist as jest.Mock).mockResolvedValue(false);
 
       await expect(service.update(1, { isPublished: true } as any)).rejects.toBeInstanceOf(BadRequestException);
@@ -435,9 +435,9 @@ describe('LessonsService', () => {
 
     it('keeps non-checkpoint unpublished by default when content is missing', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
-      articleRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
+      articleRepo.findOne.mockResolvedValue(null);
 
       const result = await service.update(1, { lesson_title: 'New' } as any);
 
@@ -448,8 +448,8 @@ describe('LessonsService', () => {
 
     it('throws when trying to publish article without content', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, isPublished: false });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      articleRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      articleRepo.findOne.mockResolvedValue(null);
 
       await expect(service.update(1, { isPublished: true } as any)).rejects.toBeInstanceOf(BadRequestException);
     });
@@ -461,8 +461,8 @@ describe('LessonsService', () => {
         lesson_videoUrl: 'https://cdn.skillacademy.com/videos/1.mp4',
         isPublished: false,
       });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
 
       const result = await service.update(1, { isPublished: true } as any);
 
@@ -477,7 +477,7 @@ describe('LessonsService', () => {
         isPublished: true,
         orderIndex: 0,
       });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
+      lessonRepo.findOne.mockResolvedValue(lesson);
 
       const otherCheckpoint = makeLesson({
         lesson_id: 11,
@@ -486,14 +486,14 @@ describe('LessonsService', () => {
         orderIndex: 2,
       });
 
-      lessonRepo.find!.mockResolvedValue([
+      lessonRepo.find.mockResolvedValue([
         lesson,
         makeLesson({ lesson_id: 12, chapter_id: 99, orderIndex: 1 }),
         otherCheckpoint,
       ]);
-      lessonRepo.remove!.mockResolvedValue(otherCheckpoint);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
-      checkpointRepo.exist!.mockResolvedValue(true);
+      lessonRepo.remove.mockResolvedValue(otherCheckpoint);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
+      checkpointRepo.exist.mockResolvedValue(true);
 
       const result = await service.update(10, { lesson_type: LessonType.CHECKPOINT, isPublished: true } as any);
 
@@ -505,9 +505,9 @@ describe('LessonsService', () => {
 
     it('publishes checkpoint when content exists', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT, isPublished: false });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
-      checkpointRepo.exist!.mockResolvedValue(true);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
+      checkpointRepo.exist.mockResolvedValue(true);
 
       const result = await service.update(1, { isPublished: true } as any);
 
@@ -516,8 +516,8 @@ describe('LessonsService', () => {
 
     it('updates orderIndex for non-checkpoint when provided', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.ARTICLE, orderIndex: 0 });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
 
       const result = await service.update(1, { orderIndex: 5 } as any);
 
@@ -526,9 +526,9 @@ describe('LessonsService', () => {
 
     it('ignores orderIndex update for checkpoint lessons', async () => {
       const lesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT, orderIndex: 0, isPublished: false });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.save!.mockImplementation(async (l) => l as any);
-      checkpointRepo.exist!.mockResolvedValue(true);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.save.mockImplementation(async (l) => l as any);
+      checkpointRepo.exist.mockResolvedValue(true);
 
       const result = await service.update(1, { orderIndex: 5 } as any);
 
@@ -538,14 +538,14 @@ describe('LessonsService', () => {
 
   describe('remove', () => {
     it('throws when not found', async () => {
-      lessonRepo.findOne!.mockResolvedValue(null);
+      lessonRepo.findOne.mockResolvedValue(null);
       await expect(service.remove(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('removes and syncs chapter publish state', async () => {
       const lesson = makeLesson({ lesson_id: 1, chapter_id: 10 });
-      lessonRepo.findOne!.mockResolvedValue(lesson);
-      lessonRepo.remove!.mockResolvedValue(lesson);
+      lessonRepo.findOne.mockResolvedValue(lesson);
+      lessonRepo.remove.mockResolvedValue(lesson);
 
       const result = await service.remove(1);
 
@@ -557,43 +557,43 @@ describe('LessonsService', () => {
 
   describe('reorder', () => {
     it('returns [] when no lessons', async () => {
-      lessonRepo.find!.mockResolvedValue([]);
+      lessonRepo.find.mockResolvedValue([]);
       const result = await service.reorder(10, [1]);
       expect(result).toEqual([]);
     });
 
     it('throws when checkpoint is not last', async () => {
       const checkpoint = makeLesson({ lesson_id: 2, lesson_type: LessonType.CHECKPOINT });
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 }), checkpoint]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 }), checkpoint]);
 
       await expect(service.reorder(10, [2, 1])).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when lessonIds missing/empty', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
       await expect(service.reorder(10, [] as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when lessonIds not array', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 })]);
       await expect(service.reorder(10, null as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when lessonIds length mismatches', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 }), makeLesson({ lesson_id: 2 })]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 }), makeLesson({ lesson_id: 2 })]);
       await expect(service.reorder(10, [1] as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when lesson id does not belong to chapter', async () => {
-      lessonRepo.find!.mockResolvedValue([makeLesson({ lesson_id: 1 }), makeLesson({ lesson_id: 2 })]);
+      lessonRepo.find.mockResolvedValue([makeLesson({ lesson_id: 1 }), makeLesson({ lesson_id: 2 })]);
       await expect(service.reorder(10, [1, 999] as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('saves updated order and returns findByChapter', async () => {
       const l1 = makeLesson({ lesson_id: 1, orderIndex: 0 });
       const l2 = makeLesson({ lesson_id: 2, orderIndex: 1 });
-      lessonRepo.find!.mockResolvedValue([l1, l2]);
-      lessonRepo.save!.mockResolvedValue([l1, l2] as any);
+      lessonRepo.find.mockResolvedValue([l1, l2]);
+      lessonRepo.save.mockResolvedValue([l1, l2] as any);
 
       jest.spyOn(service, 'findByChapter').mockResolvedValue([
         { lesson_id: 2 } as any,
@@ -610,9 +610,9 @@ describe('LessonsService', () => {
   describe('toResponseDto (checkpoint enrichment)', () => {
     it('attaches checkpoint data when lesson is CHECKPOINT and checkpoint exists', async () => {
       const checkpointLesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT });
-      lessonRepo.findOne!.mockResolvedValue(checkpointLesson);
+      lessonRepo.findOne.mockResolvedValue(checkpointLesson);
 
-      checkpointRepo.findOne!.mockResolvedValue({
+      checkpointRepo.findOne.mockResolvedValue({
         checkpointId: 99,
         checkpointScore: 5,
         checkpointType: 'mcq',
@@ -632,8 +632,8 @@ describe('LessonsService', () => {
 
     it('swallows errors from checkpointRepository.findOne', async () => {
       const checkpointLesson = makeLesson({ lesson_id: 1, lesson_type: LessonType.CHECKPOINT });
-      lessonRepo.findOne!.mockResolvedValue(checkpointLesson);
-      checkpointRepo.findOne!.mockRejectedValue(new Error('db down'));
+      lessonRepo.findOne.mockResolvedValue(checkpointLesson);
+      checkpointRepo.findOne.mockRejectedValue(new Error('db down'));
 
       const result: any = await service.findOneAdmin(1);
 

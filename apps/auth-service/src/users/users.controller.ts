@@ -32,8 +32,6 @@ export class UsersController {
     @CurrentUserId() userId: string,
     @Headers('authorization') authorization: string
   ) {
-    // console.log('User ID from JWT:', userId);
-
     const user = await this.usersService.getStudentProfile(userId);
 
     return user;

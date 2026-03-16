@@ -89,7 +89,7 @@ export class CheckpointAdminController {
     checkCheckpoint(
         @Param('checkpointId', ParseIntPipe) checkpointId: number,
         @CurrentUserId() userId: string,
-        @Body('answer') answer: any,
+        @Body('answer') answer: unknown,
     ) {
         return this.quizService.checkCheckpointAnswer(checkpointId, userId, answer);
     }

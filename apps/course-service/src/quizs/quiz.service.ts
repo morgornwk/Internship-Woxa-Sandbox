@@ -130,7 +130,7 @@ export class QuizService {
   async checkAndSaveAnswer(
     lessonId: number,
     userId: string,
-    answer: any,
+    answer: unknown,
   ) {
     const quiz = await this.quizsRepository.findOne({
       where: { lessonId },
@@ -759,7 +759,7 @@ export class QuizService {
   async checkCheckpointAnswer(
     checkpointId: number,
     userId: string,
-    answer: any,
+    answer: unknown,
   ) {
     const checkpoint = await this.checkpointRepository.findOne({
       where: { checkpointId },
@@ -842,7 +842,7 @@ export class QuizService {
 }
 
 // ฟังก์ชันช่วยเปรียบเทียบคำตอบแบบ deep equality (รองรับการเปรียบเทียบ array/object โดยไม่สนใจลำดับ)
-function normalize(value: any): any {
+function normalize(value: unknown): unknown {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     const lowered = trimmed.toLowerCase();
@@ -863,21 +863,21 @@ function normalize(value: any): any {
   }
 
   if (Array.isArray(value)) {
-    return value.map(normalize).sort();
+    return value.map(item => normalize(item)).sort();
   }
 
   if (value && typeof value === 'object') {
     return Object.keys(value)
       .sort()
       .reduce((acc, key) => {
-        acc[key] = normalize(value[key]);
+        acc[key] = normalize((value as Record<string, unknown>)[key]);
         return acc;
-      }, {} as any);
+      }, {} as Record<string, unknown>);
   }
 
   return value;
 }
 
-function isEqual(a: any, b: any): boolean {
+function isEqual(a: unknown, b: unknown): boolean {
   return JSON.stringify(normalize(a)) === JSON.stringify(normalize(b));
 }

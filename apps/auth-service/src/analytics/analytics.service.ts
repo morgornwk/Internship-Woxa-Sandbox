@@ -155,7 +155,6 @@ export class AnalyticsService {
       .andWhere('lp.updatedAt < :endDate', { endDate: end.toISOString() })
       .getRawOne<{ count: string }>();
 
-      // console.log(result)
     return Number(result?.count ?? 0);
   }
 

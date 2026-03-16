@@ -157,16 +157,11 @@ export class AuthService {
   async refreshTokens(refreshTokenValue: string): Promise<TokenResponse> {
     const refreshTokenHash = this.hashRefreshToken(refreshTokenValue);
 
-    // console.log('Received refresh token:', refreshTokenValue);
-    // console.log('Hashed refresh token:', refreshTokenHash);
-
     // ค้นหา session ที่ตรงกับ refresh token hash และโหลดข้อมูล user มาใช้ด้วย
     const session = await this.sessionRepository.findOne({
       where: { refreshTokenHash },
       relations: ['user'],
     });
-
-    // console.log('Found session:', session);
 
     if (!session) {
       throw new UnauthorizedException('Invalid refresh token');

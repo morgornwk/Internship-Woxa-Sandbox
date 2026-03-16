@@ -245,7 +245,10 @@ export class AdminInvitationsService {
     }
 
     // Delete all pending invitations from database
-    const result = await this.invitationRepo.delete({ userId, isUsed: false });
+    const result = await this.invitationRepo.update(
+      { userId, isUsed: false },
+      { isUsed: true }
+    );
     if (!result.affected) {
       throw new NotFoundException('No pending invitation found');
     }

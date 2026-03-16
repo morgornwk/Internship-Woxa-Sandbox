@@ -79,8 +79,8 @@ describe('AnnouncementsService', () => {
 
     it('creates announcement with relative deepLink', async () => {
       const created = makeAnnouncement({ title: 'x', deepLink: '/path' });
-      repo.create!.mockReturnValue(created);
-      repo.save!.mockResolvedValue(created);
+      repo.create.mockReturnValue(created);
+      repo.save.mockResolvedValue(created);
 
       const result = await service.create({ title: 'x', deepLink: '/path' } as any);
       expect(result.title).toBe('x');
@@ -97,7 +97,7 @@ describe('AnnouncementsService', () => {
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       };
 
-      repo.createQueryBuilder!.mockReturnValue(qb1);
+      repo.createQueryBuilder.mockReturnValue(qb1);
 
       await service.syncAnnouncementStatusByDate();
 
@@ -133,7 +133,7 @@ describe('AnnouncementsService', () => {
 
   describe('findAll', () => {
     it('returns mapped list', async () => {
-      repo.find!.mockResolvedValue([makeAnnouncement({ announcement_id: 1 })]);
+      repo.find.mockResolvedValue([makeAnnouncement({ announcement_id: 1 })]);
       const result = await service.findAll();
       expect(result).toHaveLength(1);
     });
@@ -148,7 +148,7 @@ describe('AnnouncementsService', () => {
         addOrderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([makeAnnouncement({ announcement_id: 1, activeStatus: true })]),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findActive();
       expect(result).toHaveLength(1);
@@ -164,12 +164,12 @@ describe('AnnouncementsService', () => {
 
   describe('findOne', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('returns dto when found', async () => {
-      repo.findOne!.mockResolvedValue(makeAnnouncement({ announcement_id: 1 }));
+      repo.findOne.mockResolvedValue(makeAnnouncement({ announcement_id: 1 }));
       const result = await service.findOne(1);
       expect(result.announcement_id).toBe(1);
     });
@@ -178,9 +178,9 @@ describe('AnnouncementsService', () => {
   describe('uploadBannerImage', () => {
     it('uploads image via MediaImagesService and updates announcement', async () => {
       const entity = makeAnnouncement({ announcement_id: 1 });
-      repo.findOne!.mockResolvedValue(entity);
+      repo.findOne.mockResolvedValue(entity);
       (mediaImages.uploadImageFileAndPersist as jest.Mock).mockResolvedValue({ url: 'https://x' });
-      repo.save!.mockImplementation(async (a) => a as any);
+      repo.save.mockImplementation(async (a) => a as any);
 
       const file = { buffer: Buffer.from('x') } as any;
       const result = await service.uploadBannerImage(1, file, 'admin');
@@ -192,14 +192,14 @@ describe('AnnouncementsService', () => {
 
   describe('update', () => {
     it('throws on invalid deepLink', async () => {
-      repo.findOne!.mockResolvedValue(makeAnnouncement({ announcement_id: 1 }));
+      repo.findOne.mockResolvedValue(makeAnnouncement({ announcement_id: 1 }));
       await expect(service.update(1, { deepLink: 'bad' } as any)).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('updates fields and saves', async () => {
       const entity = makeAnnouncement({ announcement_id: 1, title: 'Old' });
-      repo.findOne!.mockResolvedValue(entity);
-      repo.save!.mockImplementation(async (a) => a as any);
+      repo.findOne.mockResolvedValue(entity);
+      repo.save.mockImplementation(async (a) => a as any);
 
       const result = await service.update(1, { title: 'New', activeStatus: true } as any);
 
@@ -211,14 +211,14 @@ describe('AnnouncementsService', () => {
 
   describe('remove', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.remove(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('removes and returns message', async () => {
       const entity = makeAnnouncement({ announcement_id: 1 });
-      repo.findOne!.mockResolvedValue(entity);
-      repo.remove!.mockResolvedValue(entity);
+      repo.findOne.mockResolvedValue(entity);
+      repo.remove.mockResolvedValue(entity);
 
       const result = await service.remove(1);
 

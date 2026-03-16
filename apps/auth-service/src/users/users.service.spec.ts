@@ -43,13 +43,13 @@ describe('UsersService', () => {
     create?: jest.Mock;
     save?: jest.Mock;
     delete?: jest.Mock;
-  };
+  } & Record<string, jest.Mock>;
 
   let userRepo: RepoMock;
   let authRepo: RepoMock;
   let userXpRepo: RepoMock;
   let userStreakRepo: RepoMock;
-  let completeCourseRepo: RepoMock;
+  let completeCourseRepo: RepoMock & { createQueryBuilder: jest.Mock };
 
   const makeConfig = (map: Record<string, any>) =>
     ({
@@ -98,10 +98,16 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(Course, 'course'), useValue: { findOne: jest.fn() } },
         { provide: getRepositoryToken(UserXp, 'course'), useValue: { findOne: jest.fn() } },
         { provide: getRepositoryToken(UserStreak, 'course'), useValue: { findOne: jest.fn() } },
-        { provide: getRepositoryToken(LessonProgress, 'course'), useValue: { find: jest.fn() } },
+        {
+          provide: getRepositoryToken(LessonProgress, 'course'),
+          useValue: {
+            find: jest.fn(),
+            createQueryBuilder: jest.fn(),
+          },
+        },
         { provide: getRepositoryToken(Chapter, 'course'), useValue: {} },
         { provide: getRepositoryToken(Level, 'course'), useValue: {} },
-        { 
+        {
           provide: getRepositoryToken(AdminInvitation, 'auth'),
           useValue: {
             find: jest.fn(),
@@ -134,11 +140,27 @@ describe('UsersService', () => {
     const module: TestingModule = await buildModule();
     service = module.get(UsersService);
 
-    userRepo = module.get(getRepositoryToken(User, 'auth'));
-    authRepo = module.get(getRepositoryToken(AuthAccount, 'auth'));
-    userXpRepo = module.get(getRepositoryToken(UserXp, 'course'));
-    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course'));
-    completeCourseRepo = module.get(getRepositoryToken(LessonProgress, 'course'));
+    userRepo = module.get(getRepositoryToken(User, 'auth')) as RepoMock;
+    authRepo = module.get(getRepositoryToken(AuthAccount, 'auth')) as RepoMock;
+    userXpRepo = module.get(getRepositoryToken(UserXp, 'course')) as RepoMock;
+    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course')) as RepoMock;
+    completeCourseRepo = module.get(getRepositoryToken(LessonProgress, 'course')) as any;
+
+    // Initialize all mocks
+    userRepo.findOne = jest.fn();
+    userRepo.find = jest.fn();
+    userRepo.create = jest.fn();
+    userRepo.save = jest.fn();
+    userRepo.delete = jest.fn();
+    
+    authRepo.findOne = jest.fn();
+    authRepo.save = jest.fn();
+    
+    userXpRepo.findOne = jest.fn();
+    userStreakRepo.findOne = jest.fn();
+    
+    completeCourseRepo.find = jest.fn();
+    completeCourseRepo.createQueryBuilder = jest.fn();
   });
 
   afterEach(() => {
@@ -356,32 +378,32 @@ describe('UsersService', () => {
 
     it('getAllCompleteCourse maps nested lesson/course fields', async () => {
       userRepo.findOne!.mockResolvedValue(makeUser({ id: 'u1' }));
-      completeCourseRepo.find!.mockResolvedValue([
-        {
-          lessonProgressId: 1,
-          lessonId: 10,
-          status: 'DONE',
-          progressPercent: 100,
-          lesson: {
-            lesson_title: 'L1',
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        addSelect: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            lesson_progress_id: 1,
+            lessonId: 10,
+            course_image: 'img',
+            lesson: 'L1',
             lesson_description: 'D1',
             lesson_type: 'VIDEO',
-            chapter: {
-              level: {
-                course: {
-                  course_imageUrl: 'img',
-                },
-              },
-            },
+            progress_percent: 100,
           },
-        },
-      ]);
+        ]),
+      };
+      completeCourseRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder as any);
 
       const result = await service.getAllCompleteCourse('u1');
       expect(result[0]).toEqual(
         expect.objectContaining({
           lesson_progress_id: 1,
-          lessong_id: 10,
+          lessonId: 10,
           course_image: 'img',
           lesson: 'L1',
           lesson_description: 'D1',

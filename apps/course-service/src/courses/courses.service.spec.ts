@@ -66,8 +66,8 @@ describe('CoursesService', () => {
       const created = makeCourse({ course_title: 'C1', course_ownerId: 0 });
       const saved = makeCourse({ ...created, course_id: 123 });
 
-      repo.create!.mockReturnValue(created);
-      repo.save!.mockResolvedValue(saved);
+      repo.create.mockReturnValue(created);
+      repo.save.mockResolvedValue(saved);
 
       const result = await service.create({
         course_title: 'C1',
@@ -107,7 +107,7 @@ describe('CoursesService', () => {
         }),
       };
 
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findAll({
         isPublished: true,
@@ -137,7 +137,7 @@ describe('CoursesService', () => {
           raw: [{}],
         }),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
       await service.findAll({ limit: 9999 });
 
@@ -158,7 +158,7 @@ describe('CoursesService', () => {
           raw: [{ course_totalChapter: 'not-a-number' }],
         }),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
       const result = await service.findAll({ search: 'HeLLo' });
 
@@ -178,7 +178,7 @@ describe('CoursesService', () => {
         skip: jest.fn().mockReturnThis(),
         getRawAndEntities: jest.fn().mockResolvedValue({ entities: [], raw: [] }),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
       await service.findAll({ limit: -1, offset: -10 });
 
@@ -189,12 +189,12 @@ describe('CoursesService', () => {
 
   describe('findOne', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('returns dto when found', async () => {
-      repo.findOne!.mockResolvedValue(makeCourse({ course_id: 1, course_totalChapter: 2 }));
+      repo.findOne.mockResolvedValue(makeCourse({ course_id: 1, course_totalChapter: 2 }));
       const result = await service.findOne(1);
       expect(result.course_id).toBe(1);
       expect(result.course_totalChapter).toBe(2);
@@ -203,7 +203,7 @@ describe('CoursesService', () => {
 
   describe('getStructure', () => {
     it('throws when course not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.getStructure(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -252,8 +252,8 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
-      repo.query!.mockResolvedValue([
+      repo.findOne.mockResolvedValue(course);
+      repo.query.mockResolvedValue([
         { lesson_id: 1002, checkpoint_id: 1, checkpoint_score: 5 },
       ]);
 
@@ -301,8 +301,8 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
-      repo.query!.mockResolvedValue([]);
+      repo.findOne.mockResolvedValue(course);
+      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructure(1);
 
@@ -377,8 +377,8 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
-      repo.query!.mockResolvedValue([]);
+      repo.findOne.mockResolvedValue(course);
+      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructure(1);
 
@@ -410,7 +410,7 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
+      repo.findOne.mockResolvedValue(course);
 
       const result = await service.getStructure(1);
 
@@ -421,7 +421,7 @@ describe('CoursesService', () => {
 
   describe('getStructureAdmin', () => {
     it('throws when course not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.getStructureAdmin(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
@@ -447,8 +447,8 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
-      repo.query!.mockResolvedValue([]);
+      repo.findOne.mockResolvedValue(course);
+      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructureAdmin(1);
 
@@ -479,8 +479,8 @@ describe('CoursesService', () => {
         ] as any,
       });
 
-      repo.findOne!.mockResolvedValue(course);
-      repo.query!.mockResolvedValue([]);
+      repo.findOne.mockResolvedValue(course);
+      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructureAdmin(1);
 
@@ -494,14 +494,14 @@ describe('CoursesService', () => {
 
   describe('update', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.update(1, { course_title: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updates fields and returns dto', async () => {
       const course = makeCourse({ course_id: 1, course_title: 'Old' });
-      repo.findOne!.mockResolvedValue(course);
-      repo.save!.mockImplementation(async (c) => c as any);
+      repo.findOne.mockResolvedValue(course);
+      repo.save.mockImplementation(async (c) => c as any);
 
       const result = await service.update(1, { course_title: 'New', isPublished: true } as any);
 
@@ -512,8 +512,8 @@ describe('CoursesService', () => {
 
     it('allows setting nullable fields to null and maps nulls to undefined in response dto', async () => {
       const course = makeCourse({ course_id: 1, course_imageUrl: 'x', course_tags: ['a'] as any });
-      repo.findOne!.mockResolvedValue(course);
-      repo.save!.mockImplementation(async (c) => c as any);
+      repo.findOne.mockResolvedValue(course);
+      repo.save.mockImplementation(async (c) => c as any);
 
       const result = await service.update(1, { course_imageUrl: null, course_tags: null } as any);
 
@@ -526,14 +526,14 @@ describe('CoursesService', () => {
 
   describe('remove', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
+      repo.findOne.mockResolvedValue(null);
       await expect(service.remove(1)).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('removes and returns message', async () => {
       const course = makeCourse({ course_id: 1 });
-      repo.findOne!.mockResolvedValue(course);
-      repo.remove!.mockResolvedValue(course);
+      repo.findOne.mockResolvedValue(course);
+      repo.remove.mockResolvedValue(course);
 
       const result = await service.remove(1);
 
