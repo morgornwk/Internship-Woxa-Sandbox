@@ -25,7 +25,8 @@ export class RedisCacheService implements OnModuleDestroy {
     const client = this.client;
     this.client = null;
 
-    await client.quit().catch(() => {
+    await client.quit().catch((error) => {
+      this.logger.error(`Redis client quit error: ${error.message}`);
       client.disconnect();
     });
   }

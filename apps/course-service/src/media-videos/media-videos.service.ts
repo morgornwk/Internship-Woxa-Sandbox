@@ -159,7 +159,7 @@ export class MediaVideosService {
       try {
         await this.aws.deleteObject(bucket, key);
       } catch (err) {
-        this.logger.warn(`Failed to delete video file ${key}: ${String(err)}`);
+        this.logger.error(`Failed to delete video file ${key}: ${String(err)}`);
       }
     }
 

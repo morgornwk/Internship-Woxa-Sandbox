@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -12,6 +12,8 @@ const VIDEO_MAX_SIZE = 1 * 1024 * 1024 * 1024; // 1GB
 
 @Injectable()
 export class AssetLibraryService {
+    private readonly logger = new Logger(AssetLibraryService.name);
+
     constructor(
         private readonly aws: AwsS3StorageService,
 
@@ -265,7 +267,7 @@ export class AssetLibraryService {
             ...(dto.status && { status: dto.status }),
         });
 
-        // console.log('Updating asset video:', videoAsset);
+        // this.logger.debug('Updating asset video:', videoAsset);
         return this.mediaRepo.save(videoAsset);
     }
 
@@ -288,11 +290,9 @@ export class AssetLibraryService {
         try {
             await this.aws.deleteObject(bucket, storageKey);
         } catch (err) {
-            console.warn(
+            this.logger.warn(
                 'S3 delete failed',
                 err?.name,
-                err?.message,
-                err?.$metadata?.httpStatusCode
             );
         }
 

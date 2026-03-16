@@ -147,32 +147,32 @@ export class StreakController {
     return { message: 'Reward modal marked as shown' };
   }
 
-  @Post('debug/bump')
-  @ApiOperation({ summary: '[DEBUG] Bump streak with detailed log' })
-  @ApiBody({ schema: { type: 'object', properties: { date: { type: 'string', example: '2025-01-01T16:50:00.000Z' } } } })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.OWNER)
-  async debugBump(
-    @CurrentUserId() userId: string,
-    @Body() body: { date: string },
-  ) {
-    const testDate = new Date(body.date);
+  // @Post('debug/bump')
+  // @ApiOperation({ summary: '[DEBUG] Bump streak with detailed log' })
+  // @ApiBody({ schema: { type: 'object', properties: { date: { type: 'string', example: '2025-01-01T16:50:00.000Z' } } } })
+  // @ApiBearerAuth()
+  // @UseGuards(JwtAuthGuard, RolesGuard)
+  // @Roles(UserRole.ADMIN, UserRole.OWNER)
+  // async debugBump(
+  //   @CurrentUserId() userId: string,
+  //   @Body() body: { date: string },
+  // ) {
+  //   const testDate = new Date(body.date);
 
-    if (isNaN(testDate.getTime())) {
-      throw new BadRequestException('Invalid date format');
-    }
+  //   if (isNaN(testDate.getTime())) {
+  //     throw new BadRequestException('Invalid date format');
+  //   }
 
-    const result = await this.streakService.bumpStreak(userId, testDate);
+  //   const result = await this.streakService.bumpStreak(userId, testDate);
 
-    return {
-      inputUTC: testDate.toISOString(),
-      currentStreak: result.currentStreak,
-      longestStreak: result.longestStreak,
-      lastCompletedAt: result.lastCompletedAt,
-    };
+  //   return {
+  //     inputUTC: testDate.toISOString(),
+  //     currentStreak: result.currentStreak,
+  //     longestStreak: result.longestStreak,
+  //     lastCompletedAt: result.lastCompletedAt,
+  //   };
 
-  }
+  // }
 
   // @Post('test/reset')
   // @ApiOperation({

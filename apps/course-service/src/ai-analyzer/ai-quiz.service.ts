@@ -1,4 +1,4 @@
-import { BadRequestException, BadGatewayException, HttpException, Injectable, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, BadGatewayException, HttpException, Injectable, Logger, NotFoundException, ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import axios from 'axios';
 import { Repository } from 'typeorm';
@@ -259,7 +259,7 @@ export class AiQuizService {
         const MAX_ARTICLE_LENGTH = 4000;
         content = content.slice(0, MAX_ARTICLE_LENGTH);
 
-        // console.log(`content sent to ai : `, content);
+        // this.logger.debug(`Content sent to AI: ${content}`);
 
         const prompt = this.buildPrompt(content, options);
         const promptForStorage = this.redactLessonContentForStorage(prompt);

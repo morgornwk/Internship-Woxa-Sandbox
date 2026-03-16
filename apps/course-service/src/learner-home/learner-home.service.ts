@@ -1,4 +1,4 @@
-import { Injectable, Optional, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Optional, UnauthorizedException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
@@ -21,6 +21,7 @@ interface UserProfile {
 
 @Injectable()
 export class LearnerHomeService {
+  private readonly logger = new Logger(LearnerHomeService.name);
   private static readonly HOME_TTL_SECONDS = 120;
   private static readonly RECOMMENDATIONS_TTL_SECONDS = 300;
 
@@ -340,13 +341,31 @@ export class LearnerHomeService {
       notifications,
       userProfile,
     ] = await Promise.all([
-      this.getStreak(userId).catch(() => ({ currentStreak: 0 })),
-      this.getTotalXp(userId).catch(() => 0),
-      this.getLatestLearn(userId).catch(() => null),
-      this.getMyCourses(userId).catch(() => []),
-      this.getNotifications(userId).catch(() => ({ unreadCount: 0 })),
+      this.getStreak(userId).catch((error) => {
+        this.logger.error(`Failed to get streak for user ${userId}: ${error.message}`);
+        return { currentStreak: 0 };
+      }),
+      this.getTotalXp(userId).catch((error) => {
+        this.logger.error(`Failed to get total XP for user ${userId}: ${error.message}`);
+        return 0;
+      }),
+      this.getLatestLearn(userId).catch((error) => {
+        this.logger.error(`Failed to get latest learn for user ${userId}: ${error.message}`);
+        return null;
+      }),
+      this.getMyCourses(userId).catch((error) => {
+        this.logger.error(`Failed to get my courses for user ${userId}: ${error.message}`);
+        return [];
+      }),
+      this.getNotifications(userId).catch((error) => {
+        this.logger.error(`Failed to get notifications for user ${userId}: ${error.message}`);
+        return { unreadCount: 0 };
+      }),
       !shouldSkipProfile
-        ? this.getUserProfileFromAuth(authorization).catch(() => null)
+        ? this.getUserProfileFromAuth(authorization).catch((error) => {
+          this.logger.error(`Failed to get user profile from auth: ${error.message}`);
+          return null;
+        })
         : null,
     ]);
 
