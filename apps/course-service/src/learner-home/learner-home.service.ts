@@ -1,4 +1,9 @@
-import { Injectable, Optional, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Optional,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { HttpService } from '@nestjs/axios';
@@ -342,30 +347,42 @@ export class LearnerHomeService {
       userProfile,
     ] = await Promise.all([
       this.getStreak(userId).catch((error) => {
-        this.logger.error(`Failed to get streak for user ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to get streak for user ${userId}: ${error.message}`,
+        );
         return { currentStreak: 0 };
       }),
       this.getTotalXp(userId).catch((error) => {
-        this.logger.error(`Failed to get total XP for user ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to get total XP for user ${userId}: ${error.message}`,
+        );
         return 0;
       }),
       this.getContinueLearning(userId).catch((error) => {
-        this.logger.error(`Failed to get continue learning for user ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to get continue learning for user ${userId}: ${error.message}`,
+        );
         return null;
       }),
       this.getMyCourses(userId).catch((error) => {
-        this.logger.error(`Failed to get my courses for user ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to get my courses for user ${userId}: ${error.message}`,
+        );
         return [];
       }),
       this.getNotifications(userId).catch((error) => {
-        this.logger.error(`Failed to get notifications for user ${userId}: ${error.message}`);
+        this.logger.error(
+          `Failed to get notifications for user ${userId}: ${error.message}`,
+        );
         return { unreadCount: 0 };
       }),
       !shouldSkipProfile
         ? this.getUserProfileFromAuth(authorization).catch((error) => {
-          this.logger.error(`Failed to get user profile from auth: ${error.message}`);
-          return null;
-        })
+            this.logger.error(
+              `Failed to get user profile from auth: ${error.message}`,
+            );
+            return null;
+          })
         : null,
     ]);
 
@@ -389,20 +406,28 @@ export class LearnerHomeService {
   }
 
   private async getRecommendationsWithoutCache(isNewUser: boolean) {
-    const take = 4;  
+    const take = 4;
 
     const recommendedCourses = await this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.course_levels', 'level')
-      .leftJoinAndSelect('level.level_chapters', 'chapter', 'chapter.isPublished = :published', { published: true })
+      .leftJoinAndSelect(
+        'level.level_chapters',
+        'chapter',
+        'chapter.isPublished = :published',
+        { published: true },
+      )
       .where('course.isPublished = :published', { published: true })
       .orderBy(isNewUser ? 'course.createdAt' : 'course.updatedAt', 'DESC')
       .take(take)
       .getMany();
 
     const courses = recommendedCourses.map((course) => {
-      const totalChapters = course.course_levels?.reduce((sum, level) => 
-        sum + (level.level_chapters?.length || 0), 0) || 0;
+      const totalChapters =
+        course.course_levels?.reduce(
+          (sum, level) => sum + (level.level_chapters?.length || 0),
+          0,
+        ) || 0;
 
       return {
         course_id: course.course_id,
@@ -410,7 +435,7 @@ export class LearnerHomeService {
         reason: isNewUser ? 'คอร์สใหม่ล่าสุด' : 'คอร์สยอดนิยม',
         course_imageUrl: course.course_imageUrl ?? null,
         level_name: 'ระดับพื้นฐาน',
-        course_totalChapter: totalChapters,  
+        course_totalChapter: totalChapters,
       };
     });
 

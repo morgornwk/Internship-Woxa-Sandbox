@@ -33,7 +33,9 @@ describe('ChaptersAdminController', () => {
 
   it('create delegates to ChaptersService.create', async () => {
     chaptersService.create.mockResolvedValue({ chapter_id: 1 } as any);
-    await expect(controller.create({ chapter_title: 'T' } as any)).resolves.toEqual({
+    await expect(
+      controller.create({ chapter_title: 'T' } as any),
+    ).resolves.toEqual({
       chapter_id: 1,
     });
     expect(chaptersService.create).toHaveBeenCalledWith({ chapter_title: 'T' });
@@ -41,7 +43,9 @@ describe('ChaptersAdminController', () => {
 
   it('findByLevel delegates to ChaptersService.findByLevel', async () => {
     chaptersService.findByLevel.mockResolvedValue([{ chapter_id: 1 } as any]);
-    await expect(controller.findByLevel(10)).resolves.toEqual([{ chapter_id: 1 }]);
+    await expect(controller.findByLevel(10)).resolves.toEqual([
+      { chapter_id: 1 },
+    ]);
     expect(chaptersService.findByLevel).toHaveBeenCalledWith(10);
   });
 
@@ -58,12 +62,19 @@ describe('ChaptersAdminController', () => {
   });
 
   it('update delegates to ChaptersService.update', async () => {
-    chaptersService.update.mockResolvedValue({ chapter_id: 123, chapter_title: 'N' } as any);
-    await expect(controller.update(123, { chapter_title: 'N' } as any)).resolves.toEqual({
+    chaptersService.update.mockResolvedValue({
+      chapter_id: 123,
+      chapter_title: 'N',
+    } as any);
+    await expect(
+      controller.update(123, { chapter_title: 'N' } as any),
+    ).resolves.toEqual({
       chapter_id: 123,
       chapter_title: 'N',
     });
-    expect(chaptersService.update).toHaveBeenCalledWith(123, { chapter_title: 'N' });
+    expect(chaptersService.update).toHaveBeenCalledWith(123, {
+      chapter_title: 'N',
+    });
   });
 
   it('remove delegates to ChaptersService.remove', async () => {
@@ -74,9 +85,9 @@ describe('ChaptersAdminController', () => {
 
   it('reorder delegates to ChaptersService.reorder', async () => {
     chaptersService.reorder.mockResolvedValue([{ chapter_id: 2 } as any]);
-    await expect(controller.reorder({ level_id: 10, chapter_ids: [2, 1] } as any)).resolves.toEqual([
-      { chapter_id: 2 },
-    ]);
+    await expect(
+      controller.reorder({ level_id: 10, chapter_ids: [2, 1] } as any),
+    ).resolves.toEqual([{ chapter_id: 2 }]);
     expect(chaptersService.reorder).toHaveBeenCalledWith(10, [2, 1]);
   });
 

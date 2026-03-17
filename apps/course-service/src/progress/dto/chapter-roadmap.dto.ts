@@ -55,9 +55,16 @@ export class ChapterRoadmapDto {
   checkpointUnlocked?: boolean;
 
   // Streak status for this user (derived from streak service)
-  @ApiProperty({ required: false, enum: ['IN_PROGRESS', 'COMPLETE'], description: 'สถานะไฟ streak ของผู้ใช้ (COMPLETE = ไฟติด)' })
+  @ApiProperty({
+    required: false,
+    enum: ['IN_PROGRESS', 'COMPLETE'],
+    description: 'สถานะไฟ streak ของผู้ใช้ (COMPLETE = ไฟติด)',
+  })
   streakStatus?: 'IN_PROGRESS' | 'COMPLETE';
 
-  @ApiProperty({ required: false, description: 'ทำสำเร็จวันนี้แล้ว และยังไม่เคยแสดง reward modal วันนี้' })
+  @ApiProperty({
+    required: false,
+    description: 'ทำสำเร็จวันนี้แล้ว และยังไม่เคยแสดง reward modal วันนี้',
+  })
   isReward?: boolean;
 }

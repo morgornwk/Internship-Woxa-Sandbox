@@ -23,10 +23,10 @@ export class UpdateUserDto {
   @IsOptional()
   isVerified?: boolean;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'active',
     enum: Status,
-    required: false
+    required: false,
   })
   @IsEnum(Status)
   @IsOptional()

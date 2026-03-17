@@ -5,7 +5,9 @@ export class CleanupVideoOwnerColumns20260305000020 implements MigrationInterfac
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     // Ensure the desired column exists.
-    await queryRunner.query(`ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "admin_id" uuid;`);
+    await queryRunner.query(
+      `ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "admin_id" uuid;`,
+    );
 
     // If owner_user_id exists, migrate data into admin_id then drop it.
     await queryRunner.query(`
@@ -70,8 +72,12 @@ export class CleanupVideoOwnerColumns20260305000020 implements MigrationInterfac
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Recreate owner_user_id from admin_id (best-effort)
-    await queryRunner.query(`ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "owner_user_id" uuid;`);
-    await queryRunner.query(`UPDATE "video" SET "owner_user_id" = "admin_id" WHERE "owner_user_id" IS NULL AND "admin_id" IS NOT NULL;`);
+    await queryRunner.query(
+      `ALTER TABLE "video" ADD COLUMN IF NOT EXISTS "owner_user_id" uuid;`,
+    );
+    await queryRunner.query(
+      `UPDATE "video" SET "owner_user_id" = "admin_id" WHERE "owner_user_id" IS NULL AND "admin_id" IS NOT NULL;`,
+    );
 
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_video_admin_id";`);
 

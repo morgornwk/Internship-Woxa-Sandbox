@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -26,9 +32,14 @@ export class AdminInvitationsService {
     private readonly usersService: UsersService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
-  async inviteAdmin(input: { invitedByUserId: string; email: string; firstName?: string; lastName?: string }): Promise<{ userId: string; status: string; emailSent: boolean }> {
+  async inviteAdmin(input: {
+    invitedByUserId: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  }): Promise<{ userId: string; status: string; emailSent: boolean }> {
     const email = input.email.trim().toLowerCase();
 
     const existing = await this.usersService.findByEmail(email);
@@ -36,35 +47,52 @@ export class AdminInvitationsService {
       this.logger.log(`Upgrading user from ${existing.role} to ADMIN`);
     }
 
-    if (existing && String(existing.status ?? '').toLowerCase() === 'active' && existing.role === UserRole.ADMIN) {
+    if (
+      existing &&
+      String(existing.status ?? '').toLowerCase() === 'active' &&
+      existing.role === UserRole.ADMIN
+    ) {
       throw new ConflictException('Admin already active');
     }
 
-    const user = existing ? await this.usersService.update(existing.id, {
-      firstName: input.firstName ?? existing.firstName,
-      lastName: input.lastName ?? existing.lastName,
-      role: UserRole.ADMIN,
-      status: 'invited',
-    } as any) : await this.usersService.create({
-      email,
-      firstName: input.firstName,
-      lastName: input.lastName,
-      role: UserRole.ADMIN,
-      status: 'invited',
-      isVerified: false,
-    } as any);
+    const user = existing
+      ? await this.usersService.update(existing.id, {
+          firstName: input.firstName ?? existing.firstName,
+          lastName: input.lastName ?? existing.lastName,
+          role: UserRole.ADMIN,
+          status: 'invited',
+        } as any)
+      : await this.usersService.create({
+          email,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          role: UserRole.ADMIN,
+          status: 'invited',
+          isVerified: false,
+        } as any);
 
     const temporaryPassword = this.generateTemporaryPassword();
     if (!existing) {
-      await this.usersService.createEmailAuthAccount(user, email, temporaryPassword);
+      await this.usersService.createEmailAuthAccount(
+        user,
+        email,
+        temporaryPassword,
+      );
     } else {
       await this.usersService.updatePassword(user.id, temporaryPassword);
-      await this.usersService.update(user.id, { status: 'invited', isVerified: false } as any);
+      await this.usersService.update(user.id, {
+        status: 'invited',
+        isVerified: false,
+      } as any);
     }
 
-    const { tokenPlain, tokenHash, expiresAt } = await this.generateInviteToken();
+    const { tokenPlain, tokenHash, expiresAt } =
+      await this.generateInviteToken();
 
-    await this.invitationRepo.update({ userId: user.id, isUsed: false }, { isUsed: true });
+    await this.invitationRepo.update(
+      { userId: user.id, isUsed: false },
+      { isUsed: true },
+    );
     await this.invitationRepo.save(
       this.invitationRepo.create({
         userId: user.id,
@@ -75,10 +103,11 @@ export class AdminInvitationsService {
       }),
     );
 
-
     const emailSent = await this.emailService.sendAdminInviteEmail({
       to: email,
-      inviteUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}` : '',
+      inviteUrl: process.env.FRONTEND_URL
+        ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}`
+        : '',
       temporaryPassword,
     });
 
@@ -89,7 +118,10 @@ export class AdminInvitationsService {
     return { userId: user.id, status: 'invited', emailSent };
   }
 
-  async acceptInvite(token: string, newPassword: string): Promise<{ message: string }> {
+  async acceptInvite(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     const matched = await this.findInvitationByToken(token);
 
     const user = await this.usersService.findById(matched.userId);
@@ -99,7 +131,10 @@ export class AdminInvitationsService {
 
     await this.usersService.updatePassword(user.id, newPassword);
 
-    await this.usersService.update(user.id, { status: 'active', isVerified: true } as any);
+    await this.usersService.update(user.id, {
+      status: 'active',
+      isVerified: true,
+    } as any);
 
     matched.isUsed = true;
     await this.invitationRepo.save(matched);
@@ -107,7 +142,10 @@ export class AdminInvitationsService {
     return { message: 'Invitation accepted' };
   }
 
-  async resendInvite(userId: string, invitedByUserId: string): Promise<{ emailSent: boolean }> {
+  async resendInvite(
+    userId: string,
+    invitedByUserId: string,
+  ): Promise<{ emailSent: boolean }> {
     const user = await this.usersService.findById(userId);
     if (user.role !== UserRole.ADMIN) {
       throw new BadRequestException('User is not admin');
@@ -122,8 +160,12 @@ export class AdminInvitationsService {
 
     await this.usersService.update(user.id, { status: 'invited' } as any);
 
-    const { tokenPlain, tokenHash, expiresAt } = await this.generateInviteToken();
-    await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
+    const { tokenPlain, tokenHash, expiresAt } =
+      await this.generateInviteToken();
+    await this.invitationRepo.update(
+      { userId, isUsed: false },
+      { isUsed: true },
+    );
     await this.invitationRepo.save(
       this.invitationRepo.create({
         userId: user.id,
@@ -136,7 +178,9 @@ export class AdminInvitationsService {
 
     const emailSent = await this.emailService.sendAdminInviteEmail({
       to: user.email || '',
-      inviteUrl: process.env.FRONTEND_URL ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}` : '',
+      inviteUrl: process.env.FRONTEND_URL
+        ? `${process.env.FRONTEND_URL}/set-password?token=${encodeURIComponent(tokenPlain)}`
+        : '',
       temporaryPassword,
     });
 
@@ -145,7 +189,9 @@ export class AdminInvitationsService {
 
   async listAdmins(): Promise<AdminListDto[]> {
     const users = await this.usersService.findAll();
-    const admins = users.filter((u) => u.role === UserRole.ADMIN || u.role === UserRole.OWNER);
+    const admins = users.filter(
+      (u) => u.role === UserRole.ADMIN || u.role === UserRole.OWNER,
+    );
 
     const results: AdminListDto[] = [];
 
@@ -167,8 +213,13 @@ export class AdminInvitationsService {
 
         if (latest?.expiresAt) {
           expiresAt = latest.expiresAt.toISOString();
-          const bangkokExpiresAt = new Date(latest.expiresAt.getTime() + bangkokOffset);
-          hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+          const bangkokExpiresAt = new Date(
+            latest.expiresAt.getTime() + bangkokOffset,
+          );
+          hoursUntilExpiry = Math.floor(
+            (bangkokExpiresAt.getTime() - bangkokNow.getTime()) /
+              (1000 * 60 * 60),
+          );
           if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
         } else {
           // ถ้าไม่มี invitation pending ให้ดู invitation ล่าสุดทั้งหมด (รวมที่ใช้ไปแล้ว)
@@ -179,8 +230,13 @@ export class AdminInvitationsService {
 
           if (anyInvitation?.expiresAt) {
             expiresAt = anyInvitation.expiresAt.toISOString();
-            const bangkokExpiresAt = new Date(anyInvitation.expiresAt.getTime() + bangkokOffset);
-            hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+            const bangkokExpiresAt = new Date(
+              anyInvitation.expiresAt.getTime() + bangkokOffset,
+            );
+            hoursUntilExpiry = Math.floor(
+              (bangkokExpiresAt.getTime() - bangkokNow.getTime()) /
+                (1000 * 60 * 60),
+            );
             if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
           }
         }
@@ -198,7 +254,6 @@ export class AdminInvitationsService {
       });
     }
 
-
     return results;
   }
 
@@ -211,7 +266,9 @@ export class AdminInvitationsService {
     return this.usersService.blockUser(userId);
   }
 
-  async unsuspendUser(userId: string): Promise<{ id: string; status: string; message: string }> {
+  async unsuspendUser(
+    userId: string,
+  ): Promise<{ id: string; status: string; message: string }> {
     const user = await this.usersService.findById(userId);
     if (user.role !== UserRole.ADMIN) {
       throw new BadRequestException('User is not admin');
@@ -221,7 +278,9 @@ export class AdminInvitationsService {
       throw new BadRequestException('User is not suspended');
     }
 
-    const updatedUser = await this.usersService.update(userId, { status: Status.ACTIVE });
+    const updatedUser = await this.usersService.update(userId, {
+      status: Status.ACTIVE,
+    });
 
     return {
       id: updatedUser.id,
@@ -236,7 +295,10 @@ export class AdminInvitationsService {
       throw new BadRequestException('User is not admin');
     }
 
-    await this.invitationRepo.update({ userId, isUsed: false }, { isUsed: true });
+    await this.invitationRepo.update(
+      { userId, isUsed: false },
+      { isUsed: true },
+    );
     await this.usersService.delete(userId);
 
     return { message: 'User deleted successfully' };
@@ -251,7 +313,7 @@ export class AdminInvitationsService {
     // Delete all pending invitations from database
     const result = await this.invitationRepo.update(
       { userId, isUsed: false },
-      { isUsed: true }
+      { isUsed: true },
     );
     if (!result.affected) {
       throw new NotFoundException('No pending invitation found');
@@ -265,7 +327,9 @@ export class AdminInvitationsService {
           lastName: user.lastName || '',
         });
       } catch (error) {
-        this.logger.warn(`Failed to send invitation cancellation email to ${user.email}: ${error.message}`);
+        this.logger.warn(
+          `Failed to send invitation cancellation email to ${user.email}: ${error.message}`,
+        );
       }
     }
 
@@ -276,7 +340,11 @@ export class AdminInvitationsService {
     return randomBytes(9).toString('base64url');
   }
 
-  private async generateInviteToken(): Promise<{ tokenPlain: string; tokenHash: string; expiresAt: Date }> {
+  private async generateInviteToken(): Promise<{
+    tokenPlain: string;
+    tokenHash: string;
+    expiresAt: Date;
+  }> {
     const tokenPlain = randomBytes(32).toString('hex');
     const tokenHash = await bcrypt.hash(tokenPlain, BCRYPT_SALT_ROUNDS);
     const expiresAt = new Date();

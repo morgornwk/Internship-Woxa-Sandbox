@@ -162,8 +162,9 @@ describe('CoursesService', () => {
 
       const result = await service.findAll({ search: 'HeLLo' });
 
-      const searchCall = (qb.andWhere as jest.Mock).mock.calls.find((c: any[]) =>
-        String(c?.[0] ?? '').includes('LOWER(course.course_title)'),
+      const searchCall = (qb.andWhere as jest.Mock).mock.calls.find(
+        (c: any[]) =>
+          String(c?.[0] ?? '').includes('LOWER(course.course_title)'),
       );
       expect(searchCall?.[1]).toEqual({ kw: '%hello%' });
       expect(result[0].course_totalChapter).toBe(0);
@@ -176,7 +177,9 @@ describe('CoursesService', () => {
         orderBy: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         skip: jest.fn().mockReturnThis(),
-        getRawAndEntities: jest.fn().mockResolvedValue({ entities: [], raw: [] }),
+        getRawAndEntities: jest
+          .fn()
+          .mockResolvedValue({ entities: [], raw: [] }),
       };
       repo.createQueryBuilder.mockReturnValue(qb);
 
@@ -190,11 +193,15 @@ describe('CoursesService', () => {
   describe('findOne', () => {
     it('throws when not found', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findOne(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns dto when found', async () => {
-      repo.findOne.mockResolvedValue(makeCourse({ course_id: 1, course_totalChapter: 2 }));
+      repo.findOne.mockResolvedValue(
+        makeCourse({ course_id: 1, course_totalChapter: 2 }),
+      );
       const result = await service.findOne(1);
       expect(result.course_id).toBe(1);
       expect(result.course_totalChapter).toBe(2);
@@ -204,7 +211,9 @@ describe('CoursesService', () => {
   describe('getStructure', () => {
     it('throws when course not found', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(service.getStructure(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getStructure(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns nested structure with published lessons only and checkpoint attached', async () => {
@@ -263,7 +272,9 @@ describe('CoursesService', () => {
       expect(result.course_levels[0].chapters).toHaveLength(1);
       const lessons = result.course_levels[0].chapters[0].lessons;
       expect(lessons.map((l) => l.lesson_id)).toEqual([1000, 1002]);
-      expect(lessons.find((l) => l.lesson_id === 1002)?.checkpoint).toBeTruthy();
+      expect(
+        lessons.find((l) => l.lesson_id === 1002)?.checkpoint,
+      ).toBeTruthy();
 
       expect(repo.query).toHaveBeenCalledWith(
         expect.stringContaining('FROM quizs_checkpoint'),
@@ -290,7 +301,8 @@ describe('CoursesService', () => {
                     lesson_title: 'Video lesson',
                     lesson_type: LessonType.VIDEO,
                     lesson_description: '',
-                    lesson_videoUrl: 'https://cdn.skllracademy.com/videos/video-1.mp4',
+                    lesson_videoUrl:
+                      'https://cdn.skllracademy.com/videos/video-1.mp4',
                     orderIndex: 0,
                     isPublished: false,
                   },
@@ -383,11 +395,12 @@ describe('CoursesService', () => {
       const result = await service.getStructure(1);
 
       expect(result.course_levels.map((l) => l.level_id)).toEqual([1]);
-      expect(result.course_levels[0].chapters.map((c) => c.chapter_id)).toEqual([12]);
-      expect(result.course_levels[0].chapters[0].lessons.map((l) => l.lesson_id)).toEqual([
-        1201,
-        1202,
-      ]);
+      expect(result.course_levels[0].chapters.map((c) => c.chapter_id)).toEqual(
+        [12],
+      );
+      expect(
+        result.course_levels[0].chapters[0].lessons.map((l) => l.lesson_id),
+      ).toEqual([1201, 1202]);
     });
 
     it('does not query checkpoints when course has no lessons', async () => {
@@ -422,7 +435,9 @@ describe('CoursesService', () => {
   describe('getStructureAdmin', () => {
     it('throws when course not found', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(service.getStructureAdmin(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getStructureAdmin(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns nested structure including unpublished lessons', async () => {
@@ -439,7 +454,13 @@ describe('CoursesService', () => {
                 chapter_title: 'C1',
                 chapter_orderIndex: 0,
                 lessons: [
-                  { lesson_id: 1000, lesson_title: 'A', lesson_type: LessonType.ARTICLE, orderIndex: 0, isPublished: false },
+                  {
+                    lesson_id: 1000,
+                    lesson_title: 'A',
+                    lesson_type: LessonType.ARTICLE,
+                    orderIndex: 0,
+                    isPublished: false,
+                  },
                 ],
               },
             ],
@@ -453,7 +474,9 @@ describe('CoursesService', () => {
       const result = await service.getStructureAdmin(1);
 
       expect(result.course_levels[0].chapters[0].lessons).toHaveLength(1);
-      expect(result.course_levels[0].chapters[0].lessons[0].lesson_id).toBe(1000);
+      expect(result.course_levels[0].chapters[0].lessons[0].lesson_id).toBe(
+        1000,
+      );
     });
 
     it('sorts lessons by orderIndex and queries checkpoints when lessons exist', async () => {
@@ -470,8 +493,20 @@ describe('CoursesService', () => {
                 chapter_title: 'C1',
                 chapter_orderIndex: 0,
                 lessons: [
-                  { lesson_id: 2, lesson_title: 'B', lesson_type: LessonType.ARTICLE, orderIndex: 1, isPublished: false },
-                  { lesson_id: 1, lesson_title: 'A', lesson_type: LessonType.ARTICLE, orderIndex: 0, isPublished: false },
+                  {
+                    lesson_id: 2,
+                    lesson_title: 'B',
+                    lesson_type: LessonType.ARTICLE,
+                    orderIndex: 1,
+                    isPublished: false,
+                  },
+                  {
+                    lesson_id: 1,
+                    lesson_title: 'A',
+                    lesson_type: LessonType.ARTICLE,
+                    orderIndex: 0,
+                    isPublished: false,
+                  },
                 ],
               },
             ],
@@ -488,22 +523,29 @@ describe('CoursesService', () => {
         expect.stringContaining('FROM quizs_checkpoint'),
         [[2, 1]],
       );
-      expect(result.course_levels[0].chapters[0].lessons.map((l) => l.lesson_id)).toEqual([1, 2]);
+      expect(
+        result.course_levels[0].chapters[0].lessons.map((l) => l.lesson_id),
+      ).toEqual([1, 2]);
     });
   });
 
   describe('update', () => {
     it('throws when not found', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(service.update(1, { course_title: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update(1, { course_title: 'x' } as any),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updates fields and returns dto', async () => {
       const course = makeCourse({ course_id: 1, course_title: 'Old' });
       repo.findOne.mockResolvedValue(course);
-      repo.save.mockImplementation(async (c) => c as any);
+      repo.save.mockImplementation(async (c) => c);
 
-      const result = await service.update(1, { course_title: 'New', isPublished: true } as any);
+      const result = await service.update(1, {
+        course_title: 'New',
+        isPublished: true,
+      } as any);
 
       expect(course.course_title).toBe('New');
       expect(course.isPublished).toBe(true);
@@ -511,11 +553,18 @@ describe('CoursesService', () => {
     });
 
     it('allows setting nullable fields to null and maps nulls to undefined in response dto', async () => {
-      const course = makeCourse({ course_id: 1, course_imageUrl: 'x', course_tags: ['a'] as any });
+      const course = makeCourse({
+        course_id: 1,
+        course_imageUrl: 'x',
+        course_tags: ['a'] as any,
+      });
       repo.findOne.mockResolvedValue(course);
-      repo.save.mockImplementation(async (c) => c as any);
+      repo.save.mockImplementation(async (c) => c);
 
-      const result = await service.update(1, { course_imageUrl: null, course_tags: null } as any);
+      const result = await service.update(1, {
+        course_imageUrl: null,
+        course_tags: null,
+      } as any);
 
       expect(course.course_imageUrl).toBeNull();
       expect(course.course_tags).toBeNull();

@@ -22,7 +22,6 @@ import {
   AdminStatusSummaryDto,
 } from './dto/admin-dashboard-analytics.dto';
 
-
 @Injectable()
 export class AnalyticsService {
   private readonly logger = new Logger(AnalyticsService.name);
@@ -45,9 +44,12 @@ export class AnalyticsService {
     private readonly userStreakRepo: Repository<UserStreak>,
 
     private readonly websocketGateway: WebsocketGateway,
-  ) { }
+  ) {}
 
-  async getDashboardAnalytics(authUser: AuthUser, timeRange?: string): Promise<AdminDashboardAnalyticsDto> {
+  async getDashboardAnalytics(
+    authUser: AuthUser,
+    timeRange?: string,
+  ): Promise<AdminDashboardAnalyticsDto> {
     // ดึงข้อมูลการเรียนรู้ (ทุก role ต้องได้)
     const learningOverview = await this.getLearningOverview();
 
@@ -80,18 +82,26 @@ export class AnalyticsService {
   }
 
   // ฟังก์ชันย่อยสำหรับดึงข้อมูลภาพรวมของ OWNER (มีข้อมูลมากกว่า ADMIN)
-  private async getOwnerOverview(timeRange?: string): Promise<OwnerOverviewDto> {
-    const [totalUsers, usersByMonth, adminStatusSummary, totalCourses, streaks] = await Promise.all([
-      this.userRepo.count(),                    // นับ users ทั้งหมด
-      this.getUsersByTimeRange(timeRange),      // ข้อมูลผู้ใช้รายเดือน
-      this.getAdminStatusSummary(),             // สรุป admin accounts
-      this.courseRepo.count(),                  // นับจำนวนคอร์สทั้งหมด
-      this.getStreaksOverview(),                // สรุป streaks
+  private async getOwnerOverview(
+    timeRange?: string,
+  ): Promise<OwnerOverviewDto> {
+    const [
+      totalUsers,
+      usersByMonth,
+      adminStatusSummary,
+      totalCourses,
+      streaks,
+    ] = await Promise.all([
+      this.userRepo.count(), // นับ users ทั้งหมด
+      this.getUsersByTimeRange(timeRange), // ข้อมูลผู้ใช้รายเดือน
+      this.getAdminStatusSummary(), // สรุป admin accounts
+      this.courseRepo.count(), // นับจำนวนคอร์สทั้งหมด
+      this.getStreaksOverview(), // สรุป streaks
     ]);
 
     // นับผู้ใช้ที่ใช้งานใน 7 วันล่าสุด
     const activeUsers = await this.getActiveUsersInLast7Days();
-    
+
     // นับผู้ใช้ที่เคยเรียน (เคยมี UserStreak > 0)
     const usersWhoEverStudied = await this.userStreakRepo
       .createQueryBuilder('us')
@@ -107,8 +117,8 @@ export class AnalyticsService {
     // this.logger.log(`User Activity Stats - Total: ${totalUsers}, Ever Studied: ${totalEverStudied}, Active: ${activeUsers}, Inactive: ${inactiveUsers}, Never Started: ${neverStartedUsers}`);
 
     const userActivity: UserActivitySummaryDto = {
-      active: activeUsers,                    // ใช้งานใน 7 วันล่าสุด
-      inactive: inactiveUsers,                // เคยเรียนแต่ไม่ได้ทำ 7 วัน
+      active: activeUsers, // ใช้งานใน 7 วันล่าสุด
+      inactive: inactiveUsers, // เคยเรียนแต่ไม่ได้ทำ 7 วัน
     };
 
     return {
@@ -137,10 +147,10 @@ export class AnalyticsService {
     const result = await this.userStreakRepo
       .createQueryBuilder('us')
       .select('COUNT(DISTINCT us.userId)', 'count')
-      .where('us.updatedAt >= CURRENT_DATE - interval \'7 days\'')
+      .where("us.updatedAt >= CURRENT_DATE - interval '7 days'")
       .getRawOne<{ count: string }>();
 
-      // console.log('Active users in last 7 days:', result);
+    // console.log('Active users in last 7 days:', result);
     return Number(result?.count ?? 0);
   }
 
@@ -159,7 +169,10 @@ export class AnalyticsService {
   }
 
   // ฟังก์ชันย่อยสำหรับดึงข้อมูลความคืบหน้าการเรียน (สำหรับ ADMIN และ OWNER)
-  private async getCourseProgressSummary(): Promise<{ completed: number; inProgress: number; }> {
+  private async getCourseProgressSummary(): Promise<{
+    completed: number;
+    inProgress: number;
+  }> {
     const rows = await this.lessonProgressRepo
       .createQueryBuilder('lp')
       .leftJoin('lp.lesson', 'l')
@@ -170,10 +183,15 @@ export class AnalyticsService {
         'c.course_id',
         'lp.user_id',
         'COUNT(l.lesson_id) as total_lessons',
-        'COUNT(CASE WHEN lp.status IN (\'COMPLETED\', \'SKIPPED\') THEN 1 END) as completed',
+        "COUNT(CASE WHEN lp.status IN ('COMPLETED', 'SKIPPED') THEN 1 END) as completed",
       ])
       .groupBy('c.course_id, lp.user_id')
-      .getRawMany<{ course_id: string; user_id: string; total_lessons: string; completed: string; }>();
+      .getRawMany<{
+        course_id: string;
+        user_id: string;
+        total_lessons: string;
+        completed: string;
+      }>();
 
     let completed = 0;
     let inProgress = 0;
@@ -199,23 +217,23 @@ export class AnalyticsService {
     const row = await this.userStreakRepo
       .createQueryBuilder('us')
       .select(
-        "SUM(CASE WHEN us.currentStreak >= 1 AND us.currentStreak < 10 THEN 1 ELSE 0 END)",
+        'SUM(CASE WHEN us.currentStreak >= 1 AND us.currentStreak < 10 THEN 1 ELSE 0 END)',
         'bucket1_9',
       )
       .addSelect(
-        "SUM(CASE WHEN us.currentStreak >= 10 AND us.currentStreak < 30 THEN 1 ELSE 0 END)",
+        'SUM(CASE WHEN us.currentStreak >= 10 AND us.currentStreak < 30 THEN 1 ELSE 0 END)',
         'bucket10_29',
       )
       .addSelect(
-        "SUM(CASE WHEN us.currentStreak >= 30 AND us.currentStreak < 100 THEN 1 ELSE 0 END)",
+        'SUM(CASE WHEN us.currentStreak >= 30 AND us.currentStreak < 100 THEN 1 ELSE 0 END)',
         'bucket30_99',
       )
       .addSelect(
-        "SUM(CASE WHEN us.currentStreak >= 100 AND us.currentStreak < 200 THEN 1 ELSE 0 END)",
+        'SUM(CASE WHEN us.currentStreak >= 100 AND us.currentStreak < 200 THEN 1 ELSE 0 END)',
         'bucket100_199',
       )
       .addSelect(
-        "SUM(CASE WHEN us.currentStreak >= 200 THEN 1 ELSE 0 END)",
+        'SUM(CASE WHEN us.currentStreak >= 200 THEN 1 ELSE 0 END)',
         'bucket200_plus',
       )
       .getRawOne<{
@@ -241,17 +259,21 @@ export class AnalyticsService {
     const offsetMs = 7 * 60 * 60 * 1000;
     const now = new Date();
     const bangkokTime = new Date(now.getTime() + offsetMs);
-    const start = new Date(Date.UTC(
-      bangkokTime.getUTCFullYear(),
-      bangkokTime.getUTCMonth(),
-      bangkokTime.getUTCDate(),
-    ));
+    const start = new Date(
+      Date.UTC(
+        bangkokTime.getUTCFullYear(),
+        bangkokTime.getUTCMonth(),
+        bangkokTime.getUTCDate(),
+      ),
+    );
     const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
     return { start, end };
   }
 
   // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
-  private async getUsersByTimeRange(timeRange?: string): Promise<UsersByMonthPointDto[]> {
+  private async getUsersByTimeRange(
+    timeRange?: string,
+  ): Promise<UsersByMonthPointDto[]> {
     const range = timeRange || 'last12Months';
 
     if (range === 'allTime') {
@@ -284,7 +306,9 @@ export class AnalyticsService {
       .orderBy("date_trunc('month', u.createdAt)", 'ASC')
       .getRawMany<{ month: string; count: string }>();
 
-    const countByMonth = new Map(rawRows.map((r) => [r.month, Number(r.count)]));
+    const countByMonth = new Map(
+      rawRows.map((r) => [r.month, Number(r.count)]),
+    );
 
     // เติมเดือนที่ไม่มีข้อมูลให้เป็น 0 (กราฟจะไม่ขาดตอน)
     const points: UsersByMonthPointDto[] = [];
@@ -318,8 +342,12 @@ export class AnalyticsService {
   // ฟังก์ชันย่อยสำหรับดึงข้อมูลผู้ใช้รายเดือนตามช่วงเวลา (สำหรับ OWNER)
   private async getUsersByMonthLast12Months(): Promise<UsersByMonthPointDto[]> {
     const now = new Date();
-    const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1));
+    const end = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1),
+    );
+    const start = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 11, 1),
+    );
 
     const rawRows = await this.userRepo
       .createQueryBuilder('u')
@@ -331,12 +359,16 @@ export class AnalyticsService {
       .orderBy("date_trunc('month', u.createdAt)", 'ASC')
       .getRawMany<{ month: string; count: string }>();
 
-    const countByMonth = new Map(rawRows.map((r) => [r.month, Number(r.count)]));
+    const countByMonth = new Map(
+      rawRows.map((r) => [r.month, Number(r.count)]),
+    );
 
     // สร้างข้อมูล 12 เดือน (เติมเดือนว่างให้เป็น 0)
     const points: UsersByMonthPointDto[] = [];
     for (let i = 0; i < 12; i += 1) {
-      const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1));
+      const d = new Date(
+        Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + i, 1),
+      );
       const monthKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
       points.push({
         month: monthKey,
@@ -359,7 +391,10 @@ export class AnalyticsService {
 
     const statusMap = new Map(rows.map((r) => [r.status, Number(r.count)]));
 
-    const total = Array.from(statusMap.values()).reduce((sum, count) => sum + count, 0);
+    const total = Array.from(statusMap.values()).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
     const active = statusMap.get('active') ?? 0;
     const invited = statusMap.get('invited') ?? 0;
 

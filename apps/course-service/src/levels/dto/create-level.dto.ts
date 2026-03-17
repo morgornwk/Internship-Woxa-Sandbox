@@ -1,5 +1,11 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNumber, IsOptional, MaxLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateLevelDto {
   @ApiProperty({ description: 'Level title', example: 'Beginner Level' })
@@ -12,7 +18,11 @@ export class CreateLevelDto {
   @Min(1)
   course_id: number;
 
-  @ApiPropertyOptional({ description: 'Order index within the course', example: 0, default: 0 })
+  @ApiPropertyOptional({
+    description: 'Order index within the course',
+    example: 0,
+    default: 0,
+  })
   @IsOptional()
   @IsNumber()
   @Min(0)

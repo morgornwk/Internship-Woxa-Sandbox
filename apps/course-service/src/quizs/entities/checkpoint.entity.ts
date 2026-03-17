@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
 @Entity('quizs_checkpoint')
@@ -9,7 +17,12 @@ export class QuizsCheckpoint {
   @Column({ name: 'checkpoint_score', type: 'int', default: 5 })
   checkpointScore: number;
 
-  @Column({ name: 'checkpoint_type', type: 'enum', enum: ['multiple_choice', 'true_false'], default: 'multiple_choice' })
+  @Column({
+    name: 'checkpoint_type',
+    type: 'enum',
+    enum: ['multiple_choice', 'true_false'],
+    default: 'multiple_choice',
+  })
   checkpointType: string;
 
   @Column({ name: 'checkpoint_questions', type: 'text' })
@@ -19,7 +32,7 @@ export class QuizsCheckpoint {
   checkpointOption: string[];
 
   @Column({ name: 'checkpoint_answer', type: 'jsonb' })
-  checkpointAnswer: any;
+  checkpointAnswer: unknown;
 
   @Column({ name: 'checkpoint_explanation', type: 'text', nullable: true })
   checkpointExplanation?: string | null;

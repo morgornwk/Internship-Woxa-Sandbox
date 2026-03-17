@@ -1,5 +1,9 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
 
@@ -13,16 +17,28 @@ export class MediaImagesService {
     private readonly aws: AwsS3StorageService,
     @InjectRepository(ImageAsset)
     private readonly repo: Repository<ImageAsset>,
-  ) { }
+  ) {}
 
   // ตรวจสอบ MIME type ของไฟล์ภาพที่อัพโหลดเข้ามา (รองรับ jpg/jpeg/png/webp)
   private validateImageMime(mime: string, originalName?: string) {
     const ext = (originalName ?? '').split('.').pop()?.toLowerCase();
-    const allowMime = ['image/jpeg', 'image/png', 'image/jpg', 'image/pjpeg', 'image/webp', 'image/svg+xml'];
+    const allowMime = [
+      'image/jpeg',
+      'image/png',
+      'image/jpg',
+      'image/pjpeg',
+      'image/webp',
+      'image/svg+xml',
+    ];
     const allowExt = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
 
     if (allowMime.includes((mime ?? '').toLowerCase())) return;
-    if ((mime === 'application/octet-stream' || !mime) && ext && allowExt.includes(ext)) return;
+    if (
+      (mime === 'application/octet-stream' || !mime) &&
+      ext &&
+      allowExt.includes(ext)
+    )
+      return;
 
     throw new BadRequestException('invalid image mime type');
   }
@@ -33,7 +49,9 @@ export class MediaImagesService {
 
     this.validateImageMime(file.mimetype, file.originalname);
 
-    const maxSize = Number(process.env.IMAGE_MAX_SIZE_BYTES ?? 30 * 1024 * 1024); // 30MB by default
+    const maxSize = Number(
+      process.env.IMAGE_MAX_SIZE_BYTES ?? 30 * 1024 * 1024,
+    ); // 30MB by default
     if (file.size > maxSize) {
       throw new BadRequestException('file too large');
     }
@@ -83,7 +101,9 @@ export class MediaImagesService {
     if (!asset) throw new NotFoundException('image asset not found');
 
     // ถ้า publicUrl มีอยู่แล้วก็ใช้เลย ถ้าไม่ก็สร้างจาก storage key และ bucket
-    const url = asset.publicUrl ?? this.aws.buildPublicUrl(asset.storageBucket, asset.storageKey);
+    const url =
+      asset.publicUrl ??
+      this.aws.buildPublicUrl(asset.storageBucket, asset.storageKey);
 
     return {
       image_id: asset.id,
@@ -102,7 +122,10 @@ export class MediaImagesService {
     if (!asset) throw new NotFoundException('image asset not found');
 
     if (dto.mime_type !== undefined) {
-      this.validateImageMime(dto.mime_type, dto.original_filename ?? asset.originalFilename);
+      this.validateImageMime(
+        dto.mime_type,
+        dto.original_filename ?? asset.originalFilename,
+      );
       asset.mimeType = dto.mime_type;
     }
 
@@ -114,7 +137,9 @@ export class MediaImagesService {
 
     return {
       image_id: saved.id,
-      url: saved.publicUrl ?? this.aws.buildPublicUrl(saved.storageBucket, saved.storageKey),
+      url:
+        saved.publicUrl ??
+        this.aws.buildPublicUrl(saved.storageBucket, saved.storageKey),
       status: saved.status,
       original_filename: saved.originalFilename,
       mime_type: saved.mimeType,
@@ -130,5 +155,4 @@ export class MediaImagesService {
     await this.repo.remove(asset);
     return { deleted: true };
   }
-
 }

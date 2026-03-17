@@ -50,7 +50,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      docExpansion: 'none',      // ปิด expand ทั้งหมด
+      docExpansion: 'none', // ปิด expand ทั้งหมด
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,

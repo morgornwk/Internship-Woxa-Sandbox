@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Chapter } from './entities/chapter.entity';
@@ -14,16 +18,20 @@ export class ChaptersService {
     @InjectRepository(Level)
     private readonly levelRepository: Repository<Level>,
     private readonly coursesService: CoursesService,
-  ) { }
+  ) {}
 
   // Create a new chapter
-  async create(createChapterDto: CreateChapterDto): Promise<ChapterResponseDto> {
+  async create(
+    createChapterDto: CreateChapterDto,
+  ): Promise<ChapterResponseDto> {
     const level = await this.levelRepository.findOne({
       where: { level_id: createChapterDto.level_id },
     });
 
     if (!level) {
-      throw new NotFoundException(`Level with ID ${createChapterDto.level_id} not found`);
+      throw new NotFoundException(
+        `Level with ID ${createChapterDto.level_id} not found`,
+      );
     }
 
     // ถ้าไม่ได้ระบุ orderIndex มา ให้กำหนดค่า orderIndex เป็นค่าที่มากที่สุดในระดับนั้น + 1 เพื่อให้บทใหม่อยู่ท้ายสุด
@@ -31,14 +39,17 @@ export class ChaptersService {
     if (orderIndex === undefined) {
       const maxOrderResult = await this.chapterRepository
         .createQueryBuilder('chapter')
-        .where('chapter.level_id = :levelId', { levelId: createChapterDto.level_id })
+        .where('chapter.level_id = :levelId', {
+          levelId: createChapterDto.level_id,
+        })
         .select('MAX(chapter.order_index)', 'maxOrder') // column ในฐานข้อมูลชื่อ order_index
         .getRawOne();
 
       // ถ้าไม่มีบทใดในระดับนี้เลย ให้เริ่มต้น orderIndex ที่ 0
-      const maxOrder = maxOrderResult && maxOrderResult.maxOrder !== null
-        ? Number(maxOrderResult.maxOrder)
-        : -1;
+      const maxOrder =
+        maxOrderResult && maxOrderResult.maxOrder !== null
+          ? Number(maxOrderResult.maxOrder)
+          : -1;
 
       orderIndex = maxOrder + 1;
     }
@@ -76,23 +87,33 @@ export class ChaptersService {
 
   // ค้นหาบทโดยใช้ ID
   async findOne(id: number): Promise<ChapterResponseDto> {
-    const chapter = await this.chapterRepository.findOne({ where: { chapter_id: id } });
-    if (!chapter) throw new NotFoundException(`Chapter with ID ${id} not found`);
+    const chapter = await this.chapterRepository.findOne({
+      where: { chapter_id: id },
+    });
+    if (!chapter)
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
 
     return this.toResponseDto(chapter);
   }
 
   async findOneStudent(id: number): Promise<ChapterResponseDto> {
-    const chapter = await this.chapterRepository.findOne({ where: { chapter_id: id } });
-    if (!chapter) throw new NotFoundException(`Chapter with ID ${id} not found`);
+    const chapter = await this.chapterRepository.findOne({
+      where: { chapter_id: id },
+    });
+    if (!chapter)
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
 
-    if (!chapter.isPublished) throw new NotFoundException(`Chapter with ID ${id} not found`);
+    if (!chapter.isPublished)
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
 
     return this.toResponseDto(chapter);
   }
 
   // Update chapter by ID
-  async update(id: number, updateChapterDto: UpdateChapterDto): Promise<ChapterResponseDto> {
+  async update(
+    id: number,
+    updateChapterDto: UpdateChapterDto,
+  ): Promise<ChapterResponseDto> {
     const chapter = await this.chapterRepository.findOne({
       where: { chapter_id: id },
     });
@@ -117,7 +138,9 @@ export class ChaptersService {
 
     const saved = await this.chapterRepository.save(chapter);
     // ล้าง cache โครงสร้างคอร์ส
-    const level = await this.levelRepository.findOne({ where: { level_id: chapter.levelId } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: chapter.levelId },
+    });
     if (level) {
       await this.coursesService.invalidateCourseCaches(level.course_id);
     }
@@ -137,7 +160,9 @@ export class ChaptersService {
     const levelId = chapter.levelId;
     await this.chapterRepository.remove(chapter);
     // ล้าง cache โครงสร้างคอร์ส
-    const level = await this.levelRepository.findOne({ where: { level_id: levelId } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: levelId },
+    });
     if (level) {
       await this.coursesService.invalidateCourseCaches(level.course_id);
     }
@@ -145,7 +170,10 @@ export class ChaptersService {
   }
 
   // จัดลำดับบทภายในระดับ
-  async reorder(levelId: number, chapterIds: number[]): Promise<ChapterResponseDto[]> {
+  async reorder(
+    levelId: number,
+    chapterIds: number[],
+  ): Promise<ChapterResponseDto[]> {
     const chapters = await this.chapterRepository.find({
       where: { levelId },
     });
@@ -170,7 +198,9 @@ export class ChaptersService {
 
     for (const id of chapterIds) {
       if (!chapterMap.has(id)) {
-        throw new BadRequestException(`Chapter ID ${id} does not belong to level ${levelId}`);
+        throw new BadRequestException(
+          `Chapter ID ${id} does not belong to level ${levelId}`,
+        );
       }
     }
 
@@ -194,7 +224,9 @@ export class ChaptersService {
     }
 
     // ล้าง cache โครงสร้างคอร์ส
-    const level = await this.levelRepository.findOne({ where: { level_id: levelId } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: levelId },
+    });
     if (level) {
       await this.coursesService.invalidateCourseCaches(level.course_id);
     }
@@ -231,7 +263,9 @@ export class ChaptersService {
     return chapters.map((c) => this.toResponseDto(c));
   }
 
-  private async findAllInternal(opts: { onlyPublished: boolean }): Promise<ChapterResponseDto[]> {
+  private async findAllInternal(opts: {
+    onlyPublished: boolean;
+  }): Promise<ChapterResponseDto[]> {
     const where: any = {};
     if (opts.onlyPublished) where.isPublished = true;
 

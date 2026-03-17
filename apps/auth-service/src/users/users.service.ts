@@ -1,9 +1,20 @@
-import { Injectable, ConflictException, NotFoundException, BadRequestException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+  BadRequestException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import * as argon2 from 'argon2';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 
 import { User } from './entities/user.entity';
@@ -43,7 +54,8 @@ export class UsersService {
     'https://cdn.skllracademy.com/images/a9462080-9d1b-43a1-9910-1a9bef7e3568',
   ] as const;
 
-  private readonly defaultAvatar = 'https://cdn.skllracademy.com/images/13e6581e-07b7-4d41-aa44-6de674a4e513';
+  private readonly defaultAvatar =
+    'https://cdn.skllracademy.com/images/13e6581e-07b7-4d41-aa44-6de674a4e513';
 
   constructor(
     @InjectRepository(User, 'auth')
@@ -90,7 +102,7 @@ export class UsersService {
     // const user = this.userRepo.create(dto);
     const user = this.userRepo.create({
       ...dto,
-      isVerified: (dto as any).isVerified ?? false,
+      isVerified: dto.isVerified ?? false,
     });
 
     return this.userRepo.save(user);
@@ -121,8 +133,8 @@ export class UsersService {
     const streakMap = new Map(streaks.map((s) => [s.userId, s.currentStreak]));
 
     // Get admin invitations for expiry info
-    const adminUsers = users.filter(u => u.role === UserRole.ADMIN);
-    const adminUserIds = adminUsers.map(u => u.id);
+    const adminUsers = users.filter((u) => u.role === UserRole.ADMIN);
+    const adminUserIds = adminUsers.map((u) => u.id);
 
     const invitations = await this.adminInvitationRepo.find({
       where: { userId: In(adminUserIds) },
@@ -130,8 +142,8 @@ export class UsersService {
     });
 
     // Group invitations by userId and get latest for each admin
-    const latestInvitations = new Map();
-    invitations.forEach(invitation => {
+    const latestInvitations = new Map<string, AdminInvitation>();
+    invitations.forEach((invitation) => {
       if (!latestInvitations.has(invitation.userId)) {
         latestInvitations.set(invitation.userId, invitation);
       }
@@ -152,8 +164,13 @@ export class UsersService {
 
         if (latestInvitation?.expiresAt) {
           expiresAt = latestInvitation.expiresAt.toISOString();
-          const bangkokExpiresAt = new Date(latestInvitation.expiresAt.getTime() + bangkokOffset);
-          hoursUntilExpiry = Math.floor((bangkokExpiresAt.getTime() - bangkokNow.getTime()) / (1000 * 60 * 60));
+          const bangkokExpiresAt = new Date(
+            latestInvitation.expiresAt.getTime() + bangkokOffset,
+          );
+          hoursUntilExpiry = Math.floor(
+            (bangkokExpiresAt.getTime() - bangkokNow.getTime()) /
+              (1000 * 60 * 60),
+          );
           if (hoursUntilExpiry < 0) hoursUntilExpiry = 0;
         }
       }
@@ -306,7 +323,7 @@ export class UsersService {
         lastName: profile.lastName,
         avatar: profile.avatar || this.defaultAvatar,
         isVerified: true,
-      } as any);
+      });
     }
 
     await this.authRepo.save(
@@ -392,7 +409,7 @@ export class UsersService {
     }
 
     // update database
-    user.avatar = await this.getAvatarPresignedUrl(mediaId);
+    user.avatar = this.getAvatarPresignedUrl(mediaId);
 
     await this.userRepo.save(user);
 
@@ -472,7 +489,6 @@ export class UsersService {
       .leftJoin('lesson.chapter', 'chapter')
       .leftJoin('chapter.level', 'level')
       .leftJoin('level.course', 'course')
-
 
       .where('lesson_progress.userId = :userId', { userId })
       .andWhere('chapter.is_published = true')
@@ -554,12 +570,12 @@ export class UsersService {
 
       .setParameter('userId', userId)
 
-      .getRawMany();
+      .getRawMany<Record<string, unknown>>();
     return result;
   }
 
   // ดึง URL สำหรับดาวน์โหลด avatar ของผู้ใช้ (ใช้เมื่อแอปต้องการแสดงรูปโปรไฟล์)
-  async getAvatarPresignedUrl(mediaId: string) {
+  getAvatarPresignedUrl(mediaId: string): string {
     const key = `profile/${mediaId}`;
     const presign_url = `https://${process.env.AWS_CLOUDFRONT_DOMAIN}/${key}`;
 

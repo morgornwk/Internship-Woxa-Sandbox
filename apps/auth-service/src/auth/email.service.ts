@@ -84,11 +84,14 @@ export class EmailService {
     // ── Resend ──────────────────────────────
     const resendKey = this.configService.get<string>('RESEND_API_KEY');
     this.isResendConfigured = !!resendKey;
-    this.resend = this.isResendConfigured ? new Resend(resendKey as string) : null;
+    this.resend = this.isResendConfigured
+      ? new Resend(resendKey as string)
+      : null;
 
     // ── From address ────────────────────────
     this.fromEmail =
-      this.configService.get<string>('MAIL_FROM') ?? 'no-reply@skllracademy.com';
+      this.configService.get<string>('MAIL_FROM') ??
+      'no-reply@skllracademy.com';
 
     // ── SMTP (primary transport) ─────────────
     const smtpHost =
@@ -96,8 +99,8 @@ export class EmailService {
       this.configService.get<string>('SMTP_HOST');
     const smtpPort = Number(
       this.configService.get<number>('EMAIL_PORT') ??
-      this.configService.get<number>('SMTP_PORT') ??
-      587,
+        this.configService.get<number>('SMTP_PORT') ??
+        587,
     );
     const smtpUser =
       this.configService.get<string>('EMAIL_USER') ??
@@ -109,11 +112,11 @@ export class EmailService {
     this.smtpConfigured = !!(smtpHost && smtpUser && smtpPass);
     this.transporter = this.smtpConfigured
       ? nodemailer.createTransport({
-        host: smtpHost as string,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: { user: smtpUser as string, pass: smtpPass as string },
-      })
+          host: smtpHost as string,
+          port: smtpPort,
+          secure: smtpPort === 465,
+          auth: { user: smtpUser as string, pass: smtpPass as string },
+        })
       : null;
   }
 
@@ -214,7 +217,8 @@ export class EmailService {
       ${emailFooter()}
     `);
 
-    const text = 'รหัสผ่านของคุณถูกเปลี่ยนเรียบร้อยแล้ว คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที';
+    const text =
+      'รหัสผ่านของคุณถูกเปลี่ยนเรียบร้อยแล้ว คุณสามารถเข้าสู่ระบบด้วยรหัสผ่านใหม่ได้ทันที';
     return this.sendEmail(to, subject, html, text);
   }
 
@@ -369,10 +373,18 @@ export class EmailService {
     // 1. Try SMTP first
     if (this.smtpConfigured && this.transporter) {
       try {
-        await this.transporter.sendMail({ from: this.fromEmail, to, subject, text, html });
+        await this.transporter.sendMail({
+          from: this.fromEmail,
+          to,
+          subject,
+          text,
+          html,
+        });
         return true;
       } catch (err) {
-        this.logger.error(`SMTP send failed to ${to}: ${(err as Error).message}`);
+        this.logger.error(
+          `SMTP send failed to ${to}: ${(err as Error).message}`,
+        );
       }
     }
 
@@ -380,7 +392,11 @@ export class EmailService {
     if (this.isResendConfigured && this.resend) {
       try {
         const result = await this.resend.emails.send({
-          from: this.fromEmail, to, subject, html, text,
+          from: this.fromEmail,
+          to,
+          subject,
+          html,
+          text,
         });
         if (result.error) {
           this.logger.error(`Resend failed to ${to}: ${result.error.message}`);
@@ -388,12 +404,16 @@ export class EmailService {
         }
         return true;
       } catch (err) {
-        this.logger.error(`Resend send failed to ${to}: ${(err as Error).message}`);
+        this.logger.error(
+          `Resend send failed to ${to}: ${(err as Error).message}`,
+        );
       }
     }
 
     // 3. No transport configured — log and return true (dev/preview mode)
-    this.logger.warn(`[Preview] Email to: ${to} | Subject: ${subject} | ${text}`);
+    this.logger.warn(
+      `[Preview] Email to: ${to} | Subject: ${subject} | ${text}`,
+    );
     return true;
   }
 }

@@ -50,7 +50,18 @@ import { Reward } from 'apps/reward-service/src/reward/entities/rewards.entity';
       useFactory: (config: ConfigService) => ({
         type: 'postgres',
         url: config.get<string>('COURSE_DATABASE_URL'),
-        entities: [Course, Level, Chapter, Lesson, Article, LessonProgress, UserStreak, UserXp, Quizs, QuizsCheckpoint],
+        entities: [
+          Course,
+          Level,
+          Chapter,
+          Lesson,
+          Article,
+          LessonProgress,
+          UserStreak,
+          UserXp,
+          Quizs,
+          QuizsCheckpoint,
+        ],
         synchronize: false,
       }),
     }),
@@ -85,4 +96,4 @@ import { Reward } from 'apps/reward-service/src/reward/entities/rewards.entity';
     },
   ],
 })
-export class AuthAppModule { }
+export class AuthAppModule {}

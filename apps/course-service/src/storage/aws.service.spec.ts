@@ -93,7 +93,13 @@ describe('AwsS3StorageService', () => {
       const svc = new AwsS3StorageService();
       sendMock.mockResolvedValue(undefined);
 
-      await svc.putObject('bucket1', 'images/x.png', Buffer.from('x'), 1, 'image/png');
+      await svc.putObject(
+        'bucket1',
+        'images/x.png',
+        Buffer.from('x'),
+        1,
+        'image/png',
+      );
 
       expect(sendMock).toHaveBeenCalledTimes(1);
     });
@@ -102,9 +108,9 @@ describe('AwsS3StorageService', () => {
       const svc = new AwsS3StorageService();
       sendMock.mockRejectedValue(new Error('boom'));
 
-      await expect(svc.putObject('bucket1', 'images/x.png', Buffer.from('x'))).rejects.toBeInstanceOf(
-        InternalServerErrorException,
-      );
+      await expect(
+        svc.putObject('bucket1', 'images/x.png', Buffer.from('x')),
+      ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
   });
 
@@ -122,7 +128,12 @@ describe('AwsS3StorageService', () => {
       const svc = new AwsS3StorageService();
       getSignedUrlMock.mockResolvedValue('https://signed');
 
-      const url = await svc.presignPut('bucket1', 'videos/x.mp4', 'video/mp4', 60);
+      const url = await svc.presignPut(
+        'bucket1',
+        'videos/x.mp4',
+        'video/mp4',
+        60,
+      );
       expect(url).toBe('https://signed');
       expect(getSignedUrlMock).toHaveBeenCalled();
     });

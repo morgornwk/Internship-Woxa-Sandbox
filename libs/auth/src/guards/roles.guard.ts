@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { UserRole } from '@common/enums';
 import { ROLES_KEY } from '../decorators/roles.decorator';
@@ -6,7 +11,7 @@ import type { AuthUser } from '../types/auth-user.type';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) { }
+  constructor(private readonly reflector: Reflector) {}
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest<{
@@ -38,9 +43,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const hasPermission = requiredRoles.some(
-      (role) => user.role === role,
-    );
+    const hasPermission = requiredRoles.some((role) => user.role === role);
 
     if (!hasPermission) {
       throw new UnauthorizedException('Insufficient role');

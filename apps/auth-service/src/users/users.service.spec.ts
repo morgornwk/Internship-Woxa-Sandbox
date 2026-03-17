@@ -12,12 +12,21 @@ jest.mock('@aws-sdk/client-s3', () => ({
   DeleteObjectCommand: jest.fn().mockImplementation((input) => ({ input })),
 }));
 
-import { BadRequestException, ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import * as argon2 from 'argon2';
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+} from '@aws-sdk/client-s3';
 
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
@@ -95,9 +104,18 @@ describe('UsersService', () => {
             save: jest.fn(async (a) => a),
           },
         },
-        { provide: getRepositoryToken(Course, 'course'), useValue: { findOne: jest.fn() } },
-        { provide: getRepositoryToken(UserXp, 'course'), useValue: { findOne: jest.fn() } },
-        { provide: getRepositoryToken(UserStreak, 'course'), useValue: { findOne: jest.fn() } },
+        {
+          provide: getRepositoryToken(Course, 'course'),
+          useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(UserXp, 'course'),
+          useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(UserStreak, 'course'),
+          useValue: { findOne: jest.fn() },
+        },
         {
           provide: getRepositoryToken(LessonProgress, 'course'),
           useValue: {
@@ -140,11 +158,13 @@ describe('UsersService', () => {
     const module: TestingModule = await buildModule();
     service = module.get(UsersService);
 
-    userRepo = module.get(getRepositoryToken(User, 'auth')) as RepoMock;
-    authRepo = module.get(getRepositoryToken(AuthAccount, 'auth')) as RepoMock;
-    userXpRepo = module.get(getRepositoryToken(UserXp, 'course')) as RepoMock;
-    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course')) as RepoMock;
-    completeCourseRepo = module.get(getRepositoryToken(LessonProgress, 'course')) as any;
+    userRepo = module.get(getRepositoryToken(User, 'auth'));
+    authRepo = module.get(getRepositoryToken(AuthAccount, 'auth'));
+    userXpRepo = module.get(getRepositoryToken(UserXp, 'course'));
+    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course'));
+    completeCourseRepo = module.get(
+      getRepositoryToken(LessonProgress, 'course'),
+    );
 
     // Initialize all mocks
     userRepo.findOne = jest.fn();
@@ -152,13 +172,13 @@ describe('UsersService', () => {
     userRepo.create = jest.fn();
     userRepo.save = jest.fn();
     userRepo.delete = jest.fn();
-    
+
     authRepo.findOne = jest.fn();
     authRepo.save = jest.fn();
-    
+
     userXpRepo.findOne = jest.fn();
     userStreakRepo.findOne = jest.fn();
-    
+
     completeCourseRepo.find = jest.fn();
     completeCourseRepo.createQueryBuilder = jest.fn();
   });
@@ -176,9 +196,9 @@ describe('UsersService', () => {
   describe('create', () => {
     it('throws ConflictException when email already exists', async () => {
       userRepo.findOne!.mockResolvedValue(makeUser());
-      await expect(service.create({ email: 'test@example.com' } as any)).rejects.toBeInstanceOf(
-        ConflictException,
-      );
+      await expect(
+        service.create({ email: 'test@example.com' } as any),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('creates user with default isVerified=false', async () => {
@@ -196,7 +216,10 @@ describe('UsersService', () => {
       userRepo.findOne!.mockResolvedValue(null);
       userRepo.save!.mockResolvedValue(makeUser({ isVerified: true }));
 
-      const user = await service.create({ email: 'x@example.com', isVerified: true } as any);
+      const user = await service.create({
+        email: 'x@example.com',
+        isVerified: true,
+      } as any);
       expect(user.isVerified).toBe(true);
     });
   });
@@ -204,18 +227,24 @@ describe('UsersService', () => {
   describe('findById', () => {
     it('throws NotFoundException when missing', async () => {
       userRepo.findOne!.mockResolvedValue(null);
-      await expect(service.findById('u1')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findById('u1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns user when found', async () => {
       userRepo.findOne!.mockResolvedValue(makeUser({ id: 'u1' }));
-      await expect(service.findById('u1')).resolves.toEqual(expect.objectContaining({ id: 'u1' }));
+      await expect(service.findById('u1')).resolves.toEqual(
+        expect.objectContaining({ id: 'u1' }),
+      );
     });
   });
 
   describe('update / delete / updateRole', () => {
     it('updates user and saves', async () => {
-      userRepo.findOne!.mockResolvedValue(makeUser({ id: 'u1', firstName: 'A' }));
+      userRepo.findOne!.mockResolvedValue(
+        makeUser({ id: 'u1', firstName: 'A' }),
+      );
       userRepo.save!.mockImplementation(async (u) => u);
 
       const result = await service.update('u1', { firstName: 'B' } as any);
@@ -225,11 +254,15 @@ describe('UsersService', () => {
 
     it('delete throws NotFoundException when affected=0', async () => {
       userRepo.delete!.mockResolvedValue({ affected: 0 });
-      await expect(service.delete('u1')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.delete('u1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('updateRole sets role and saves', async () => {
-      userRepo.findOne!.mockResolvedValue(makeUser({ id: 'u1', role: 'STUDENT' as any }));
+      userRepo.findOne!.mockResolvedValue(
+        makeUser({ id: 'u1', role: 'STUDENT' as any }),
+      );
       userRepo.save!.mockImplementation(async (u) => u);
 
       const result = await service.updateRole('u1', { role: 'ADMIN' } as any);
@@ -240,7 +273,10 @@ describe('UsersService', () => {
   describe('auth accounts', () => {
     it('findAuthAccountByProviderAndEmail queries with relations', async () => {
       authRepo.findOne!.mockResolvedValue(null);
-      await service.findAuthAccountByProviderAndEmail(AuthProvider.LOCAL, 'a@b.com');
+      await service.findAuthAccountByProviderAndEmail(
+        AuthProvider.LOCAL,
+        'a@b.com',
+      );
       expect(authRepo.findOne).toHaveBeenCalledWith({
         where: { provider: AuthProvider.LOCAL, email: 'a@b.com' },
         relations: ['user'],
@@ -251,7 +287,11 @@ describe('UsersService', () => {
       const user = makeUser({ id: 'u1' });
       authRepo.save!.mockImplementation(async (a) => a);
 
-      const account = await service.createEmailAuthAccount(user, 'a@b.com', 'pass');
+      const account = await service.createEmailAuthAccount(
+        user,
+        'a@b.com',
+        'pass',
+      );
 
       expect(argon2.hash).toHaveBeenCalledWith('pass');
       expect(account).toEqual(
@@ -265,14 +305,16 @@ describe('UsersService', () => {
     });
 
     it('verifyPasswordHash returns false on null hash', async () => {
-      await expect(service.verifyPasswordHash(null, 'pass')).resolves.toBe(false);
+      await expect(service.verifyPasswordHash(null, 'pass')).resolves.toBe(
+        false,
+      );
     });
   });
 
   describe('findOrCreateFromGoogle', () => {
     it('returns existing Google user when found', async () => {
-      authRepo.findOne!
-        .mockResolvedValueOnce({ user: makeUser({ id: 'u-google' }) })
+      authRepo
+        .findOne!.mockResolvedValueOnce({ user: makeUser({ id: 'u-google' }) })
         .mockResolvedValueOnce(null);
 
       const user = await service.findOrCreateFromGoogle({
@@ -284,11 +326,11 @@ describe('UsersService', () => {
     });
 
     it('creates user when missing and saves Google account', async () => {
-      authRepo.findOne!
-        .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(null);
+      authRepo.findOne!.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
       userRepo.findOne!.mockResolvedValue(null);
-      userRepo.save!.mockResolvedValue(makeUser({ id: 'u-new', email: 'g@example.com', isVerified: true }));
+      userRepo.save!.mockResolvedValue(
+        makeUser({ id: 'u-new', email: 'g@example.com', isVerified: true }),
+      );
 
       const user = await service.findOrCreateFromGoogle({
         googleId: 'g1',
@@ -309,24 +351,32 @@ describe('UsersService', () => {
     });
 
     it('uploadAvatar throws when file missing', async () => {
-      await expect(service.uploadAvatar('u1', undefined as any)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.uploadAvatar('u1', undefined as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('uploadAvatar throws when file type invalid', async () => {
       await expect(
-        service.uploadAvatar('u1', { buffer: Buffer.from('x'), mimetype: 'image/gif' } as any),
+        service.uploadAvatar('u1', {
+          buffer: Buffer.from('x'),
+          mimetype: 'image/gif',
+        } as any),
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('uploadAvatar throws InternalServerErrorException when S3 upload fails', async () => {
-      userRepo.findOne!.mockResolvedValue(makeUser({ id: 'u1', avatar: undefined }));
+      userRepo.findOne!.mockResolvedValue(
+        makeUser({ id: 'u1', avatar: undefined }),
+      );
       const s3 = (S3Client as unknown as jest.Mock).mock.results.at(-1)!.value;
       s3.send.mockRejectedValueOnce(new Error('fail'));
 
       await expect(
-        service.uploadAvatar('u1', { buffer: Buffer.from('x'), mimetype: 'image/png' } as any),
+        service.uploadAvatar('u1', {
+          buffer: Buffer.from('x'),
+          mimetype: 'image/png',
+        } as any),
       ).rejects.toBeInstanceOf(InternalServerErrorException);
     });
 
@@ -400,7 +450,9 @@ describe('UsersService', () => {
           },
         ]),
       };
-      completeCourseRepo.createQueryBuilder = jest.fn().mockReturnValue(mockQueryBuilder as any);
+      completeCourseRepo.createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(mockQueryBuilder as any);
 
       const result = await service.getAllCompleteCourse('u1');
       expect(result[0]).toEqual(

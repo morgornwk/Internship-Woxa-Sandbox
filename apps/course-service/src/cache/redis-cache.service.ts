@@ -115,7 +115,11 @@ export class RedisCacheService implements OnModuleDestroy {
     }
   }
 
-  async wrap<T>(key: string, ttlSeconds: number, factory: () => Promise<T>): Promise<T> {
+  async wrap<T>(
+    key: string,
+    ttlSeconds: number,
+    factory: () => Promise<T>,
+  ): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached !== null) {
       return cached;
@@ -176,7 +180,10 @@ export class RedisCacheService implements OnModuleDestroy {
   }
 
   private async initializeClient(): Promise<Redis | null> {
-    const redisEnabled = this.configService.get<string>('REDIS_ENABLED')?.trim().toLowerCase();
+    const redisEnabled = this.configService
+      .get<string>('REDIS_ENABLED')
+      ?.trim()
+      .toLowerCase();
     if (redisEnabled === 'false') {
       return null;
     }
@@ -244,7 +251,9 @@ export class RedisCacheService implements OnModuleDestroy {
 
     this.hasLoggedUnavailable = true;
     const message = error instanceof Error ? error.message : 'unknown error';
-    this.logger.warn(`Redis cache unavailable, falling back to database reads: ${message}`);
+    this.logger.warn(
+      `Redis cache unavailable, falling back to database reads: ${message}`,
+    );
   }
 
   private logMissingConfigOnce(reason?: string): void {
@@ -260,7 +269,10 @@ export class RedisCacheService implements OnModuleDestroy {
   }
 
   private logDebug(message: string): void {
-    if (this.configService.get<string>('CACHE_DEBUG')?.trim().toLowerCase() !== 'true') {
+    if (
+      this.configService.get<string>('CACHE_DEBUG')?.trim().toLowerCase() !==
+      'true'
+    ) {
       return;
     }
 

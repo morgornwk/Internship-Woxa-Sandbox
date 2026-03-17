@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull, In } from 'typeorm';
 import { Notification } from './entities/notification.entity';
@@ -10,7 +14,7 @@ export class NotificationsService {
     @InjectRepository(Notification)
     private readonly notificationRepo: Repository<Notification>,
     private readonly announcementsService: AnnouncementsService,
-  ) { }
+  ) {}
 
   private assertUserId(userId: string) {
     if (!userId) throw new UnauthorizedException();
@@ -74,15 +78,12 @@ export class NotificationsService {
     );
   }
 
-  // ซิงค์ประกาศที่ยังไม่หมดอายุจาก AnnouncementsService เข้าสู่ตาราง Notifications ของผู้ใช้แต่ละคน 
+  // ซิงค์ประกาศที่ยังไม่หมดอายุจาก AnnouncementsService เข้าสู่ตาราง Notifications ของผู้ใช้แต่ละคน
   // โดยจะเพิ่มการแจ้งเตือนใหม่สำหรับประกาศที่ยังไม่มีในระบบ และลบการแจ้งเตือนที่เกี่ยวข้องกับประกาศที่หมดอายุไปแล้ว
   private async syncAnnouncements(userId: string) {
-    const activeAnnouncements =
-      await this.announcementsService.findActive();
+    const activeAnnouncements = await this.announcementsService.findActive();
 
-    const activeIds = activeAnnouncements.map((a) =>
-      String(a.announcement_id),
-    );
+    const activeIds = activeAnnouncements.map((a) => String(a.announcement_id));
 
     const existing = await this.notificationRepo
       .createQueryBuilder('n')
@@ -125,8 +126,7 @@ export class NotificationsService {
     // ลบการแจ้งเตือนที่เกี่ยวข้องกับประกาศที่หมดอายุไปแล้ว
     const staleIds = existing
       .filter(
-        (n) =>
-          !activeIds.includes(String(n.metadata?.announcementId ?? '')),
+        (n) => !activeIds.includes(String(n.metadata?.announcementId ?? '')),
       )
       .map((n) => n.notificationId);
 

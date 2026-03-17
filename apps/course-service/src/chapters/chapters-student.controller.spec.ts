@@ -28,19 +28,27 @@ describe('ChaptersStudentController', () => {
   });
 
   it('findByLevel delegates to ChaptersService.findByLevelStudent', async () => {
-    chaptersService.findByLevelStudent.mockResolvedValue([{ chapter_id: 1 } as any]);
-    await expect(controller.findByLevel(10)).resolves.toEqual([{ chapter_id: 1 }]);
+    chaptersService.findByLevelStudent.mockResolvedValue([
+      { chapter_id: 1 } as any,
+    ]);
+    await expect(controller.findByLevel(10)).resolves.toEqual([
+      { chapter_id: 1 },
+    ]);
     expect(chaptersService.findByLevelStudent).toHaveBeenCalledWith(10);
   });
 
   it('findAll delegates to ChaptersService.findAllStudent', async () => {
-    chaptersService.findAllStudent.mockResolvedValue([{ chapter_id: 1 } as any]);
+    chaptersService.findAllStudent.mockResolvedValue([
+      { chapter_id: 1 } as any,
+    ]);
     await expect(controller.findAll()).resolves.toEqual([{ chapter_id: 1 }]);
     expect(chaptersService.findAllStudent).toHaveBeenCalledWith();
   });
 
   it('findOne delegates to ChaptersService.findOneStudent', async () => {
-    chaptersService.findOneStudent.mockResolvedValue({ chapter_id: 123 } as any);
+    chaptersService.findOneStudent.mockResolvedValue({
+      chapter_id: 123,
+    } as any);
     await expect(controller.findOne(123)).resolves.toEqual({ chapter_id: 123 });
     expect(chaptersService.findOneStudent).toHaveBeenCalledWith(123);
   });

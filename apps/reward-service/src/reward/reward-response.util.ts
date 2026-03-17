@@ -45,19 +45,6 @@ function formatBangkokTimestamp(value?: Date | string | null): string | null {
   return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
 }
 
-function formatDateToBangkokWallClock(date: Date): string | null {
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-
-  const parts = bangkokFormatter.formatToParts(date);
-  const getPart = (type: Intl.DateTimeFormatPartTypes) => {
-    return parts.find((part) => part.type === type)?.value ?? '';
-  };
-
-  return `${getPart('year')}-${getPart('month')}-${getPart('day')}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}.${pad(date.getUTCMilliseconds(), 3)}+07:00`;
-}
-
 function formatStoredTimestamp(value?: Date | string | null): string | null {
   return formatStoredRewardTimestamp(value);
 }

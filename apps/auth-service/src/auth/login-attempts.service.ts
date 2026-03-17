@@ -14,9 +14,10 @@ export class LoginAttemptsService {
   private static readonly MAX_FAILED_ATTEMPTS = 5;
   private static readonly LOCK_DURATION_MS = 60 * 1000; // 1 minute
 
-  constructor(@InjectRepository(LoginAttempt, 'auth')
+  constructor(
+    @InjectRepository(LoginAttempt, 'auth')
     private readonly loginAttemptRepository: Repository<LoginAttempt>,
-  ) { }
+  ) {}
 
   async getLockStatus(email: string): Promise<LockStatus> {
     const attempt = await this.loginAttemptRepository.findOne({

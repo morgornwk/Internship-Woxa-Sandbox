@@ -35,19 +35,25 @@ describe('UsersController', () => {
 
   it('getProfile delegates to getStudentProfile', async () => {
     usersService.getStudentProfile.mockResolvedValue({ id: 'u1' });
-    await expect(controller.getProfile('u1', 'Bearer t')).resolves.toEqual({ id: 'u1' });
+    await expect(controller.getProfile('u1', 'Bearer t')).resolves.toEqual({
+      id: 'u1',
+    });
   });
 
   it('getAllStudentCompleteCourse delegates to getAllCompleteCourse', async () => {
     usersService.getAllCompleteCourse.mockResolvedValue({ completeCourse: [] });
-    await expect(controller.getAllStudentCompleteCourse('u1')).resolves.toEqual({
-      completeCourse: [],
-    });
+    await expect(controller.getAllStudentCompleteCourse('u1')).resolves.toEqual(
+      {
+        completeCourse: [],
+      },
+    );
   });
 
   it('updateProfile delegates to update', async () => {
     usersService.update.mockResolvedValue({ id: 'u1' });
-    await expect(controller.updateProfile('u1', { firstName: 'A' } as any)).resolves.toEqual({
+    await expect(
+      controller.updateProfile('u1', { firstName: 'A' } as any),
+    ).resolves.toEqual({
       id: 'u1',
     });
   });
@@ -59,7 +65,9 @@ describe('UsersController', () => {
 
   it('uploadAvatar delegates to uploadAvatar', async () => {
     usersService.uploadAvatar.mockResolvedValue({ id: 'u1' });
-    await expect(controller.uploadAvatar('u1', { buffer: Buffer.from('x') } as any)).resolves.toEqual({
+    await expect(
+      controller.uploadAvatar('u1', { buffer: Buffer.from('x') } as any),
+    ).resolves.toEqual({
       id: 'u1',
     });
   });

@@ -1,4 +1,11 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 export enum AssetMediaType {
   IMAGE = 'image',
@@ -25,7 +32,12 @@ export class AssetMedia {
   @Column({ name: 'type', type: 'varchar', length: 10 })
   type: AssetMediaType;
 
-  @Column({ name: 'original_filename', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'original_filename',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   originalFilename?: string;
 
   @Column({ name: 'mime_type', type: 'varchar', length: 255 })
@@ -37,13 +49,23 @@ export class AssetMedia {
   @Column({ name: 'duration_seconds', type: 'integer', nullable: true })
   durationSeconds?: number;
 
-  @Column({ name: 'thumbnail_url', type: 'varchar', length: 2048, nullable: true })
+  @Column({
+    name: 'thumbnail_url',
+    type: 'varchar',
+    length: 2048,
+    nullable: true,
+  })
   thumbnailUrl?: string;
 
   @Column({ name: 'public_url', type: 'varchar', length: 2048, nullable: true })
   publicUrl?: string;
 
-  @Column({ name: 'status', type: 'varchar', length: 20, default: AssetMediaStatus.UPLOADING })
+  @Column({
+    name: 'status',
+    type: 'varchar',
+    length: 20,
+    default: AssetMediaStatus.UPLOADING,
+  })
   status: AssetMediaStatus;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })

@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 import { QuizsCheckpoint } from './checkpoint.entity';
 
@@ -48,7 +57,7 @@ export class QuizsResult {
   checkpoint: QuizsCheckpoint | null;
 
   @Column({ name: 'user_answer', type: 'jsonb', nullable: true })
-  userAnswer: any;
+  userAnswer: unknown;
 
   @Column({ name: 'is_correct', type: 'boolean', nullable: true })
   isCorrect: boolean | null;

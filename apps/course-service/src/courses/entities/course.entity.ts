@@ -1,10 +1,17 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  Index,
+} from 'typeorm';
 import { Level } from '../../levels/entities/level.entity';
 
 @Entity('courses')
 @Index('idx_courses_course_owner_id', ['course_ownerId'])
 @Index('idx_courses_is_published', ['isPublished'])
-
 export class Course {
   @PrimaryGeneratedColumn()
   course_id: number;
@@ -18,7 +25,12 @@ export class Course {
   @Column({ type: 'text', nullable: true })
   course_description?: string;
 
-  @Column({ name: 'course_image_url', type: 'varchar', length: 2048, nullable: true })
+  @Column({
+    name: 'course_image_url',
+    type: 'varchar',
+    length: 2048,
+    nullable: true,
+  })
   course_imageUrl?: string | null;
 
   @Column({ name: 'course_tags', type: 'text', array: true, nullable: true })

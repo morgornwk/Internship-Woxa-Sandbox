@@ -29,7 +29,7 @@ describe('WebsocketGateway', () => {
     (gateway as any).server = server;
 
     const socket = makeSocket({ handshake: { auth: {} } });
-    await gateway.handleConnection(socket as any);
+    await gateway.handleConnection(socket);
 
     expect(socket.disconnect).toHaveBeenCalled();
     expect(jwtService.verifyAsync).not.toHaveBeenCalled();
@@ -41,7 +41,7 @@ describe('WebsocketGateway', () => {
     jwtService.verifyAsync.mockRejectedValue(new Error('bad'));
 
     const socket = makeSocket();
-    await gateway.handleConnection(socket as any);
+    await gateway.handleConnection(socket);
 
     expect(socket.disconnect).toHaveBeenCalled();
   });
@@ -52,7 +52,7 @@ describe('WebsocketGateway', () => {
     jwtService.verifyAsync.mockResolvedValue({});
 
     const socket = makeSocket();
-    await gateway.handleConnection(socket as any);
+    await gateway.handleConnection(socket);
 
     expect(socket.disconnect).toHaveBeenCalled();
   });
@@ -63,7 +63,7 @@ describe('WebsocketGateway', () => {
     jwtService.verifyAsync.mockResolvedValue({ sub: 'u1' });
 
     const socket = makeSocket({ id: 'sock-1' });
-    await gateway.handleConnection(socket as any);
+    await gateway.handleConnection(socket);
 
     expect(server.emit).toHaveBeenCalledWith('user_online', 'u1');
   });
@@ -78,10 +78,10 @@ describe('WebsocketGateway', () => {
 
     // prime internal maps by calling handleConnection once
     const first = makeSocket({ id: 'old-sock' });
-    await gateway.handleConnection(first as any);
+    await gateway.handleConnection(first);
 
     const second = makeSocket({ id: 'new-sock' });
-    await gateway.handleConnection(second as any);
+    await gateway.handleConnection(second);
 
     expect(oldSocket.disconnect).toHaveBeenCalled();
   });
@@ -92,8 +92,8 @@ describe('WebsocketGateway', () => {
     jwtService.verifyAsync.mockResolvedValue({ sub: 'u1' });
 
     const socket = makeSocket({ id: 'sock-1' });
-    await gateway.handleConnection(socket as any);
-    await gateway.handleDisconnect(socket as any);
+    await gateway.handleConnection(socket);
+    await gateway.handleDisconnect(socket);
 
     expect(server.emit).toHaveBeenCalledWith('user_offline', 'u1');
   });

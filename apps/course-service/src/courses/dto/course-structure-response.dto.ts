@@ -17,7 +17,10 @@ export class LessonStructureDto {
   @ApiProperty({ description: 'Order index in chapter' })
   orderIndex: number;
 
-  @ApiProperty({ description: 'Whether the lesson is published', required: false })
+  @ApiProperty({
+    description: 'Whether the lesson is published',
+    required: false,
+  })
   isPublished?: boolean;
 
   @ApiProperty({ description: 'Checkpoint data when present', required: false })
@@ -35,10 +38,16 @@ export class ChapterStructureDto {
   @ApiProperty({ description: 'Order index in level' })
   orderIndex: number;
 
-  @ApiProperty({ description: 'Whether this chapter has at least one published lesson', required: false })
+  @ApiProperty({
+    description: 'Whether this chapter has at least one published lesson',
+    required: false,
+  })
   isPublished?: boolean;
 
-  @ApiProperty({ description: 'Lessons in this chapter', type: [LessonStructureDto] })
+  @ApiProperty({
+    description: 'Lessons in this chapter',
+    type: [LessonStructureDto],
+  })
   lessons: LessonStructureDto[];
 }
 
@@ -53,7 +62,10 @@ export class LevelStructureDto {
   @ApiProperty({ description: 'Order index in course' })
   orderIndex: number;
 
-  @ApiProperty({ description: 'Chapters in this level', type: [ChapterStructureDto] })
+  @ApiProperty({
+    description: 'Chapters in this level',
+    type: [ChapterStructureDto],
+  })
   chapters: ChapterStructureDto[];
 }
 
@@ -74,6 +86,9 @@ export class CourseStructureResponseDto {
   @ApiProperty({ description: 'Is the course published' })
   isPublished: boolean;
 
-  @ApiProperty({ description: 'Levels in this course', type: [LevelStructureDto] })
+  @ApiProperty({
+    description: 'Levels in this course',
+    type: [LevelStructureDto],
+  })
   course_levels: LevelStructureDto[];
 }

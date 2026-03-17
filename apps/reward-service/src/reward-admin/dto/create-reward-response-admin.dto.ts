@@ -1,5 +1,4 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { RedemptionType } from "../../reward/entities/rewards.entity";
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateRewardAdminResponseDto {
   @ApiProperty()

@@ -1,16 +1,12 @@
 import {
   Controller,
   Get,
-  Body,
-  Patch,
   Param,
-  Delete,
   ParseIntPipe,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { RewardService } from './reward.service';
-import { UpdateRewardDto } from './dto/update-reward.dto';
 import { CurrentUserId, JwtAuthGuard, Roles, RolesGuard } from '@auth';
 import {
   ApiBadRequestResponse,
@@ -23,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { UserRole } from '@common/enums';
 import { Reward } from './entities/rewards.entity';
+
 @Controller('rewards')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -35,9 +32,8 @@ export class RewardController {
   @ApiResponse({ status: 200, description: 'List of rewards' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Rewards not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  GetAllReward() {
+  getAllReward() {
     return this.rewardService.getAllReward();
   }
 
@@ -62,7 +58,7 @@ export class RewardController {
   @ApiNotFoundResponse({
     description: 'Reward not found',
   })
-  getDetailReward(
+  getRewardDetail(
     @Param('reward_id', ParseIntPipe) reward_id: number,
     @CurrentUserId() userId: string,
   ) {
@@ -93,9 +89,8 @@ export class RewardController {
   @ApiResponse({ status: 200, description: 'List of redeemed rewards' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Redemption not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  getReedeem(@CurrentUserId() userId: string) {
+  getRedeem(@CurrentUserId() userId: string) {
     return this.rewardService.getRedeem(userId);
   }
 
@@ -104,10 +99,9 @@ export class RewardController {
   @ApiResponse({ status: 200, description: 'Current user XP' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
   @ApiOperation({ summary: 'Get total XP for current user' })
-  getTotalXp(@CurrentUserId() userId: string) {
+  getUserTotalXp(@CurrentUserId() userId: string) {
     return this.rewardService.getUserTotalXp(userId);
   }
 
@@ -116,9 +110,8 @@ export class RewardController {
   @ApiResponse({ status: 200, description: 'Current user cupon count' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'User not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  getCountCupon(@CurrentUserId() userId: string) {
+  getCouponCount(@CurrentUserId() userId: string) {
     return this.rewardService.getRedeemCount(userId);
   }
 }

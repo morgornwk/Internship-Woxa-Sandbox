@@ -2,7 +2,9 @@ import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), 'apps/course-service/.env') });
+dotenv.config({
+  path: path.resolve(process.cwd(), 'apps/course-service/.env'),
+});
 dotenv.config({ path: path.resolve(process.cwd(), '.env'), override: false });
 
 export const CourseDataSource = new DataSource({

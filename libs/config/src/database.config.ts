@@ -4,8 +4,9 @@ import { ConfigService } from '@nestjs/config';
 export const getDatabaseConfig = (
   configService: ConfigService,
 ): TypeOrmModuleOptions => {
- const databaseUrl = configService.get<string>('DATABASE_URL');
-  const synchronize = configService.get<string>('TYPEORM_SYNCHRONIZE') === 'true';
+  const databaseUrl = configService.get<string>('DATABASE_URL');
+  const synchronize =
+    configService.get<string>('TYPEORM_SYNCHRONIZE') === 'true';
 
   return {
     type: 'postgres',

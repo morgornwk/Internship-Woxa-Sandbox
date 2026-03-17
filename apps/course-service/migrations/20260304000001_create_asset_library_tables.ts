@@ -1,13 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  Table,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
-export class CreateAssetLibraryTables20260304000001
-  implements MigrationInterface
-{
+export class CreateAssetLibraryTables20260304000001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -21,16 +14,63 @@ export class CreateAssetLibraryTables20260304000001
             generationStrategy: 'increment',
           },
           { name: 'admin_id', type: 'uuid', isNullable: false },
-          { name: 'original_filename', type: 'varchar', length: '255', isNullable: true },
-          { name: 'mime_type', type: 'varchar', length: '255', isNullable: false },
+          {
+            name: 'original_filename',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'mime_type',
+            type: 'varchar',
+            length: '255',
+            isNullable: false,
+          },
           { name: 'size_bytes', type: 'bigint', isNullable: false },
-          { name: 'storage_provider', type: 'varchar', length: '32', isNullable: false, default: "'s3'" },
-          { name: 'storage_bucket', type: 'varchar', length: '255', isNullable: false },
-          { name: 'storage_key', type: 'varchar', length: '1024', isNullable: false },
-          { name: 'public_url', type: 'varchar', length: '2048', isNullable: true },
-          { name: 'status', type: 'varchar', length: '20', isNullable: false, default: "'uploading'" },
-          { name: 'created_at', type: 'timestamptz', isNullable: false, default: 'now()' },
-          { name: 'updated_at', type: 'timestamptz', isNullable: false, default: 'now()' },
+          {
+            name: 'storage_provider',
+            type: 'varchar',
+            length: '32',
+            isNullable: false,
+            default: "'s3'",
+          },
+          {
+            name: 'storage_bucket',
+            type: 'varchar',
+            length: '255',
+            isNullable: false,
+          },
+          {
+            name: 'storage_key',
+            type: 'varchar',
+            length: '1024',
+            isNullable: false,
+          },
+          {
+            name: 'public_url',
+            type: 'varchar',
+            length: '2048',
+            isNullable: true,
+          },
+          {
+            name: 'status',
+            type: 'varchar',
+            length: '20',
+            isNullable: false,
+            default: "'uploading'",
+          },
+          {
+            name: 'created_at',
+            type: 'timestamptz',
+            isNullable: false,
+            default: 'now()',
+          },
+          {
+            name: 'updated_at',
+            type: 'timestamptz',
+            isNullable: false,
+            default: 'now()',
+          },
         ],
       }),
       true,
@@ -56,16 +96,63 @@ export class CreateAssetLibraryTables20260304000001
             generationStrategy: 'increment',
           },
           { name: 'admin_id', type: 'uuid', isNullable: false },
-          { name: 'original_filename', type: 'varchar', length: '255', isNullable: true },
-          { name: 'mime_type', type: 'varchar', length: '255', isNullable: false },
+          {
+            name: 'original_filename',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'mime_type',
+            type: 'varchar',
+            length: '255',
+            isNullable: false,
+          },
           { name: 'size_bytes', type: 'bigint', isNullable: false },
-          { name: 'storage_provider', type: 'varchar', length: '32', isNullable: false, default: "'s3'" },
-          { name: 'storage_bucket', type: 'varchar', length: '255', isNullable: false },
-          { name: 'storage_key', type: 'varchar', length: '1024', isNullable: false },
-          { name: 'public_url', type: 'varchar', length: '2048', isNullable: true },
-          { name: 'status', type: 'varchar', length: '20', isNullable: false, default: "'uploading'" },
-          { name: 'created_at', type: 'timestamptz', isNullable: false, default: 'now()' },
-          { name: 'updated_at', type: 'timestamptz', isNullable: false, default: 'now()' },
+          {
+            name: 'storage_provider',
+            type: 'varchar',
+            length: '32',
+            isNullable: false,
+            default: "'s3'",
+          },
+          {
+            name: 'storage_bucket',
+            type: 'varchar',
+            length: '255',
+            isNullable: false,
+          },
+          {
+            name: 'storage_key',
+            type: 'varchar',
+            length: '1024',
+            isNullable: false,
+          },
+          {
+            name: 'public_url',
+            type: 'varchar',
+            length: '2048',
+            isNullable: true,
+          },
+          {
+            name: 'status',
+            type: 'varchar',
+            length: '20',
+            isNullable: false,
+            default: "'uploading'",
+          },
+          {
+            name: 'created_at',
+            type: 'timestamptz',
+            isNullable: false,
+            default: 'now()',
+          },
+          {
+            name: 'updated_at',
+            type: 'timestamptz',
+            isNullable: false,
+            default: 'now()',
+          },
         ],
       }),
       true,

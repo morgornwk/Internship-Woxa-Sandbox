@@ -114,11 +114,13 @@ describe('AnalyticsService', () => {
     }).compile();
 
     service = module.get<AnalyticsService>(AnalyticsService);
-    userRepo = module.get(getRepositoryToken(User, 'auth')) as jest.Mocked<Repository<User>>;
-    lessonProgressRepo = module.get(getRepositoryToken(LessonProgress, 'course')) as jest.Mocked<Repository<LessonProgress>>;
-    courseRepo = module.get(getRepositoryToken(Course, 'course')) as jest.Mocked<Repository<Course>>;
-    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course')) as jest.Mocked<Repository<UserStreak>>;
-    websocketGateway = module.get(WebsocketGateway) as jest.Mocked<WebsocketGateway>;
+    userRepo = module.get(getRepositoryToken(User, 'auth'));
+    lessonProgressRepo = module.get(
+      getRepositoryToken(LessonProgress, 'course'),
+    );
+    courseRepo = module.get(getRepositoryToken(Course, 'course'));
+    userStreakRepo = module.get(getRepositoryToken(UserStreak, 'course'));
+    websocketGateway = module.get(WebsocketGateway);
   });
 
   describe('getDashboardAnalytics', () => {
@@ -164,9 +166,15 @@ describe('AnalyticsService', () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       };
 
-      lessonProgressRepo.createQueryBuilder.mockReturnValue(mockLessonQueryBuilder as any);
-      userRepo.createQueryBuilder.mockReturnValue(mockLessonQueryBuilder as any);
-      userStreakRepo.createQueryBuilder.mockReturnValue(mockStreakQueryBuilder as any);
+      lessonProgressRepo.createQueryBuilder.mockReturnValue(
+        mockLessonQueryBuilder as any,
+      );
+      userRepo.createQueryBuilder.mockReturnValue(
+        mockLessonQueryBuilder as any,
+      );
+      userStreakRepo.createQueryBuilder.mockReturnValue(
+        mockStreakQueryBuilder as any,
+      );
 
       const result = await service.getDashboardAnalytics(mockAuthUser);
 
@@ -199,7 +207,9 @@ describe('AnalyticsService', () => {
         getRawMany: jest.fn().mockResolvedValue([]),
       };
 
-      lessonProgressRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      lessonProgressRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
 
       const result = await service.getDashboardAnalytics(adminUser);
 
@@ -217,7 +227,9 @@ describe('AnalyticsService', () => {
         getRawOne: jest.fn().mockResolvedValue({ count: '45' }),
       };
 
-      userStreakRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      userStreakRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
 
       const result = await service['getActiveUsersInLast7Days']();
 
@@ -250,8 +262,12 @@ describe('AnalyticsService', () => {
       // Mock other required methods
       courseRepo.count.mockResolvedValue(10);
       jest.spyOn(service as any, 'getUsersByTimeRange').mockResolvedValue([]);
-      jest.spyOn(service as any, 'getAdminStatusSummary').mockResolvedValue({ total: 5, active: 4, invited: 1 });
-      jest.spyOn(service as any, 'getStreaksOverview').mockResolvedValue({ buckets: [] });
+      jest
+        .spyOn(service as any, 'getAdminStatusSummary')
+        .mockResolvedValue({ total: 5, active: 4, invited: 1 });
+      jest
+        .spyOn(service as any, 'getStreaksOverview')
+        .mockResolvedValue({ buckets: [] });
 
       const result = await service['getOwnerOverview']();
 
@@ -271,7 +287,9 @@ describe('AnalyticsService', () => {
         getRawOne: jest.fn().mockResolvedValue({ count: '10' }),
       };
 
-      lessonProgressRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      lessonProgressRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
 
       const result = await service['getDailyActiveLearnerCount']();
 
@@ -293,7 +311,9 @@ describe('AnalyticsService', () => {
         }),
       };
 
-      userStreakRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      userStreakRepo.createQueryBuilder.mockReturnValue(
+        mockQueryBuilder as any,
+      );
 
       const result = await service['getStreaksOverview']();
 

@@ -1,7 +1,31 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { LessonsService } from './lessons.service';
-import { CreateLessonDto, UpdateLessonDto, LessonResponseDto, ReorderLessonsDto } from './dto/lesson';
+import {
+  CreateLessonDto,
+  UpdateLessonDto,
+  LessonResponseDto,
+  ReorderLessonsDto,
+} from './dto/lesson';
 import { JwtAuthGuard, RolesGuard, Roles } from '@auth';
 import { UserRole } from '@common/enums/user-role.enum';
 
@@ -11,7 +35,7 @@ import { UserRole } from '@common/enums/user-role.enum';
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin/lesson')
 export class LessonsAdminController {
-  constructor(private readonly lessonsService: LessonsService) { }
+  constructor(private readonly lessonsService: LessonsService) {}
 
   @Post()
   @ApiOperation({ summary: 'สร้างบทเรียนใหม่' })
@@ -27,8 +51,8 @@ export class LessonsAdminController {
           lesson_type: 'article',
           orderIndex: 0,
           lesson_ImageUrl: 'https://cdn.skillacademy.com/images/abc123.jpg',
-          lesson_videoUrl: null
-        }
+          lesson_videoUrl: null,
+        },
       },
       video: {
         summary: 'ตัวอย่าง: บทเรียนแบบวิดีโอ',
@@ -39,8 +63,8 @@ export class LessonsAdminController {
           lesson_type: 'video',
           orderIndex: 1,
           lesson_ImageUrl: 'https://cdn.skillacademy.com/images/def456.jpg',
-          lesson_videoUrl: 'https://cdn.skillacademy.com/videos/abc123.mp4'
-        }
+          lesson_videoUrl: 'https://cdn.skillacademy.com/videos/abc123.mp4',
+        },
       },
       quiz: {
         summary: 'ตัวอย่าง: บทเรียนแบบแบบทดสอบ',
@@ -51,8 +75,8 @@ export class LessonsAdminController {
           lesson_type: 'quiz',
           orderIndex: 2,
           lesson_ImageUrl: 'https://cdn.skillacademy.com/images/ghi789.jpg',
-          lesson_videoUrl: null
-        }
+          lesson_videoUrl: null,
+        },
       },
       checkpoint: {
         summary: 'ตัวอย่าง: บทเรียนแบบจุดตรวจสอบ',
@@ -63,12 +87,16 @@ export class LessonsAdminController {
           lesson_type: 'checkpoint',
           orderIndex: 3,
           lesson_ImageUrl: 'https://cdn.skillacademy.com/images/jkl012.jpg',
-          lesson_videoUrl: null
-        }
-      }
-    }
+          lesson_videoUrl: null,
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 201, description: 'Lesson created successfully', type: LessonResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Lesson created successfully',
+    type: LessonResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Chapter not found' })
@@ -80,18 +108,30 @@ export class LessonsAdminController {
   @Get()
   @ApiOperation({ summary: 'ดึงบทเรียนทั้งหมดสำหรับบท' })
   @ApiQuery({ name: 'chapterId', required: true, type: Number })
-  @ApiResponse({ status: 200, description: 'List of lessons for the specified chapter', type: LessonResponseDto, isArray: true })
+  @ApiResponse({
+    status: 200,
+    description: 'List of lessons for the specified chapter',
+    type: LessonResponseDto,
+    isArray: true,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Chapter not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  findByChapter(@Query('chapterId', ParseIntPipe) chapterId: number): Promise<LessonResponseDto[]> {
+  findByChapter(
+    @Query('chapterId', ParseIntPipe) chapterId: number,
+  ): Promise<LessonResponseDto[]> {
     return this.lessonsService.findByChapter(chapterId);
   }
 
   @Get('all')
   @ApiOperation({ summary: 'ดึงบทเรียนทั้งหมด' })
-  @ApiResponse({ status: 200, description: 'List of all lessons', type: LessonResponseDto, isArray: true })
+  @ApiResponse({
+    status: 200,
+    description: 'List of all lessons',
+    type: LessonResponseDto,
+    isArray: true,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
@@ -102,7 +142,11 @@ export class LessonsAdminController {
   @Get(':id')
   @ApiOperation({ summary: 'ดึงบทเรียนตาม ID' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiResponse({ status: 200, description: 'Lesson found', type: LessonResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Lesson found',
+    type: LessonResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
@@ -121,58 +165,74 @@ export class LessonsAdminController {
         summary: 'ตัวอย่าง: บทเรียนแบบบทความ',
         value: {
           lesson_title: 'updated article title',
-          lesson_description: 'Updated description about variable types and declarations',
+          lesson_description:
+            'Updated description about variable types and declarations',
           chapter_id: 1,
           lesson_type: 'article',
           orderIndex: 0,
-          lesson_ImageUrl: 'https://cdn.skillacademy.com/images/updated-abc123.jpg',
-          lesson_videoUrl: null
-        }
+          lesson_ImageUrl:
+            'https://cdn.skillacademy.com/images/updated-abc123.jpg',
+          lesson_videoUrl: null,
+        },
       },
       video: {
         summary: 'ตัวอย่าง: บทเรียนแบบวิดีโอ',
         value: {
           lesson_title: 'updated video title',
-          lesson_description: 'Updated description about watching how variables work in practice',
+          lesson_description:
+            'Updated description about watching how variables work in practice',
           chapter_id: 1,
           lesson_type: 'video',
           orderIndex: 1,
-          lesson_ImageUrl: 'https://cdn.skillacademy.com/images/updated-def456.jpg',
-          lesson_videoUrl: 'https://cdn.skillacademy.com/videos/updated-abc123.mp4'
-        }
+          lesson_ImageUrl:
+            'https://cdn.skillacademy.com/images/updated-def456.jpg',
+          lesson_videoUrl:
+            'https://cdn.skillacademy.com/videos/updated-abc123.mp4',
+        },
       },
       quiz: {
         summary: 'ตัวอย่าง: บทเรียนแบบแบบทดสอบ',
         value: {
           lesson_title: 'updated quiz title',
-          lesson_description: 'Updated description about testing your knowledge on variable concepts',
+          lesson_description:
+            'Updated description about testing your knowledge on variable concepts',
           chapter_id: 1,
           lesson_type: 'quiz',
           orderIndex: 2,
-          lesson_ImageUrl: 'https://cdn.skillacademy.com/images/updated-ghi789.jpg',
-          lesson_videoUrl: null
-        }
+          lesson_ImageUrl:
+            'https://cdn.skillacademy.com/images/updated-ghi789.jpg',
+          lesson_videoUrl: null,
+        },
       },
       checkpoint: {
         summary: 'ตัวอย่าง: บทเรียนแบบจุดตรวจสอบ',
         value: {
           lesson_title: 'updated checkpoint title',
-          lesson_description: 'Updated description about quick check on variable concepts',
+          lesson_description:
+            'Updated description about quick check on variable concepts',
           chapter_id: 1,
           lesson_type: 'checkpoint',
           orderIndex: 3,
-          lesson_ImageUrl: 'https://cdn.skillacademy.com/images/updated-jkl012.jpg',
-          lesson_videoUrl: null
-        }
-      }
-    }
+          lesson_ImageUrl:
+            'https://cdn.skillacademy.com/images/updated-jkl012.jpg',
+          lesson_videoUrl: null,
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 204, description: 'Lesson updated successfully', type: LessonResponseDto })
+  @ApiResponse({
+    status: 204,
+    description: 'Lesson updated successfully',
+    type: LessonResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Lesson not found' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateLessonDto: UpdateLessonDto): Promise<LessonResponseDto> {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateLessonDto: UpdateLessonDto,
+  ): Promise<LessonResponseDto> {
     return this.lessonsService.update(id, updateLessonDto);
   }
 
@@ -196,12 +256,17 @@ export class LessonsAdminController {
       reorder: {
         value: {
           chapterId: 1,
-          lessonIds: [3, 1, 2, 4]
-        }
-      }
-    }
+          lessonIds: [3, 1, 2, 4],
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 200, description: 'Lessons reordered successfully', type: LessonResponseDto, isArray: true })
+  @ApiResponse({
+    status: 200,
+    description: 'Lessons reordered successfully',
+    type: LessonResponseDto,
+    isArray: true,
+  })
   @ApiResponse({ status: 400, description: 'Bad Request' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'Chapter not found' })

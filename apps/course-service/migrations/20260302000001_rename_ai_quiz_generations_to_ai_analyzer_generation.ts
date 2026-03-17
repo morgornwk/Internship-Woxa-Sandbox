@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class RenameAiQuizGenerationsToAiAnalyzerGeneration20260302000001
-  implements MigrationInterface
-{
+export class RenameAiQuizGenerationsToAiAnalyzerGeneration20260302000001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const oldName = 'ai_quiz_generations';
     const newName = 'ai_analyzer_generation';

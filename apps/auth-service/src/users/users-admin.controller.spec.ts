@@ -39,7 +39,9 @@ describe('UsersAdminController', () => {
 
   it('updateRole delegates to usersService.updateRole', async () => {
     usersService.updateRole.mockResolvedValue({ id: 'u1', role: 'ADMIN' });
-    await expect(controller.updateRole('u1', { role: 'ADMIN' } as any)).resolves.toEqual({
+    await expect(
+      controller.updateRole('u1', { role: 'ADMIN' } as any),
+    ).resolves.toEqual({
       id: 'u1',
       role: 'ADMIN',
     });

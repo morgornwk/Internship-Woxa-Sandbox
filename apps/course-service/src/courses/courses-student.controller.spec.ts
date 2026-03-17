@@ -56,7 +56,9 @@ describe('StudentCoursesController', () => {
   describe('getStructure', () => {
     it('delegates to CoursesService.getStructure', async () => {
       coursesService.getStructure.mockResolvedValue({ course_id: 3 } as any);
-      await expect(controller.getStructure(3)).resolves.toEqual({ course_id: 3 });
+      await expect(controller.getStructure(3)).resolves.toEqual({
+        course_id: 3,
+      });
       expect(coursesService.getStructure).toHaveBeenCalledWith(3);
     });
 

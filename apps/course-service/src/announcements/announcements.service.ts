@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
@@ -17,7 +22,7 @@ export class AnnouncementsService {
     private readonly mediaImagesService: MediaImagesService,
     @InjectRepository(Announcement)
     private readonly announcementRepository: Repository<Announcement>,
-  ) { }
+  ) {}
 
   private toResponseDto(announcement: Announcement): AnnouncementResponseDto {
     return {
@@ -33,7 +38,6 @@ export class AnnouncementsService {
       updatedAt: announcement.updatedAt,
     };
   }
-
 
   // Create a new announcement
   async create(dto: CreateAnnouncementDto): Promise<AnnouncementResponseDto> {
@@ -89,14 +93,17 @@ export class AnnouncementsService {
       .where('active_status = :active', { active: true })
       .andWhere(
         new Brackets((qb) => {
-          qb.where(`start_date IS NOT NULL AND start_date > ${nowExpr}`)
-            .orWhere(`end_date IS NOT NULL AND end_date < ${nowExpr}`);
+          qb.where(
+            `start_date IS NOT NULL AND start_date > ${nowExpr}`,
+          ).orWhere(`end_date IS NOT NULL AND end_date < ${nowExpr}`);
         }),
       )
       .execute();
 
     if (deactivatedResult.affected && deactivatedResult.affected > 0) {
-      this.logger.log(`Deactivated ${deactivatedResult.affected} announcement(s)`);
+      this.logger.log(
+        `Deactivated ${deactivatedResult.affected} announcement(s)`,
+      );
       return;
     }
   }
@@ -116,9 +123,12 @@ export class AnnouncementsService {
     const list = await this.announcementRepository
       .createQueryBuilder('a')
       .where('a.active_status = :active', { active: true })
-      .andWhere(new Brackets((qb) => {
-        qb.where('a.start_date IS NULL').orWhere(`a.start_date <= ${nowExpr}`);
-      }),
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('a.start_date IS NULL').orWhere(
+            `a.start_date <= ${nowExpr}`,
+          );
+        }),
       )
       .andWhere(
         new Brackets((qb) => {
@@ -134,10 +144,17 @@ export class AnnouncementsService {
   }
 
   // อัปโหลดรูปภาพสำหรับป้ายประกาศและอัปเดต URL ในฐานข้อมูล
-  async uploadBannerImage(id: number, file: Express.Multer.File, adminId: string): Promise<AnnouncementResponseDto> {
+  async uploadBannerImage(
+    id: number,
+    file: Express.Multer.File,
+    adminId: string,
+  ): Promise<AnnouncementResponseDto> {
     const announcementEntity = await this.findOneEntity(id);
 
-    const uploaded = await this.mediaImagesService.uploadImageFileAndPersist(file, adminId);
+    const uploaded = await this.mediaImagesService.uploadImageFileAndPersist(
+      file,
+      adminId,
+    );
     announcementEntity.imageUrl = uploaded.url;
 
     const saved = await this.announcementRepository.save(announcementEntity);
@@ -146,7 +163,9 @@ export class AnnouncementsService {
 
   // ดึง URL รูปภาพ placeholder สำหรับประกาศ (ใช้เมื่อประกาศไม่มีรูปภาพ)
   getPlaceholderImageUrl(): string {
-    return String('https://cdn.skllracademy.com/images/9f6e04bc-981a-43e2-947d-22f779c09f79.jpg');
+    return String(
+      'https://cdn.skllracademy.com/images/9f6e04bc-981a-43e2-947d-22f779c09f79.jpg',
+    );
   }
 
   // หา announcement โดยใช้ ID
@@ -168,7 +187,10 @@ export class AnnouncementsService {
   }
 
   // อัปเดตข้อมูลป้ายประกาศ
-  async update(id: number, dto: UpdateAnnouncementDto): Promise<AnnouncementResponseDto> {
+  async update(
+    id: number,
+    dto: UpdateAnnouncementDto,
+  ): Promise<AnnouncementResponseDto> {
     const announcement = await this.findOneEntity(id);
 
     if (dto.deepLink) {

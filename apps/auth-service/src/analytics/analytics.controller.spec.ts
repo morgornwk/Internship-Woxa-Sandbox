@@ -83,7 +83,7 @@ describe('AnalyticsController', () => {
       .compile();
 
     controller = module.get<AnalyticsController>(AnalyticsController);
-    service = module.get(AnalyticsService) as jest.Mocked<AnalyticsService>;
+    service = module.get(AnalyticsService);
   });
 
   describe('getDashboardAnalytics', () => {

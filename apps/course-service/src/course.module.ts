@@ -67,38 +67,38 @@ const isTest = process.env.NODE_ENV === 'test';
     ...(isTest
       ? []
       : [
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          useFactory: getDatabaseConfig,
-          inject: [ConfigService],
-        }),
+          TypeOrmModule.forRootAsync({
+            imports: [ConfigModule],
+            useFactory: getDatabaseConfig,
+            inject: [ConfigService],
+          }),
 
-        TypeOrmModule.forFeature([
-          Course,
-          Level,
-          Chapter,
-          Lesson,
-          Article,
-          Quizs,
-          QuizsCheckpoint,
-          LessonProgress,
-          UserStreak,
-          Announcement,
-          VideoAsset,
+          TypeOrmModule.forFeature([
+            Course,
+            Level,
+            Chapter,
+            Lesson,
+            Article,
+            Quizs,
+            QuizsCheckpoint,
+            LessonProgress,
+            UserStreak,
+            Announcement,
+            VideoAsset,
+          ]),
+
+          AuthLibModule,
+          StorageModule,
+          MediaImagesModule,
+          MediaVideosModule,
+          AssetLibraryModule,
+
+          AnnouncementsModule,
+          QuizsModule,
+          AiQuizModule,
+          LearnerHomeModule,
+          NotificationsModule,
         ]),
-
-        AuthLibModule,
-        StorageModule,
-        MediaImagesModule,
-        MediaVideosModule,
-        AssetLibraryModule,
-
-        AnnouncementsModule,
-        QuizsModule,
-        AiQuizModule,
-        LearnerHomeModule,
-        NotificationsModule,
-      ]),
   ],
 
   controllers: [
@@ -126,4 +126,4 @@ const isTest = process.env.NODE_ENV === 'test';
     StreakService,
   ],
 })
-export class AppModule { }
+export class AppModule {}

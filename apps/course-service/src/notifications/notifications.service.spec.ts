@@ -27,7 +27,9 @@ describe('NotificationsService', () => {
   let repo: NotificationRepoMock;
   let announcements: AnnouncementsServiceMock;
 
-  const makeNotification = (overrides: Partial<Notification> = {}): Notification =>
+  const makeNotification = (
+    overrides: Partial<Notification> = {},
+  ): Notification =>
     ({
       notificationId: 'n1',
       userId: 'u1',
@@ -74,16 +76,22 @@ describe('NotificationsService', () => {
 
   describe('getPaginated', () => {
     it('throws UnauthorizedException when userId missing', async () => {
-      await expect(service.getPaginated('', 10, 0)).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.getPaginated('', 10, 0)).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('throws BadRequestException on invalid pagination', async () => {
-      await expect(service.getPaginated('u1', 0, 0)).rejects.toBeInstanceOf(BadRequestException);
-      await expect(service.getPaginated('u1', 1, -1)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(service.getPaginated('u1', 0, 0)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+      await expect(service.getPaginated('u1', 1, -1)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('syncs announcements then returns {notifications,total,limit}', async () => {
-      (announcements.findActive as jest.Mock).mockResolvedValue([
+      announcements.findActive.mockResolvedValue([
         {
           announcement_id: 1,
           title: 'A1',
@@ -98,13 +106,15 @@ describe('NotificationsService', () => {
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue([makeNotification({ notificationId: 'n1' })] as any);
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue([
+        makeNotification({ notificationId: 'n1' }),
+      ] as any);
 
-      repo.find!.mockResolvedValue([makeNotification({ notificationId: 'n1' })]);
-      repo.count!.mockResolvedValue(1);
+      repo.find.mockResolvedValue([makeNotification({ notificationId: 'n1' })]);
+      repo.count.mockResolvedValue(1);
 
       const result = await service.getPaginated('u1', 100, 0);
 
@@ -118,19 +128,21 @@ describe('NotificationsService', () => {
 
   describe('getUnreadCount', () => {
     it('throws UnauthorizedException when userId missing', async () => {
-      await expect(service.getUnreadCount('')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.getUnreadCount('')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('syncs announcements then returns count', async () => {
-      (announcements.findActive as jest.Mock).mockResolvedValue([]);
+      announcements.findActive.mockResolvedValue([]);
       const qb: any = {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue([]),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
-      repo.count!.mockResolvedValue(3);
+      repo.count.mockResolvedValue(3);
 
       const result = await service.getUnreadCount('u1');
 
@@ -141,16 +153,23 @@ describe('NotificationsService', () => {
 
   describe('markAsRead / markAllAsRead', () => {
     it('markAsRead throws UnauthorizedException when userId missing', async () => {
-      await expect(service.markAsRead('n1', '')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.markAsRead('n1', '')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('markAsRead updates by notificationId+userId', async () => {
       await service.markAsRead('n1', 'u1');
-      expect(repo.update).toHaveBeenCalledWith({ notificationId: 'n1', userId: 'u1' }, expect.any(Object));
+      expect(repo.update).toHaveBeenCalledWith(
+        { notificationId: 'n1', userId: 'u1' },
+        expect.any(Object),
+      );
     });
 
     it('markAllAsRead throws UnauthorizedException when userId missing', async () => {
-      await expect(service.markAllAsRead('')).rejects.toBeInstanceOf(UnauthorizedException);
+      await expect(service.markAllAsRead('')).rejects.toBeInstanceOf(
+        UnauthorizedException,
+      );
     });
 
     it('markAllAsRead updates all unread', async () => {
@@ -161,21 +180,36 @@ describe('NotificationsService', () => {
 
   describe('createNotification', () => {
     it('creates and saves', async () => {
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(makeNotification({ notificationId: 'n1' }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(makeNotification({ notificationId: 'n1' }));
 
       const result = await service.createNotification('u1', 't', 'm');
       expect(result.notificationId).toBe('n1');
     });
 
     it('passes type and metadata through', async () => {
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockImplementation(async (x: any) => ({ ...makeNotification(), ...x }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockImplementation(async (x: any) => ({
+        ...makeNotification(),
+        ...x,
+      }));
 
-      const result = await service.createNotification('u1', 't', 'm', 'warning', { a: 1 });
+      const result = await service.createNotification(
+        'u1',
+        't',
+        'm',
+        'warning',
+        { a: 1 },
+      );
 
       expect(repo.create).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 'u1', title: 't', message: 'm', type: 'warning', metadata: { a: 1 } }),
+        expect.objectContaining({
+          userId: 'u1',
+          title: 't',
+          message: 'm',
+          type: 'warning',
+          metadata: { a: 1 },
+        }),
       );
       expect(result.type).toBe('warning');
       expect(result.metadata).toEqual({ a: 1 });
@@ -184,7 +218,7 @@ describe('NotificationsService', () => {
 
   describe('syncAnnouncements via getPaginated/getUnreadCount', () => {
     it('does not insert when all active announcements already exist', async () => {
-      (announcements.findActive as jest.Mock).mockResolvedValue([
+      announcements.findActive.mockResolvedValue([
         {
           announcement_id: 1,
           title: 'A1',
@@ -204,10 +238,10 @@ describe('NotificationsService', () => {
           }),
         ]),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
-      repo.find!.mockResolvedValue([makeNotification({ notificationId: 'n1' })]);
-      repo.count!.mockResolvedValue(1);
+      repo.find.mockResolvedValue([makeNotification({ notificationId: 'n1' })]);
+      repo.count.mockResolvedValue(1);
 
       await service.getPaginated('u1', 10, 0);
 
@@ -216,7 +250,7 @@ describe('NotificationsService', () => {
     });
 
     it('deletes stale announcement notifications', async () => {
-      (announcements.findActive as jest.Mock).mockResolvedValue([]);
+      announcements.findActive.mockResolvedValue([]);
 
       const qb: any = {
         where: jest.fn().mockReturnThis(),
@@ -232,14 +266,16 @@ describe('NotificationsService', () => {
           }),
         ]),
       };
-      repo.createQueryBuilder!.mockReturnValue(qb);
+      repo.createQueryBuilder.mockReturnValue(qb);
 
-      repo.find!.mockResolvedValue([]);
-      repo.count!.mockResolvedValue(0);
+      repo.find.mockResolvedValue([]);
+      repo.count.mockResolvedValue(0);
 
       await service.getPaginated('u1', 10, 0);
 
-      expect(repo.delete).toHaveBeenCalledWith({ notificationId: In(['n1', 'n2']) });
+      expect(repo.delete).toHaveBeenCalledWith({
+        notificationId: In(['n1', 'n2']),
+      });
     });
   });
 });

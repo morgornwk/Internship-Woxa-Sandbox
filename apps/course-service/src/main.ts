@@ -1,5 +1,9 @@
 import { NestFactory, Reflector } from '@nestjs/core';
-import { ValidationPipe, Logger, ClassSerializerInterceptor } from '@nestjs/common';
+import {
+  ValidationPipe,
+  Logger,
+  ClassSerializerInterceptor,
+} from '@nestjs/common';
 
 // import * as express from 'express';
 import { AppModule } from './course.module';
@@ -40,7 +44,6 @@ async function bootstrap() {
     }),
   );
 
-
   const config = new DocumentBuilder()
     .setTitle('Skillr Course Service API')
     .setDescription('Official API documentation for Skllr Platform')
@@ -53,14 +56,13 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      docExpansion: 'none',      // ปิด expand ทั้งหมด
+      docExpansion: 'none', // ปิด expand ทั้งหมด
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,
     },
     customSiteTitle: 'Skllr API Docs',
   });
-
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
@@ -69,7 +71,6 @@ async function bootstrap() {
 
   const port = Number(process.env.PORT ?? 3002);
   await app.listen(port);
-
 
   logger.log(`Course service listening on http://localhost:${port}/api`);
   logger.log(`Swagger docs available at http://localhost:${port}/docs`);

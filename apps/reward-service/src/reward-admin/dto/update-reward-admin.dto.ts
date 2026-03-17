@@ -1,9 +1,15 @@
-import { IsOptional, IsString, IsNumber, Min, IsDateString, IsBoolean } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateRewardAdminDto {
-
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

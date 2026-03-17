@@ -18,8 +18,12 @@ export class AdminInvitations20260305001000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_admin_invitations_user_id ON admin_invitations(user_id)`);
-    await queryRunner.query(`CREATE INDEX IF NOT EXISTS idx_admin_invitations_expires_at ON admin_invitations(expires_at)`);
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_admin_invitations_user_id ON admin_invitations(user_id)`,
+    );
+    await queryRunner.query(
+      `CREATE INDEX IF NOT EXISTS idx_admin_invitations_expires_at ON admin_invitations(expires_at)`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

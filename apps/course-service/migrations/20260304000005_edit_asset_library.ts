@@ -1,12 +1,7 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableColumn,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, TableColumn } from 'typeorm';
 
 export class EditAssetLibrary20260304000005 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-
     /**
      * -------------------------
      * RENAME TABLES
@@ -16,7 +11,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
     await queryRunner.renameTable('asset_image_assets', 'asset_image');
     await queryRunner.renameTable('asset_video_assets', 'asset_video');
 
-
     /**
      * -------------------------
      * RENAME ID COLUMNS
@@ -25,7 +19,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
 
     await queryRunner.renameColumn('asset_image', 'id', 'assetImageId');
     await queryRunner.renameColumn('asset_video', 'id', 'assetVideoId');
-
 
     /**
      * -------------------------
@@ -52,7 +45,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
       }),
     );
 
-
     /**
      * -------------------------
      * DROP UNUSED COLUMNS
@@ -75,7 +67,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-
     /**
      * -------------------------
      * ADD BACK STORAGE COLUMNS
@@ -110,7 +101,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
       }),
     );
 
-
     /**
      * -------------------------
      * REMOVE NEW COLUMNS
@@ -120,7 +110,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
     await queryRunner.dropColumn('asset_video', 'duration_seconds');
     await queryRunner.dropColumn('asset_video', 'thumbnail_url');
 
-
     /**
      * -------------------------
      * RENAME ID COLUMNS BACK
@@ -129,7 +118,6 @@ export class EditAssetLibrary20260304000005 implements MigrationInterface {
 
     await queryRunner.renameColumn('asset_image', 'assetImageId', 'id');
     await queryRunner.renameColumn('asset_video', 'assetVideoId', 'id');
-
 
     /**
      * -------------------------

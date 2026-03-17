@@ -1,6 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, Index, DeleteDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  Index,
+  DeleteDateColumn,
+} from 'typeorm';
 import { RewardRedemption } from './reward-redemption';
-
 
 export enum RedemptionType {
   SPOT = 'SPOT',
@@ -65,11 +73,8 @@ export class Reward {
   updated_at: Date;
 
   @DeleteDateColumn()
-  delete_at: Date
+  delete_at: Date;
 
-  @OneToMany(
-    () => RewardRedemption,
-    (redemption) => redemption.reward,
-  )
+  @OneToMany(() => RewardRedemption, (redemption) => redemption.reward)
   redemptions: RewardRedemption[];
 }

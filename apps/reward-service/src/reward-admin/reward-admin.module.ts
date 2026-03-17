@@ -7,7 +7,11 @@ import { StorageModule } from 'apps/course-service/src/storage/storage.module';
 import { RewardModule } from '../reward/reward.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Reward], 'reward'), StorageModule, RewardModule],
+  imports: [
+    TypeOrmModule.forFeature([Reward], 'reward'),
+    StorageModule,
+    RewardModule,
+  ],
   controllers: [AdminController],
   providers: [RewardAdminService],
 })

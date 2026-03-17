@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Level } from './entities/level.entity';
@@ -22,7 +26,9 @@ export class LevelsService {
     });
 
     if (!course) {
-      throw new NotFoundException(`Course with ID ${createLevelDto.course_id} not found`);
+      throw new NotFoundException(
+        `Course with ID ${createLevelDto.course_id} not found`,
+      );
     }
 
     // ถ้าไม่ได้ระบุ orderIndex มา ให้กำหนดค่า orderIndex เป็นค่าที่มากที่สุดในคอร์สนี้ + 1 เพื่อให้ระดับใหม่อยู่ท้ายสุด
@@ -30,7 +36,9 @@ export class LevelsService {
     if (orderIndex === undefined) {
       const maxOrderResult = await this.levelRepository
         .createQueryBuilder('level')
-        .where('level.course_id = :course_id', { course_id: createLevelDto.course_id })
+        .where('level.course_id = :course_id', {
+          course_id: createLevelDto.course_id,
+        })
         .select('MAX(level.level_orderIndex)', 'maxOrder')
         .getRawOne();
       orderIndex = (maxOrderResult?.maxOrder ?? -1) + 1;
@@ -65,7 +73,9 @@ export class LevelsService {
   }
 
   async findOne(id: number): Promise<LevelResponseDto> {
-    const level = await this.levelRepository.findOne({ where: { level_id: id } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: id },
+    });
 
     if (!level) {
       throw new NotFoundException(`Level with ID ${id} not found`);
@@ -74,8 +84,13 @@ export class LevelsService {
     return this.toResponseDto(level);
   }
 
-  async update(id: number, updateLevelDto: UpdateLevelDto): Promise<LevelResponseDto> {
-    const level = await this.levelRepository.findOne({ where: { level_id: id } });
+  async update(
+    id: number,
+    updateLevelDto: UpdateLevelDto,
+  ): Promise<LevelResponseDto> {
+    const level = await this.levelRepository.findOne({
+      where: { level_id: id },
+    });
 
     if (!level) {
       throw new NotFoundException(`Level with ID ${id} not found`);
@@ -95,7 +110,9 @@ export class LevelsService {
   }
 
   async remove(id: number): Promise<{ message: string }> {
-    const level = await this.levelRepository.findOne({ where: { level_id: id } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: id },
+    });
 
     if (!level) {
       throw new NotFoundException(`Level with ID ${id} not found`);
@@ -106,7 +123,10 @@ export class LevelsService {
     return { message: `Level with ID ${id} deleted successfully` };
   }
 
-  async reorder(courseId: number, levelIds: number[]): Promise<LevelResponseDto[]> {
+  async reorder(
+    courseId: number,
+    levelIds: number[],
+  ): Promise<LevelResponseDto[]> {
     const levels = await this.levelRepository.find({
       where: { course_id: courseId },
     });
@@ -131,7 +151,9 @@ export class LevelsService {
     // ตรวจสอบว่า levelIds ที่ส่งมาทุกตัวมีอยู่ในคอร์สนี้จริงๆ ถ้าไม่ใช่จะโยน error ออกมา
     for (const id of levelIds) {
       if (!levelMap.has(id)) {
-        throw new BadRequestException(`Level ID ${id} does not belong to course ${courseId}`);
+        throw new BadRequestException(
+          `Level ID ${id} does not belong to course ${courseId}`,
+        );
       }
     }
 

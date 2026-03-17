@@ -1,7 +1,26 @@
-import { Body, Controller, Get, Param, Post, UploadedFile, UseInterceptors, Delete, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UploadedFile,
+  UseInterceptors,
+  Delete,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as multer from 'multer';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiParam, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiConsumes,
+  ApiBody,
+  ApiParam,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
 import { MediaImagesService } from './media-images.service';
 import { UpdateImageDto } from './dto/update-image.dto';
@@ -14,7 +33,7 @@ import { UserRole } from '@common/enums';
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('media/image')
 export class MediaImagesController {
-  constructor(private readonly svc: MediaImagesService) { }
+  constructor(private readonly svc: MediaImagesService) {}
 
   @Post('upload')
   @ApiOperation({ summary: 'อัพโหลดภาพ' })
@@ -23,7 +42,11 @@ export class MediaImagesController {
     schema: {
       type: 'object',
       properties: {
-        file: { type: 'string', format: 'binary', description: 'Image file to upload' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Image file to upload',
+        },
       },
       required: ['file'],
     },
@@ -33,11 +56,16 @@ export class MediaImagesController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  @UseInterceptors(FileInterceptor('file', {
-    storage: multer.memoryStorage(),
-    limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
-  }))
-  async upload(@CurrentUserId() adminId: string, @UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: multer.memoryStorage(),
+      limits: { fileSize: 30 * 1024 * 1024 }, // 30MB
+    }),
+  )
+  async upload(
+    @CurrentUserId() adminId: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return this.svc.uploadImageFileAndPersist(file, adminId);
   }
 
@@ -76,7 +104,10 @@ export class MediaImagesController {
     },
   })
   @ApiResponse({ status: 200, description: 'Updated' })
-  @ApiResponse({ status: 400, description: 'No fields to update / invalid payload' })
+  @ApiResponse({
+    status: 400,
+    description: 'No fields to update / invalid payload',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Image not found' })

@@ -5,7 +5,11 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { QuizService } from './quiz.service';
 import { Quizs } from './entities/quizs.entity';
 import { QuizsCheckpoint } from './entities/checkpoint.entity';
-import { QuizsResult, QuizsResultType, QuizsStatus } from './entities/quizs-result.entity';
+import {
+  QuizsResult,
+  QuizsResultType,
+  QuizsStatus,
+} from './entities/quizs-result.entity';
 import { Lesson } from '../lessons/entities/lesson.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
 import { UserXp } from './entities/user-xp.entity';
@@ -59,7 +63,6 @@ describe('QuizService (quiz)', () => {
   let checkpointRepo: CheckpointRepoMock;
   let resultRepo: ResultRepoMock;
   let lessonRepo: LessonRepoMock;
-  let chapterRepo: ChapterRepoMock;
   let userXpRepo: UserXpRepoMock;
 
   const makeQuiz = (overrides: Partial<Quizs> = {}): Quizs =>
@@ -74,7 +77,9 @@ describe('QuizService (quiz)', () => {
       ...overrides,
     }) as Quizs;
 
-  const makeCheckpoint = (overrides: Partial<QuizsCheckpoint> = {}): QuizsCheckpoint =>
+  const makeCheckpoint = (
+    overrides: Partial<QuizsCheckpoint> = {},
+  ): QuizsCheckpoint =>
     ({
       checkpointId: 1,
       lessonId: 10,
@@ -169,7 +174,6 @@ describe('QuizService (quiz)', () => {
     checkpointRepo = module.get(getRepositoryToken(QuizsCheckpoint));
     resultRepo = module.get(getRepositoryToken(QuizsResult));
     lessonRepo = module.get(getRepositoryToken(Lesson));
-    chapterRepo = module.get(getRepositoryToken(Chapter));
     userXpRepo = module.get(getRepositoryToken(UserXp));
 
     jest.clearAllMocks();
@@ -179,7 +183,7 @@ describe('QuizService (quiz)', () => {
     it('updates existing quiz', async () => {
       const existing = makeQuiz({ lessonId: 1, quizsAnswer: 'old' });
       quizRepo.findOne.mockResolvedValue(existing);
-      quizRepo.save.mockImplementation(async (q) => q as any);
+      quizRepo.save.mockImplementation(async (q) => q);
 
       const saved = await service.createQuizs({
         lesson_id: 1,
@@ -197,7 +201,7 @@ describe('QuizService (quiz)', () => {
     it('creates new quiz when not existing', async () => {
       quizRepo.findOne.mockResolvedValue(null);
       quizRepo.create.mockImplementation((x: any) => x);
-      quizRepo.save.mockImplementation(async (q) => ({ ...q, quizsId: 99 }) as any);
+      quizRepo.save.mockImplementation(async (q) => ({ ...q, quizsId: 99 }));
 
       const saved = await service.createQuizs({
         lesson_id: 10,
@@ -216,7 +220,9 @@ describe('QuizService (quiz)', () => {
   describe('getQuizWithStatus', () => {
     it('throws when quiz not found', async () => {
       quizRepo.findOne.mockResolvedValue(null);
-      await expect(service.getQuizWithStatus(10, 'u1')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getQuizWithStatus(10, 'u1')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns NOT_ATTEMPTED when no result', async () => {
@@ -230,7 +236,9 @@ describe('QuizService (quiz)', () => {
 
     it('returns PENDING when result has no userAnswer', async () => {
       quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10 }));
-      resultRepo.findOne.mockResolvedValue(makeResult({ status: QuizsStatus.PENDING, userAnswer: null }));
+      resultRepo.findOne.mockResolvedValue(
+        makeResult({ status: QuizsStatus.PENDING, userAnswer: null }),
+      );
 
       const res = await service.getQuizWithStatus(10, 'u1');
       expect(res.status).toBe(QuizsStatus.PENDING);
@@ -238,7 +246,9 @@ describe('QuizService (quiz)', () => {
     });
 
     it('returns completed result with solution when attempted', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'A' }));
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'A' }),
+      );
       resultRepo.findOne.mockResolvedValue(
         makeResult({
           status: QuizsStatus.PENDING,
@@ -255,7 +265,9 @@ describe('QuizService (quiz)', () => {
     });
 
     it('keeps COMPLETED status when result already completed', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'A' }));
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'A' }),
+      );
       resultRepo.findOne.mockResolvedValue(
         makeResult({
           status: QuizsStatus.COMPLETED,
@@ -274,48 +286,66 @@ describe('QuizService (quiz)', () => {
   describe('checkAndSaveAnswer', () => {
     it('throws when quiz not found', async () => {
       quizRepo.findOne.mockResolvedValue(null);
-      await expect(service.checkAndSaveAnswer(10, 'u1', 'a')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.checkAndSaveAnswer(10, 'u1', 'a'),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws conflict when already attempted', async () => {
       quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10 }));
-      resultRepo.findOne.mockResolvedValue(makeResult({ userAnswer: 'a', status: QuizsStatus.COMPLETED }));
+      resultRepo.findOne.mockResolvedValue(
+        makeResult({ userAnswer: 'a', status: QuizsStatus.COMPLETED }),
+      );
 
-      await expect(service.checkAndSaveAnswer(10, 'u1', 'a')).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        service.checkAndSaveAnswer(10, 'u1', 'a'),
+      ).rejects.toBeInstanceOf(ConflictException);
     });
 
     it('allows answering again when previous result was SKIPPED', async () => {
       quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10 }));
-      resultRepo.findOne.mockResolvedValue(makeResult({ status: QuizsStatus.SKIPPED, userAnswer: null }));
-      resultRepo.save.mockImplementation(async (r) => r as any);
+      resultRepo.findOne.mockResolvedValue(
+        makeResult({ status: QuizsStatus.SKIPPED, userAnswer: null }),
+      );
+      resultRepo.save.mockImplementation(async (r) => r);
       lessonRepo.findOne.mockResolvedValue(null);
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'a');
 
-      expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-        status: QuizsStatus.COMPLETED,
-        userAnswer: 'a',
-      }));
+      expect(resultRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: QuizsStatus.COMPLETED,
+          userAnswer: 'a',
+        }),
+      );
       expect(res.is_correct).toBe(true);
     });
 
     it('updates existing PENDING result when userAnswer is null', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'A', quizsExplanation: 'E' }));
-      resultRepo.findOne.mockResolvedValue(makeResult({ status: QuizsStatus.PENDING, userAnswer: null }));
-      resultRepo.save.mockImplementation(async (r) => r as any);
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'A', quizsExplanation: 'E' }),
+      );
+      resultRepo.findOne.mockResolvedValue(
+        makeResult({ status: QuizsStatus.PENDING, userAnswer: null }),
+      );
+      resultRepo.save.mockImplementation(async (r) => r);
       lessonRepo.findOne.mockResolvedValue(null);
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'a');
 
-      expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-        userAnswer: 'a',
-        status: QuizsStatus.COMPLETED,
-      }));
+      expect(resultRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userAnswer: 'a',
+          status: QuizsStatus.COMPLETED,
+        }),
+      );
       expect(res.quizs_answer).toBe('A');
     });
 
     it('normalizes Thai true answer before checking correctness', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'true', quizsExplanation: 'E' }));
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'true', quizsExplanation: 'E' }),
+      );
       resultRepo.findOne.mockResolvedValue(null);
       resultRepo.create.mockImplementation((x: any) => x);
       resultRepo.save.mockImplementation(async (x: any) => x);
@@ -323,24 +353,42 @@ describe('QuizService (quiz)', () => {
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'ถูก');
 
-      expect(resultRepo.save).toHaveBeenCalledWith(expect.objectContaining({
-        userAnswer: 'ถูก',
-        isCorrect: true,
-        status: QuizsStatus.COMPLETED,
-      }));
+      expect(resultRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userAnswer: 'ถูก',
+          isCorrect: true,
+          status: QuizsStatus.COMPLETED,
+        }),
+      );
       expect(res.is_correct).toBe(true);
     });
 
     it('saves result and syncs userXp when correct', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'A', quizsExplanation: 'E' }));
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'A', quizsExplanation: 'E' }),
+      );
       resultRepo.findOne.mockResolvedValue(null);
       resultRepo.create.mockImplementation((x: any) => x);
-      resultRepo.save.mockResolvedValue(makeResult({ status: QuizsStatus.COMPLETED, userAnswer: 'a', isCorrect: true }));
+      resultRepo.save.mockResolvedValue(
+        makeResult({
+          status: QuizsStatus.COMPLETED,
+          userAnswer: 'a',
+          isCorrect: true,
+        }),
+      );
 
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 10, chapter_id: 1 } as any);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 10,
+        chapter_id: 1,
+      } as any);
       userXpRepo.findOne.mockResolvedValue(null);
-      lessonRepo.find.mockResolvedValue([{ lesson_id: 10 }, { lesson_id: 11 }] as any);
-      checkpointRepo.find.mockResolvedValue([makeCheckpoint({ checkpointId: 1, lessonId: 10, checkpointScore: 5 })]);
+      lessonRepo.find.mockResolvedValue([
+        { lesson_id: 10 },
+        { lesson_id: 11 },
+      ] as any);
+      checkpointRepo.find.mockResolvedValue([
+        makeCheckpoint({ checkpointId: 1, lessonId: 10, checkpointScore: 5 }),
+      ]);
 
       const qb: any = {
         select: jest.fn().mockReturnThis(),
@@ -351,7 +399,7 @@ describe('QuizService (quiz)', () => {
       userXpRepo.createQueryBuilder.mockReturnValue(qb);
 
       userXpRepo.create.mockImplementation((x: any) => x);
-      userXpRepo.save.mockImplementation(async (x) => x as any);
+      userXpRepo.save.mockImplementation(async (x) => x);
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'a');
 
@@ -361,10 +409,18 @@ describe('QuizService (quiz)', () => {
     });
 
     it('returns solution but does not sync XP when incorrect', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsAnswer: 'a', quizsExplanation: 'E' }));
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsAnswer: 'a', quizsExplanation: 'E' }),
+      );
       resultRepo.findOne.mockResolvedValue(null);
       resultRepo.create.mockImplementation((x: any) => x);
-      resultRepo.save.mockResolvedValue(makeResult({ status: QuizsStatus.COMPLETED, userAnswer: 'b', isCorrect: false }));
+      resultRepo.save.mockResolvedValue(
+        makeResult({
+          status: QuizsStatus.COMPLETED,
+          userAnswer: 'b',
+          isCorrect: false,
+        }),
+      );
 
       const res = await service.checkAndSaveAnswer(10, 'u1', 'b');
 
@@ -377,15 +433,17 @@ describe('QuizService (quiz)', () => {
     it('creates result if missing and marks SKIPPED', async () => {
       resultRepo.findOne.mockResolvedValue(null);
       resultRepo.create.mockImplementation((x: any) => x);
-      resultRepo.save.mockImplementation(async (x) => x as any);
+      resultRepo.save.mockImplementation(async (x) => x);
 
       const saved = await service.skipQuiz(10, 'u1');
       expect(saved.status).toBe(QuizsStatus.SKIPPED);
     });
 
     it('marks existing result as SKIPPED', async () => {
-      resultRepo.findOne.mockResolvedValue(makeResult({ status: QuizsStatus.PENDING }));
-      resultRepo.save.mockImplementation(async (x) => x as any);
+      resultRepo.findOne.mockResolvedValue(
+        makeResult({ status: QuizsStatus.PENDING }),
+      );
+      resultRepo.save.mockImplementation(async (x) => x);
 
       const saved = await service.skipQuiz(10, 'u1');
       expect(saved.status).toBe(QuizsStatus.SKIPPED);
@@ -405,7 +463,9 @@ describe('QuizService (quiz)', () => {
   describe('findOneQuizsByLesson', () => {
     it('throws when not found', async () => {
       quizRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOneQuizsByLesson(10)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findOneQuizsByLesson(10)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns quiz', async () => {
@@ -416,10 +476,14 @@ describe('QuizService (quiz)', () => {
 
   describe('updateQuizs', () => {
     it('updates fields', async () => {
-      quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10, quizsQuestions: 'old' }));
-      quizRepo.save.mockImplementation(async (q) => q as any);
+      quizRepo.findOne.mockResolvedValue(
+        makeQuiz({ lessonId: 10, quizsQuestions: 'old' }),
+      );
+      quizRepo.save.mockImplementation(async (q) => q);
 
-      const res = await service.updateQuizs(10, { quizs_questions: 'new' } as any);
+      const res = await service.updateQuizs(10, {
+        quizs_questions: 'new',
+      } as any);
       expect(res.quizsQuestions).toBe('new');
     });
   });
@@ -428,7 +492,10 @@ describe('QuizService (quiz)', () => {
     it('removes quiz and clears lesson_description when present', async () => {
       quizRepo.findOne.mockResolvedValue(makeQuiz({ lessonId: 10 }));
       quizRepo.remove.mockResolvedValue({} as any);
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 10, lesson_description: 'x' } as any);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 10,
+        lesson_description: 'x',
+      } as any);
       lessonRepo.save.mockResolvedValue({} as any);
 
       const res = await service.removeQuizs(10);

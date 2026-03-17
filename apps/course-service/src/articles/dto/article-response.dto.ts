@@ -10,7 +10,9 @@ export class ArticleResponseDto {
 
   @ApiProperty({
     description: 'Article content as array of { url, article } items',
-    example: [{ image_id: 123, article: 'This is a sample article block', order: 1 }]
+    example: [
+      { image_id: 123, article: 'This is a sample article block', order: 1 },
+    ],
   })
   article_content: any[];
 }

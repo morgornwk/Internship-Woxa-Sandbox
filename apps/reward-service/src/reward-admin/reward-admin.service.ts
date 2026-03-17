@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateRewardAdminDto } from './dto/create-reward-admin.dto';
 import { UpdateRewardAdminDto } from './dto/update-reward-admin.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -17,7 +21,7 @@ export class RewardAdminService {
     private readonly rewardStatusService: RewardStatusService,
     @InjectRepository(Reward, 'reward')
     private readonly rewardRepo: Repository<Reward>,
-  ) { }
+  ) {}
 
   async getAllReward() {
     await this.rewardStatusService.syncExpiredRewards();
@@ -39,8 +43,12 @@ export class RewardAdminService {
   }
 
   async createReward(createRewardDto: CreateRewardAdminDto, imageUrl: string) {
-    const redeem_start_date = this.normalizeIncomingRewardDate(createRewardDto.redeem_start_date);
-    const redeem_end_date = this.normalizeIncomingRewardDate(createRewardDto.redeem_end_date);
+    const redeem_start_date = this.normalizeIncomingRewardDate(
+      createRewardDto.redeem_start_date,
+    );
+    const redeem_end_date = this.normalizeIncomingRewardDate(
+      createRewardDto.redeem_end_date,
+    );
 
     this.ensureValidRedeemPeriod(redeem_start_date, redeem_end_date);
 
@@ -60,7 +68,11 @@ export class RewardAdminService {
     return serializeReward(savedReward);
   }
 
-  async updateReward(id: number, dto: UpdateRewardAdminDto, file?: Express.Multer.File) {
+  async updateReward(
+    id: number,
+    dto: UpdateRewardAdminDto,
+    file?: Express.Multer.File,
+  ) {
     await this.rewardStatusService.syncExpiredRewards();
 
     const reward = await this.rewardRepo.findOne({ where: { id } });
@@ -92,22 +104,29 @@ export class RewardAdminService {
       reward.image_url = imageUrl;
     }
 
-    const normalizedRedeemStartDate = dto.redeem_start_date !== undefined
-      ? this.normalizeIncomingRewardDate(dto.redeem_start_date)
-      : undefined;
-    const normalizedRedeemEndDate = dto.redeem_end_date !== undefined
-      ? this.normalizeIncomingRewardDate(dto.redeem_end_date)
-      : undefined;
+    const normalizedRedeemStartDate =
+      dto.redeem_start_date !== undefined
+        ? this.normalizeIncomingRewardDate(dto.redeem_start_date)
+        : undefined;
+    const normalizedRedeemEndDate =
+      dto.redeem_end_date !== undefined
+        ? this.normalizeIncomingRewardDate(dto.redeem_end_date)
+        : undefined;
 
-    const nextRedeemStartDate = normalizedRedeemStartDate ?? reward.redeem_start_date;
+    const nextRedeemStartDate =
+      normalizedRedeemStartDate ?? reward.redeem_start_date;
     const nextRedeemEndDate = normalizedRedeemEndDate ?? reward.redeem_end_date;
 
     this.ensureValidRedeemPeriod(nextRedeemStartDate, nextRedeemEndDate);
 
     Object.assign(reward, {
       ...dto,
-      ...(normalizedRedeemStartDate !== undefined ? { redeem_start_date: normalizedRedeemStartDate } : {}),
-      ...(normalizedRedeemEndDate !== undefined ? { redeem_end_date: normalizedRedeemEndDate } : {}),
+      ...(normalizedRedeemStartDate !== undefined
+        ? { redeem_start_date: normalizedRedeemStartDate }
+        : {}),
+      ...(normalizedRedeemEndDate !== undefined
+        ? { redeem_end_date: normalizedRedeemEndDate }
+        : {}),
     });
     reward.is_active = this.rewardStatusService.resolveActiveStatus(
       dto.is_active ?? reward.is_active,
@@ -136,7 +155,10 @@ export class RewardAdminService {
     };
   }
 
-  private ensureValidRedeemPeriod(startDate: Date | string, endDate: Date | string) {
+  private ensureValidRedeemPeriod(
+    startDate: Date | string,
+    endDate: Date | string,
+  ) {
     if (new Date(endDate) <= new Date(startDate)) {
       throw new BadRequestException(
         'Redeem end date must be greater than start date',
@@ -155,7 +177,16 @@ export class RewardAdminService {
     );
 
     if (wallClockMatch) {
-      const [, year, month, day, hour, minute, second = '00', milliseconds = '0'] = wallClockMatch;
+      const [
+        ,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        second = '00',
+        milliseconds = '0',
+      ] = wallClockMatch;
       const normalizedMilliseconds = milliseconds.padEnd(3, '0');
 
       return new Date(
@@ -221,7 +252,13 @@ export class RewardAdminService {
     const storageKey = `rewards/${uuid}`;
 
     // อัพโหลดไฟล์ไปยัง storage provider s3 หรือตามที่คุณตั้งค่าไว้
-    await this.aws.putObject(bucket, storageKey, file.buffer, file.size, file.mimetype);
+    await this.aws.putObject(
+      bucket,
+      storageKey,
+      file.buffer,
+      file.size,
+      file.mimetype,
+    );
 
     // สร้าง URL สาธารณะสำหรับเข้าถึงไฟล์ผ่าน CloudFront หรือ storage provider อื่น
     const publicUrl = this.aws.buildPublicUrl(bucket, storageKey);

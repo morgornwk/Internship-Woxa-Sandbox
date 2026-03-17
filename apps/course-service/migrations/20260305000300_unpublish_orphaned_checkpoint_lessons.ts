@@ -16,7 +16,8 @@ export class UnpublishOrphanedCheckpointLessons20260305000300 implements Migrati
         )
     `);
 
-    const count = Array.isArray(rows) && rows.length > 0 ? Number(rows[0].count) : 0;
+    const count =
+      Array.isArray(rows) && rows.length > 0 ? Number(rows[0].count) : 0;
 
     await queryRunner.query(`
       UPDATE lessons l
@@ -30,7 +31,9 @@ export class UnpublishOrphanedCheckpointLessons20260305000300 implements Migrati
         )
     `);
 
-    console.log(`✅ Unpublished ${count} checkpoint lessons without checkpoint content`);
+    console.log(
+      `✅ Unpublished ${count} checkpoint lessons without checkpoint content`,
+    );
   }
 
   public async down(_queryRunner: QueryRunner): Promise<void> {

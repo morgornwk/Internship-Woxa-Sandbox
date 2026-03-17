@@ -1,5 +1,11 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ArrayNotEmpty, ArrayUnique, IsArray, IsInt, Min } from 'class-validator';
+import {
+  ArrayNotEmpty,
+  ArrayUnique,
+  IsArray,
+  IsInt,
+  Min,
+} from 'class-validator';
 
 export class ReorderLevelsDto {
   @ApiProperty({ example: 19, description: 'Course ID' })
@@ -8,7 +14,8 @@ export class ReorderLevelsDto {
   course_id: number;
 
   @ApiProperty({
-    description: 'Level IDs (level_id) in the desired order. This is NOT orderIndex values.',
+    description:
+      'Level IDs (level_id) in the desired order. This is NOT orderIndex values.',
     isArray: true,
     type: Number,
     example: [12, 8, 9, 10],

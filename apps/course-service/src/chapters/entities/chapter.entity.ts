@@ -1,4 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, Index, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  Index,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { Level } from '../../levels/entities/level.entity';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
@@ -20,7 +30,9 @@ export class Chapter {
   @Column({ name: 'is_published', type: 'boolean', default: false })
   isPublished: boolean;
 
-  @ManyToOne(() => Level, (level) => level.level_chapters, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Level, (level) => level.level_chapters, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'level_id', referencedColumnName: 'level_id' })
   level: Level;
 
@@ -36,4 +48,3 @@ export class Chapter {
   @OneToMany(() => Lesson, (lesson) => lesson.chapter, { cascade: true })
   lessons: Lesson[];
 }
-

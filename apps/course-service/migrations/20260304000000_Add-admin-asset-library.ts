@@ -7,13 +7,29 @@ import {
 
 export class AddAdminIdToMediaAssets20260304000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await this.addAdminIdColumn(queryRunner, 'image_assets', 'idx_image_assets_admin_id');
-    await this.addAdminIdColumn(queryRunner, 'video_assets', 'idx_video_assets_admin_id');
+    await this.addAdminIdColumn(
+      queryRunner,
+      'image_assets',
+      'idx_image_assets_admin_id',
+    );
+    await this.addAdminIdColumn(
+      queryRunner,
+      'video_assets',
+      'idx_video_assets_admin_id',
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await this.dropAdminIdColumn(queryRunner, 'video_assets', 'idx_video_assets_admin_id');
-    await this.dropAdminIdColumn(queryRunner, 'image_assets', 'idx_image_assets_admin_id');
+    await this.dropAdminIdColumn(
+      queryRunner,
+      'video_assets',
+      'idx_video_assets_admin_id',
+    );
+    await this.dropAdminIdColumn(
+      queryRunner,
+      'image_assets',
+      'idx_image_assets_admin_id',
+    );
   }
 
   private async addAdminIdColumn(

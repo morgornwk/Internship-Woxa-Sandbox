@@ -1,18 +1,18 @@
 import { ConfigService } from '@nestjs/config';
 import { JwtModuleOptions } from '@nestjs/jwt';
-import type { StringValue } from 'ms';
 
-function isMsString(value: string): value is StringValue {
-  // Accept common ms formats used by jsonwebtoken / @nestjs/jwt
-  // Examples: "15m", "7d", "30s", "1h", "1000ms"
+type JwtExpiresInUnit = 'ms' | 's' | 'm' | 'h' | 'd' | 'w' | 'y';
+type JwtExpiresInString = `${number}${JwtExpiresInUnit}`;
+
+function isMsString(value: string): value is JwtExpiresInString {
   return /^\d+(ms|s|m|h|d|w|y)$/.test(value.trim());
 }
 
 function getExpiresIn(
   configService: ConfigService,
   key: string,
-  fallback: StringValue,
-): number | StringValue {
+  fallback: JwtExpiresInString,
+): number | JwtExpiresInString {
   const raw = configService.get<string>(key);
   if (!raw) return fallback;
 
@@ -31,7 +31,9 @@ function getExpiresIn(
   return fallback;
 }
 
-export const getJwtConfig = (configService: ConfigService): JwtModuleOptions => {
+export const getJwtConfig = (
+  configService: ConfigService,
+): JwtModuleOptions => {
   const secret = configService.get<string>('JWT_ACCESS_SECRET');
   if (!secret) {
     throw new Error('Authentication configuration is missing');

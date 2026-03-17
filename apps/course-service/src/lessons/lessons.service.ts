@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Lesson, LessonType } from './entities/lesson.entity';
@@ -7,7 +12,11 @@ import { Article } from '../articles/entities/article.entity';
 import { Quizs } from '../quizs/entities/quizs.entity';
 import { QuizsCheckpoint } from '../quizs/entities/checkpoint.entity';
 import { VideoAsset } from '../media-videos/entities/video.entity';
-import { CreateLessonDto, UpdateLessonDto, LessonResponseDto } from './dto/lesson';
+import {
+  CreateLessonDto,
+  UpdateLessonDto,
+  LessonResponseDto,
+} from './dto/lesson';
 import { Level } from '../levels/entities/level.entity';
 import { CoursesService } from '../courses/courses.service';
 
@@ -31,7 +40,7 @@ export class LessonsService {
     @InjectRepository(Level)
     private readonly levelRepository: Repository<Level>,
     private readonly coursesService: CoursesService,
-  ) { }
+  ) {}
 
   async create(createLessonDto: CreateLessonDto): Promise<LessonResponseDto> {
     const chapter = await this.chapterRepository.findOne({
@@ -39,7 +48,9 @@ export class LessonsService {
     });
 
     if (!chapter) {
-      throw new NotFoundException(`Chapter with ID ${createLessonDto.chapter_id} not found`);
+      throw new NotFoundException(
+        `Chapter with ID ${createLessonDto.chapter_id} not found`,
+      );
     }
 
     // ดึง lessons ทั้งหมดใน chapter เรียงตามลำดับ
@@ -64,7 +75,6 @@ export class LessonsService {
         orderIndex = lessons.length; // checkpoint ใหม่จะอยู่ท้ายสุดเสมอ
       }
     } else {
-
       // ถ้าไม่ใช่ checkpoint → แทรกก่อน checkpoint
       if (existingCheckpoint) {
         orderIndex = existingCheckpoint.orderIndex;
@@ -107,11 +117,15 @@ export class LessonsService {
     return Promise.all(lessons.map((l) => this.toResponseDto(l)));
   }
 
-  async findPublishedByChapter(chapterId: number): Promise<LessonResponseDto[]> {
-    const lessons = (await this.lessonRepository.find({
-      where: { chapter_id: chapterId },
-      order: { orderIndex: 'ASC' },
-    })).filter((lesson) => this.isLessonPublishedForStudent(lesson));
+  async findPublishedByChapter(
+    chapterId: number,
+  ): Promise<LessonResponseDto[]> {
+    const lessons = (
+      await this.lessonRepository.find({
+        where: { chapter_id: chapterId },
+        order: { orderIndex: 'ASC' },
+      })
+    ).filter((lesson) => this.isLessonPublishedForStudent(lesson));
 
     return Promise.all(lessons.map((l) => this.toResponseDto(l)));
   }
@@ -125,15 +139,19 @@ export class LessonsService {
   }
 
   async findAllPublished(): Promise<LessonResponseDto[]> {
-    const lessons = (await this.lessonRepository.find({
-      order: { orderIndex: 'ASC' },
-    })).filter((lesson) => this.isLessonPublishedForStudent(lesson));
+    const lessons = (
+      await this.lessonRepository.find({
+        order: { orderIndex: 'ASC' },
+      })
+    ).filter((lesson) => this.isLessonPublishedForStudent(lesson));
 
     return Promise.all(lessons.map((l) => this.toResponseDto(l)));
   }
 
   async findOne(id: number): Promise<LessonResponseDto> {
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: id } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: id },
+    });
 
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
@@ -196,7 +214,9 @@ export class LessonsService {
   }
 
   async findOneAdmin(id: number): Promise<LessonResponseDto> {
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: id } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: id },
+    });
 
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
@@ -206,8 +226,13 @@ export class LessonsService {
   }
 
   // Update lesson by ID
-  async update(id: number, updateLessonDto: UpdateLessonDto): Promise<LessonResponseDto> {
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: id } });
+  async update(
+    id: number,
+    updateLessonDto: UpdateLessonDto,
+  ): Promise<LessonResponseDto> {
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: id },
+    });
 
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
@@ -277,7 +302,8 @@ export class LessonsService {
     }
 
     // ถ้า update orderIndex ให้ตรวจสอบว่าไม่ใช่ checkpoint และไม่ให้ไปอยู่กลาง chapter
-    if (updateLessonDto.orderIndex !== undefined &&
+    if (
+      updateLessonDto.orderIndex !== undefined &&
       lesson.lesson_type !== LessonType.CHECKPOINT
     ) {
       lesson.orderIndex = updateLessonDto.orderIndex;
@@ -293,7 +319,9 @@ export class LessonsService {
 
   // Delete lesson by ID
   async remove(id: number): Promise<{ message: string }> {
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: id } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: id },
+    });
 
     if (!lesson) {
       throw new NotFoundException(`Lesson with ID ${id} not found`);
@@ -307,7 +335,10 @@ export class LessonsService {
   }
 
   // reorder lessons within a chapter
-  async reorder(chapterId: number, lessonIds: number[]): Promise<LessonResponseDto[]> {
+  async reorder(
+    chapterId: number,
+    lessonIds: number[],
+  ): Promise<LessonResponseDto[]> {
     const lessons = await this.lessonRepository.find({
       where: { chapter_id: chapterId },
     });
@@ -334,7 +365,9 @@ export class LessonsService {
 
     for (const id of lessonIds) {
       if (!lessonMap.has(id)) {
-        throw new BadRequestException(`Lesson ID ${id} does not belong to chapter ${chapterId}`);
+        throw new BadRequestException(
+          `Lesson ID ${id} does not belong to chapter ${chapterId}`,
+        );
       }
     }
 
@@ -380,9 +413,10 @@ export class LessonsService {
       chapter_id: lesson.chapter_id,
       lesson_ImageUrl: lesson.lesson_ImageUrl,
       lesson_videoUrl: lesson.lesson_videoUrl,
-      isPublished: lesson.lesson_type === LessonType.VIDEO
-        ? Boolean(lesson.lesson_videoUrl?.trim())
-        : lesson.isPublished,
+      isPublished:
+        lesson.lesson_type === LessonType.VIDEO
+          ? Boolean(lesson.lesson_videoUrl?.trim())
+          : lesson.isPublished,
       createdAt: lesson.createdAt,
     };
 
@@ -406,7 +440,9 @@ export class LessonsService {
         }
       } catch (error) {
         // Log checkpoint enrichment errors but return base lesson data
-        this.logger.warn(`Failed to enrich checkpoint data for lesson ID ${lesson.lesson_id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        this.logger.warn(
+          `Failed to enrich checkpoint data for lesson ID ${lesson.lesson_id}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        );
       }
     }
 
@@ -425,14 +461,20 @@ export class LessonsService {
 
   // ล้าง cache โครงสร้างคอร์สเมื่อ lesson เปลี่ยน
   private async invalidateCourseCache(chapterId: number): Promise<void> {
-    const chapter = await this.chapterRepository.findOne({ where: { chapter_id: chapterId } });
+    const chapter = await this.chapterRepository.findOne({
+      where: { chapter_id: chapterId },
+    });
     if (!chapter) return;
-    const level = await this.levelRepository.findOne({ where: { level_id: chapter.levelId } });
+    const level = await this.levelRepository.findOne({
+      where: { level_id: chapter.levelId },
+    });
     if (!level) return;
     await this.coursesService.invalidateCourseCaches(level.course_id);
   }
 
-  private resolveInitialPublishedState(createLessonDto: CreateLessonDto): boolean {
+  private resolveInitialPublishedState(
+    createLessonDto: CreateLessonDto,
+  ): boolean {
     if (!createLessonDto.isPublished) {
       return false;
     }

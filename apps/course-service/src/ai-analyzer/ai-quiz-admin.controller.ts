@@ -1,5 +1,19 @@
-import { Body, Controller, Param, ParseIntPipe, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard, Roles, RolesGuard } from '@auth';
 import { UserRole } from '@common/enums';
 
@@ -27,7 +41,8 @@ export class AiQuizAdminController {
           language: 'th',
           difficulty: 'medium',
           quiz_type: 'multiple_choice',
-          admin: 'ช่วยสร้างข้อสอบแบบเลือกตอบ 4 ตัวเลือก เน้นความเข้าใจจากเนื้อหา',
+          admin:
+            'ช่วยสร้างข้อสอบแบบเลือกตอบ 4 ตัวเลือก เน้นความเข้าใจจากเนื้อหา',
         },
       },
       true_false: {
@@ -57,7 +72,10 @@ export class AiQuizAdminController {
   @Post(':aiQuizId/approve')
   @ApiOperation({ summary: 'Approve AI quiz and save to quizs table' })
   @ApiParam({ name: 'aiQuizId', type: Number })
-  @ApiResponse({ status: 201, description: 'Quiz saved and AI quiz marked approved' })
+  @ApiResponse({
+    status: 201,
+    description: 'Quiz saved and AI quiz marked approved',
+  })
   @ApiResponse({ status: 400, description: 'Invalid AI quiz ID' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 404, description: 'AI quiz not found' })

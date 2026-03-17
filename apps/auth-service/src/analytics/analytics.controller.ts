@@ -1,5 +1,11 @@
 import { Controller, Get, Query, UseGuards, Logger } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CurrentUser, JwtAuthGuard, Roles, RolesGuard } from '@auth';
 import { UserRole } from '@common/enums';
@@ -16,12 +22,13 @@ import { AdminDashboardAnalyticsDto } from './dto/admin-dashboard-analytics.dto'
 export class AnalyticsController {
   private readonly logger = new Logger(AnalyticsController.name);
 
-  constructor(private readonly analyticsService: AnalyticsService) { }
+  constructor(private readonly analyticsService: AnalyticsService) {}
 
   @Get('analytics')
   @ApiOperation({
     summary: 'ดึงข้อมูล Analytics ของ Admin Dashboard',
-    description: 'สำหรับ ADMIN จะได้ข้อมูลภาพรวมการเรียนรู้ของผู้ใช้ ส่วน OWNER จะได้ข้อมูลภาพรวมทั้งหมด รวมถึงข้อมูลผู้ใช้และการใช้งาน',
+    description:
+      'สำหรับ ADMIN จะได้ข้อมูลภาพรวมการเรียนรู้ของผู้ใช้ ส่วน OWNER จะได้ข้อมูลภาพรวมทั้งหมด รวมถึงข้อมูลผู้ใช้และการใช้งาน',
   })
   @ApiQuery({
     name: 'timeRange',
@@ -102,7 +109,10 @@ export class AnalyticsController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 500, description: 'Internal Server Error' })
-  async getDashboardAnalytics(@CurrentUser() user: AuthUser, @Query('timeRange') timeRange?: string): Promise<AdminDashboardAnalyticsDto> {
+  async getDashboardAnalytics(
+    @CurrentUser() user: AuthUser,
+    @Query('timeRange') timeRange?: string,
+  ): Promise<AdminDashboardAnalyticsDto> {
     return this.analyticsService.getDashboardAnalytics(user, timeRange);
   }
 }

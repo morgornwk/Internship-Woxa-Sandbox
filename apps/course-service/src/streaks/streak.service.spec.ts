@@ -49,14 +49,19 @@ describe('StreakService', () => {
 
   describe('bumpStreak', () => {
     it('creates streak if missing then increments', async () => {
-      (repo.findOne as jest.Mock)
+      repo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(makeStreak())
-        .mockResolvedValueOnce(makeStreak({ currentStreak: 1, longestStreak: 1 }));
+        .mockResolvedValueOnce(
+          makeStreak({ currentStreak: 1, longestStreak: 1 }),
+        );
 
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
-      const res = await service.bumpStreak('u1', new Date('2026-03-05T10:00:00.000Z'));
+      const res = await service.bumpStreak(
+        'u1',
+        new Date('2026-03-05T10:00:00.000Z'),
+      );
 
       expect(repo.upsert).toHaveBeenCalled();
       expect(res.currentStreak).toBe(1);
@@ -64,7 +69,9 @@ describe('StreakService', () => {
 
     it('does not increment if already completed today', async () => {
       const now = new Date('2026-03-05T10:00:00.000Z');
-      repo.findOne.mockResolvedValue(makeStreak({ currentStreak: 5, lastCompletedAt: now }));
+      repo.findOne.mockResolvedValue(
+        makeStreak({ currentStreak: 5, lastCompletedAt: now }),
+      );
 
       const res = await service.bumpStreak('u1', now);
       expect(res.currentStreak).toBe(5);
@@ -74,9 +81,14 @@ describe('StreakService', () => {
     it('resets when gap >= 2 days then increments', async () => {
       const last = new Date('2026-03-01T10:00:00.000Z');
       const now = new Date('2026-03-05T10:00:00.000Z');
-      const streak = makeStreak({ currentStreak: 10, longestStreak: 10, lastCompletedAt: last, rewardShownAt: last });
+      const streak = makeStreak({
+        currentStreak: 10,
+        longestStreak: 10,
+        lastCompletedAt: last,
+        rewardShownAt: last,
+      });
       repo.findOne.mockResolvedValue(streak);
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
       const res = await service.bumpStreak('u1', now);
       expect(res.currentStreak).toBe(1);
@@ -86,9 +98,13 @@ describe('StreakService', () => {
     it('increments when lastCompletedAt was yesterday (gap = 1)', async () => {
       const last = new Date('2026-03-04T10:00:00.000Z');
       const now = new Date('2026-03-05T10:00:00.000Z');
-      const streak = makeStreak({ currentStreak: 2, longestStreak: 2, lastCompletedAt: last });
+      const streak = makeStreak({
+        currentStreak: 2,
+        longestStreak: 2,
+        lastCompletedAt: last,
+      });
       repo.findOne.mockResolvedValue(streak);
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
       const res = await service.bumpStreak('u1', now);
 
@@ -101,9 +117,13 @@ describe('StreakService', () => {
   describe('getStreak', () => {
     it('resets when gap >= 2 days', async () => {
       const last = new Date('2026-03-01T10:00:00.000Z');
-      const streak = makeStreak({ currentStreak: 3, lastCompletedAt: last, rewardShownAt: last });
+      const streak = makeStreak({
+        currentStreak: 3,
+        lastCompletedAt: last,
+        rewardShownAt: last,
+      });
       repo.findOne.mockResolvedValue(streak);
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
       const res = await service.getStreak('u1');
       expect(res.streak.currentStreak).toBe(0);
@@ -111,7 +131,11 @@ describe('StreakService', () => {
 
     it('returns isReward true when completed today and not shown yet', async () => {
       const now = new Date();
-      const streak = makeStreak({ currentStreak: 2, lastCompletedAt: now, rewardShownAt: null });
+      const streak = makeStreak({
+        currentStreak: 2,
+        lastCompletedAt: now,
+        rewardShownAt: null,
+      });
       repo.findOne.mockResolvedValue(streak);
 
       const res = await service.getStreak('u1');
@@ -121,7 +145,11 @@ describe('StreakService', () => {
 
     it('returns isReward false when reward already shown today', async () => {
       const now = new Date();
-      const streak = makeStreak({ currentStreak: 2, lastCompletedAt: now, rewardShownAt: now });
+      const streak = makeStreak({
+        currentStreak: 2,
+        lastCompletedAt: now,
+        rewardShownAt: now,
+      });
       repo.findOne.mockResolvedValue(streak);
 
       const res = await service.getStreak('u1');
@@ -133,7 +161,11 @@ describe('StreakService', () => {
       jest.useFakeTimers();
       jest.setSystemTime(new Date('2026-03-05T10:00:00.000Z'));
       const last = new Date('2026-03-04T10:00:00.000Z');
-      const streak = makeStreak({ currentStreak: 2, lastCompletedAt: last, rewardShownAt: null });
+      const streak = makeStreak({
+        currentStreak: 2,
+        lastCompletedAt: last,
+        rewardShownAt: null,
+      });
       repo.findOne.mockResolvedValue(streak);
 
       const res = await service.getStreak('u1');
@@ -150,7 +182,7 @@ describe('StreakService', () => {
     it('sets rewardShownAt and saves', async () => {
       const streak = makeStreak({ rewardShownAt: null });
       repo.findOne.mockResolvedValue(streak);
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
       const res = await service.markRewardShown('u1');
       expect(res.rewardShownAt).toBeInstanceOf(Date);
@@ -158,12 +190,12 @@ describe('StreakService', () => {
     });
 
     it('creates streak if missing then marks shown', async () => {
-      (repo.findOne as jest.Mock)
+      repo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(makeStreak())
         .mockResolvedValueOnce(makeStreak());
 
-      repo.save.mockImplementation(async (s) => s as any);
+      repo.save.mockImplementation(async (s) => s);
 
       await service.markRewardShown('u1');
       expect(repo.upsert).toHaveBeenCalled();

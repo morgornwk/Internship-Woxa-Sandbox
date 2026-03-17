@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -15,27 +20,34 @@ export class MediaVideosService {
   constructor(
     @InjectRepository(VideoAsset)
     private readonly repo: Repository<VideoAsset>,
-    private readonly aws: AwsS3StorageService
-  ) { }
+    private readonly aws: AwsS3StorageService,
+  ) {}
 
   // เช็คว่า MIME type ของไฟล์วิดีโอที่อัพโหลดมานั้นอยู่ใน allowlist หรือไม่ ถ้าไม่อยู่ให้โยน BadRequestException ออกมา
   private validateVideoMime(mimeType: string, originalFilename?: string) {
     const normalizedMime = (mimeType ?? '').trim().toLowerCase();
 
-    const allowMimes = 'video/mp4,video/webm,video/quicktime,video/x-msvideo,video/avi,video/x-matroska,video/mpeg,application/octet-stream'
-      .split(',')
-      .map((x) => x.trim().toLowerCase());
+    const allowMimes =
+      'video/mp4,video/webm,video/quicktime,video/x-msvideo,video/avi,video/x-matroska,video/mpeg,application/octet-stream'
+        .split(',')
+        .map((x) => x.trim().toLowerCase());
 
     if (allowMimes.includes(normalizedMime)) return;
 
     // บาง browser/SDK อาจส่งเป็น octet-stream: ให้ fallback เช็คจากนามสกุลไฟล์
-    const allowExt = (process.env.VIDEO_EXT_ALLOWLIST ?? 'mp4,webm,mov,avi,mkv,mpeg,mpg')
+    const allowExt = (
+      process.env.VIDEO_EXT_ALLOWLIST ?? 'mp4,webm,mov,avi,mkv,mpeg,mpg'
+    )
       .split(',')
       .map((x) => x.trim().toLowerCase())
       .filter(Boolean);
 
     const ext = (originalFilename ?? '').split('.').pop()?.toLowerCase();
-    if ((normalizedMime === 'application/octet-stream' || !normalizedMime) && ext && allowExt.includes(ext)) {
+    if (
+      (normalizedMime === 'application/octet-stream' || !normalizedMime) &&
+      ext &&
+      allowExt.includes(ext)
+    ) {
       return;
     }
 
@@ -46,7 +58,8 @@ export class MediaVideosService {
   async createPresignedUpload(dto: CreateVideoDto, adminId: string) {
     this.validateVideoMime(dto.mime_type, dto.original_filename);
 
-    const maxSize = Number(process.env.VIDEO_MAX_SIZE_BYTES) || 1 * 1024 * 1024 * 1024; // 1GB
+    const maxSize =
+      Number(process.env.VIDEO_MAX_SIZE_BYTES) || 1 * 1024 * 1024 * 1024; // 1GB
 
     if (dto.size_bytes > maxSize) {
       throw new BadRequestException('file size exceeds limit');
@@ -58,7 +71,12 @@ export class MediaVideosService {
     const key = `videos/${videoId}`;
 
     // สร้าง presigned URL สำหรับอัพโหลดไปยัง S3 โดยกำหนด content type และระยะเวลาหมดอายุ (เช่น 15 นาที)
-    const uploadUrl = await this.aws.presignPut(bucket, key, dto.mime_type, 60 * 15);
+    const uploadUrl = await this.aws.presignPut(
+      bucket,
+      key,
+      dto.mime_type,
+      60 * 15,
+    );
 
     const asset = this.repo.create({
       adminId,
@@ -107,7 +125,12 @@ export class MediaVideosService {
     const asset = await this.repo.findOne({ where: { id } });
     if (!asset) throw new NotFoundException('video asset not found');
 
-    const url = asset.publicUrl ?? this.aws.buildPublicUrl(asset.storageBucket ?? this.aws.bucket, asset.storageKey!);
+    const url =
+      asset.publicUrl ??
+      this.aws.buildPublicUrl(
+        asset.storageBucket ?? this.aws.bucket,
+        asset.storageKey!,
+      );
 
     return {
       video_id: asset.id,
@@ -125,10 +148,12 @@ export class MediaVideosService {
     const asset = await this.repo.findOne({ where: { id } });
     if (!asset) throw new NotFoundException('video asset not found');
 
-    if (dto.original_filename !== undefined) asset.originalFilename = dto.original_filename;
+    if (dto.original_filename !== undefined)
+      asset.originalFilename = dto.original_filename;
     if (dto.mime_type !== undefined) asset.mimeType = dto.mime_type;
     if (dto.size_bytes !== undefined) asset.sizeBytes = String(dto.size_bytes);
-    if (dto.storage_bucket !== undefined) asset.storageBucket = dto.storage_bucket;
+    if (dto.storage_bucket !== undefined)
+      asset.storageBucket = dto.storage_bucket;
     if (dto.storage_key !== undefined) asset.storageKey = dto.storage_key;
     if (dto.public_url !== undefined) asset.publicUrl = dto.public_url;
     if (dto.status !== undefined) asset.status = dto.status;

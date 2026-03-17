@@ -8,8 +8,8 @@ import { AssetLibraryService } from './asset-library.service';
 import { AssetMedia } from './entities/asset-media.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([AssetMedia]), StorageModule],
-    controllers: [AssetLibraryController],
-    providers: [AssetLibraryService, JwtAuthGuard, RolesGuard],
+  imports: [TypeOrmModule.forFeature([AssetMedia]), StorageModule],
+  controllers: [AssetLibraryController],
+  providers: [AssetLibraryService, JwtAuthGuard, RolesGuard],
 })
-export class AssetLibraryModule { }
+export class AssetLibraryModule {}

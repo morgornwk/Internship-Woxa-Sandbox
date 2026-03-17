@@ -26,7 +26,12 @@ export class CreateAiQuizGenerations20260302000000 implements MigrationInterface
             { name: 'lesson_id', type: 'int', isNullable: false },
             { name: 'prompt_used', type: 'text', isNullable: false },
             { name: 'ai_response', type: 'jsonb', isNullable: false },
-            { name: 'model_name', type: 'varchar', length: '100', isNullable: false },
+            {
+              name: 'model_name',
+              type: 'varchar',
+              length: '100',
+              isNullable: false,
+            },
             { name: 'prompt_tokens', type: 'int', isNullable: true },
             { name: 'completion_tokens', type: 'int', isNullable: true },
             { name: 'total_tokens', type: 'int', isNullable: true },
@@ -75,7 +80,8 @@ export class CreateAiQuizGenerations20260302000000 implements MigrationInterface
     const hasFk = table.foreignKeys.some(
       (fk) =>
         fk.name === fkName ||
-        (fk.columnNames.includes('lesson_id') && fk.referencedTableName === 'lessons'),
+        (fk.columnNames.includes('lesson_id') &&
+          fk.referencedTableName === 'lessons'),
     );
 
     if (!hasFk) {

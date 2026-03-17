@@ -29,7 +29,9 @@ describe('LevelsStudentController', () => {
 
   it('findByCourse delegates to LevelsService.findByCourse', async () => {
     levelsService.findByCourse.mockResolvedValue([{ level_id: 1 } as any]);
-    await expect(controller.findByCourse(10)).resolves.toEqual([{ level_id: 1 }]);
+    await expect(controller.findByCourse(10)).resolves.toEqual([
+      { level_id: 1 },
+    ]);
     expect(levelsService.findByCourse).toHaveBeenCalledWith(10);
   });
 

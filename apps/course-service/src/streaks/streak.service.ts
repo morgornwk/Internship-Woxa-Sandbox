@@ -24,9 +24,7 @@ function isSameBangkokDay(a: Date, b: Date): boolean {
 }
 
 function diffDaysBangkok(a: Date, b: Date): number {
-  return Math.floor(
-    (startOfBangkokDay(a) - startOfBangkokDay(b)) / DAY_MS,
-  );
+  return Math.floor((startOfBangkokDay(a) - startOfBangkokDay(b)) / DAY_MS);
 }
 
 @Injectable()
@@ -34,14 +32,14 @@ export class StreakService {
   constructor(
     @InjectRepository(UserStreak)
     private readonly streakRepository: Repository<UserStreak>,
-  ) { }
+  ) {}
 
   // ---------- Increment Streak ----------
   async bumpStreak(
     userId: string,
     now: Date = new Date(),
   ): Promise<UserStreak> {
-    let streak = await this.ensureStreak(userId);
+    const streak = await this.ensureStreak(userId);
 
     if (streak.lastCompletedAt) {
       const gap = diffDaysBangkok(now, streak.lastCompletedAt);
@@ -61,10 +59,7 @@ export class StreakService {
     const nextCurrent = (streak.currentStreak ?? 0) + 1;
 
     streak.currentStreak = nextCurrent;
-    streak.longestStreak = Math.max(
-      streak.longestStreak ?? 0,
-      nextCurrent,
-    );
+    streak.longestStreak = Math.max(streak.longestStreak ?? 0, nextCurrent);
     streak.lastCompletedAt = now;
 
     return this.streakRepository.save(streak);
@@ -92,13 +87,11 @@ export class StreakService {
     }
 
     const isCompletedToday =
-      !!streak.lastCompletedAt &&
-      isSameBangkokDay(streak.lastCompletedAt, now);
+      !!streak.lastCompletedAt && isSameBangkokDay(streak.lastCompletedAt, now);
 
     const isReward =
       isCompletedToday &&
-      (!streak.rewardShownAt ||
-        !isSameBangkokDay(streak.rewardShownAt, now));
+      (!streak.rewardShownAt || !isSameBangkokDay(streak.rewardShownAt, now));
 
     const isFlameOn = isCompletedToday;
 

@@ -1,4 +1,10 @@
-import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { v4 as uuidv4 } from 'uuid';
 
 @Entity('notifications')
@@ -6,7 +12,12 @@ import { v4 as uuidv4 } from 'uuid';
 @Index('idx_notifications_read_at', ['readAt'])
 @Index('idx_notifications_notification_id', ['notificationId'])
 export class Notification {
-  @Column({ name: 'notification_id', type: 'uuid', primary: true, default: () => uuidv4() })
+  @Column({
+    name: 'notification_id',
+    type: 'uuid',
+    primary: true,
+    default: () => uuidv4(),
+  })
   notificationId: string;
 
   @Column({ name: 'user_id', type: 'uuid' })

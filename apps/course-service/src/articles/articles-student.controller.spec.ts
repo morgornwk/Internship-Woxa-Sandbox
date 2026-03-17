@@ -41,7 +41,9 @@ describe('ArticlesStudentController', () => {
 
   it('findByLesson delegates to ArticlesService.findByLesson', async () => {
     svc.findByLesson.mockResolvedValue([{ article_id: 1 } as any]);
-    await expect(controller.findByLesson(10)).resolves.toEqual([{ article_id: 1 }]);
+    await expect(controller.findByLesson(10)).resolves.toEqual([
+      { article_id: 1 },
+    ]);
     expect(svc.findByLesson).toHaveBeenCalledWith(10);
   });
 

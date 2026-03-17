@@ -46,7 +46,10 @@ function createTimestampParts(
   };
 }
 
-function getFormatterPart(parts: Intl.DateTimeFormatPart[], type: Intl.DateTimeFormatPartTypes): string {
+function getFormatterPart(
+  parts: Intl.DateTimeFormatPart[],
+  type: Intl.DateTimeFormatPartTypes,
+): string {
   return parts.find((part) => part.type === type)?.value ?? '0';
 }
 
@@ -57,7 +60,8 @@ function parseWallClockTimestamp(value: string): TimestampParts | null {
     return null;
   }
 
-  const [, year, month, day, hour, minute, second = '00', millisecond = '0'] = match;
+  const [, year, month, day, hour, minute, second = '00', millisecond = '0'] =
+    match;
 
   return createTimestampParts(
     Number(year),
@@ -112,7 +116,9 @@ function formatTimestampParts(parts: TimestampParts): string {
   return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(parts.hour)}:${pad(parts.minute)}:${pad(parts.second)}.${pad(parts.millisecond, 3)}+07:00`;
 }
 
-function getStoredTimestampParts(value?: Date | string | null): TimestampParts | null {
+function getStoredTimestampParts(
+  value?: Date | string | null,
+): TimestampParts | null {
   if (!value) {
     return null;
   }
@@ -146,7 +152,9 @@ export function convertInstantToBangkokWallClock(value: Date): Date {
   return new Date(toEpochMilliseconds(parts));
 }
 
-export function formatStoredRewardTimestamp(value?: Date | string | null): string | null {
+export function formatStoredRewardTimestamp(
+  value?: Date | string | null,
+): string | null {
   const parts = getStoredTimestampParts(value);
 
   if (!parts) {
@@ -166,5 +174,8 @@ export function compareStoredRewardTimestampToBangkokNow(
     return null;
   }
 
-  return toEpochMilliseconds(targetParts) - toEpochMilliseconds(getBangkokNowParts(now));
+  return (
+    toEpochMilliseconds(targetParts) -
+    toEpochMilliseconds(getBangkokNowParts(now))
+  );
 }

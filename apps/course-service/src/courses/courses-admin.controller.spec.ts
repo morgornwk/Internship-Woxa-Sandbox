@@ -33,7 +33,9 @@ describe('AdminCoursesController', () => {
   describe('create', () => {
     it('delegates to CoursesService.create', async () => {
       coursesService.create.mockResolvedValue({ course_id: 1 } as any);
-      await expect(controller.create({ course_title: 't' } as any)).resolves.toEqual({
+      await expect(
+        controller.create({ course_title: 't' } as any),
+      ).resolves.toEqual({
         course_id: 1,
       });
       expect(coursesService.create).toHaveBeenCalledWith({ course_title: 't' });
@@ -61,7 +63,9 @@ describe('AdminCoursesController', () => {
   describe('findOne', () => {
     it('delegates to CoursesService.findOne', async () => {
       coursesService.findOne.mockResolvedValue({ course_id: 123 } as any);
-      await expect(controller.findOne(123)).resolves.toEqual({ course_id: 123 });
+      await expect(controller.findOne(123)).resolves.toEqual({
+        course_id: 123,
+      });
       expect(coursesService.findOne).toHaveBeenCalledWith(123);
     });
 
@@ -73,8 +77,12 @@ describe('AdminCoursesController', () => {
 
   describe('getStructure', () => {
     it('delegates to CoursesService.getStructureAdmin', async () => {
-      coursesService.getStructureAdmin.mockResolvedValue({ course_id: 5 } as any);
-      await expect(controller.getStructure(5)).resolves.toEqual({ course_id: 5 });
+      coursesService.getStructureAdmin.mockResolvedValue({
+        course_id: 5,
+      } as any);
+      await expect(controller.getStructure(5)).resolves.toEqual({
+        course_id: 5,
+      });
       expect(coursesService.getStructureAdmin).toHaveBeenCalledWith(5);
     });
 
@@ -86,12 +94,19 @@ describe('AdminCoursesController', () => {
 
   describe('update', () => {
     it('delegates to CoursesService.update', async () => {
-      coursesService.update.mockResolvedValue({ course_id: 7, course_title: 'n' } as any);
-      await expect(controller.update(7, { course_title: 'n' } as any)).resolves.toEqual({
+      coursesService.update.mockResolvedValue({
+        course_id: 7,
+        course_title: 'n',
+      } as any);
+      await expect(
+        controller.update(7, { course_title: 'n' } as any),
+      ).resolves.toEqual({
         course_id: 7,
         course_title: 'n',
       });
-      expect(coursesService.update).toHaveBeenCalledWith(7, { course_title: 'n' });
+      expect(coursesService.update).toHaveBeenCalledWith(7, {
+        course_title: 'n',
+      });
     });
 
     it('propagates errors from CoursesService.update', async () => {

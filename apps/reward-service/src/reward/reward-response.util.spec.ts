@@ -1,4 +1,7 @@
-import { serializeReward, serializeRewardRedemption } from './reward-response.util';
+import {
+  serializeReward,
+  serializeRewardRedemption,
+} from './reward-response.util';
 import { Reward } from './entities/rewards.entity';
 import { RewardRedemption } from './entities/reward-redemption';
 
@@ -25,7 +28,9 @@ describe('reward-response.util', () => {
 
     expect(serialized.redeem_start_date).toBe('2026-03-13T00:48:00.000+07:00');
     expect(serialized.redeem_end_date).toBe('2026-03-31T01:18:00.000+07:00');
-    expect(serialized.redeem_start_date).not.toBe('2026-03-13T07:48:00.000+07:00');
+    expect(serialized.redeem_start_date).not.toBe(
+      '2026-03-13T07:48:00.000+07:00',
+    );
   });
 
   it('keeps wall-clock strings unchanged when serializing rewards', () => {

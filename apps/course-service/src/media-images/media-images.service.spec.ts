@@ -52,7 +52,9 @@ describe('MediaImagesService', () => {
           useValue: {
             bucket: 'bucket1',
             putObject: jest.fn(),
-            buildPublicUrl: jest.fn((bucket: string, key: string) => `https://cdn/${bucket}/${key}`),
+            buildPublicUrl: jest.fn(
+              (bucket: string, key: string) => `https://cdn/${bucket}/${key}`,
+            ),
             deleteObject: jest.fn(),
           },
         },
@@ -78,7 +80,9 @@ describe('MediaImagesService', () => {
 
   describe('uploadImageFileAndPersist', () => {
     it('throws when file missing', async () => {
-      await expect(service.uploadImageFileAndPersist(null as any, 'admin')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.uploadImageFileAndPersist(null as any, 'admin'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when invalid mime', async () => {
@@ -89,7 +93,9 @@ describe('MediaImagesService', () => {
         buffer: Buffer.from('x'),
       } as any;
 
-      await expect(service.uploadImageFileAndPersist(file, 'admin')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.uploadImageFileAndPersist(file, 'admin'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('uploads to S3 and saves asset', async () => {
@@ -100,8 +106,10 @@ describe('MediaImagesService', () => {
         buffer: Buffer.from('x'),
       } as any;
 
-      repo.create!.mockImplementation((x: any) => x);
-      repo.save!.mockResolvedValue(makeAsset({ id: 99, publicUrl: 'https://cdn/bucket1/images/uuid' }));
+      repo.create.mockImplementation((x: any) => x);
+      repo.save.mockResolvedValue(
+        makeAsset({ id: 99, publicUrl: 'https://cdn/bucket1/images/uuid' }),
+      );
 
       const res = await service.uploadImageFileAndPersist(file, 'admin');
 
@@ -113,18 +121,29 @@ describe('MediaImagesService', () => {
 
   describe('getPublicUrlById', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
-      await expect(service.getPublicUrlById(1)).rejects.toBeInstanceOf(NotFoundException);
+      repo.findOne.mockResolvedValue(null);
+      await expect(service.getPublicUrlById(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('uses stored publicUrl when present', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ id: 1, publicUrl: 'https://cdn/x' }));
+      repo.findOne.mockResolvedValue(
+        makeAsset({ id: 1, publicUrl: 'https://cdn/x' }),
+      );
       const res = await service.getPublicUrlById(1);
       expect(res.url).toBe('https://cdn/x');
     });
 
     it('builds url when publicUrl missing', async () => {
-      repo.findOne!.mockResolvedValue(makeAsset({ id: 1, publicUrl: null as any, storageBucket: 'b', storageKey: 'k' }));
+      repo.findOne.mockResolvedValue(
+        makeAsset({
+          id: 1,
+          publicUrl: null as any,
+          storageBucket: 'b',
+          storageKey: 'k',
+        }),
+      );
       const res = await service.getPublicUrlById(1);
       expect(aws.buildPublicUrl).toHaveBeenCalledWith('b', 'k');
       expect(res.url).toContain('https://cdn/');
@@ -133,36 +152,42 @@ describe('MediaImagesService', () => {
 
   describe('updateImageAsset', () => {
     it('throws when no fields', async () => {
-      await expect(service.updateImageAsset(1, {} as any)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.updateImageAsset(1, {} as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
-      await expect(service.updateImageAsset(1, { original_filename: 'x.png' } as any)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      repo.findOne.mockResolvedValue(null);
+      await expect(
+        service.updateImageAsset(1, { original_filename: 'x.png' } as any),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('updates fields and saves', async () => {
       const asset = makeAsset({ id: 1, originalFilename: 'old.png' });
-      repo.findOne!.mockResolvedValue(asset);
-      repo.save!.mockImplementation(async (a) => a as any);
+      repo.findOne.mockResolvedValue(asset);
+      repo.save.mockImplementation(async (a) => a);
 
-      const res = await service.updateImageAsset(1, { original_filename: 'new.png' } as any);
+      const res = await service.updateImageAsset(1, {
+        original_filename: 'new.png',
+      } as any);
       expect(res.original_filename).toBe('new.png');
     });
   });
 
   describe('deleteImageById', () => {
     it('throws when not found', async () => {
-      repo.findOne!.mockResolvedValue(null);
-      await expect(service.deleteImageById(1)).rejects.toBeInstanceOf(NotFoundException);
+      repo.findOne.mockResolvedValue(null);
+      await expect(service.deleteImageById(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('deletes from S3 and removes asset', async () => {
       const asset = makeAsset({ id: 1, storageBucket: 'b', storageKey: 'k' });
-      repo.findOne!.mockResolvedValue(asset);
-      repo.remove!.mockResolvedValue(asset);
+      repo.findOne.mockResolvedValue(asset);
+      repo.remove.mockResolvedValue(asset);
 
       const res = await service.deleteImageById(1);
       expect(aws.deleteObject).toHaveBeenCalledWith('b', 'k');

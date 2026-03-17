@@ -1,6 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFile, UseInterceptors, ParseIntPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  ParseIntPipe,
+} from '@nestjs/common';
 import { RewardAdminService } from './reward-admin.service';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiCreatedResponse, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiCreatedResponse,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CreateRewardAdminResponseDto } from './dto/create-reward-response-admin.dto';
 import { JwtAuthGuard, Roles, RolesGuard } from '@auth';
 import { UserRole } from '@common/enums';
@@ -15,7 +38,7 @@ import { UpdateRewardAdminDto } from './dto/update-reward-admin.dto';
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly RewardAdminService: RewardAdminService) { }
+  constructor(private readonly RewardAdminService: RewardAdminService) {}
 
   @Get('/reward/getAllAdminReward')
   @ApiOperation({ summary: 'Get reward admin ทั้งหมด' })
@@ -37,7 +60,10 @@ export class AdminController {
     description: 'Reward ID',
     example: 1,
   })
-  @ApiResponse({ status: 200, description: 'Reward detail retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'Reward detail retrieved successfully',
+  })
   @ApiResponse({ status: 400, description: 'Invalid reward id' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
@@ -48,7 +74,9 @@ export class AdminController {
   }
 
   @Post('/reward/create')
-  @ApiOperation({ summary: 'สร้าง reward โดยต้องกรอกข้อมูลให้ครบ (ไม่รับ 0 บาง field)' })
+  @ApiOperation({
+    summary: 'สร้าง reward โดยต้องกรอกข้อมูลให้ครบ (ไม่รับ 0 บาง field)',
+  })
   @HttpCode(HttpStatus.CREATED)
   @ApiConsumes('multipart/form-data')
   @ApiBody({

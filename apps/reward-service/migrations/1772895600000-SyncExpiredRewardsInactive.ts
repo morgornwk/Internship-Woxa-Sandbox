@@ -13,7 +13,7 @@ export class SyncExpiredRewardsInactive1772895600000 implements MigrationInterfa
     `);
   }
 
-  public async down(): Promise<void> {
+  public down(): Promise<void> {
     return;
   }
 }

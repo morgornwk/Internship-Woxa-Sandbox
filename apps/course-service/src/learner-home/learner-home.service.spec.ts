@@ -108,12 +108,16 @@ describe('LearnerHomeService', () => {
   });
 
   it('throws UnauthorizedException when userId missing', async () => {
-    await expect(service.getHome('', 'Bearer x')).rejects.toBeInstanceOf(UnauthorizedException);
+    await expect(service.getHome('', 'Bearer x')).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 
   it('returns aggregated home data and skips profile when internalCall=true', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 5 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(2);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 5 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(2);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -177,7 +181,7 @@ describe('LearnerHomeService', () => {
       ]),
     };
 
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
@@ -233,7 +237,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    (courseRepo.createQueryBuilder as jest.Mock)
+    courseRepo.createQueryBuilder
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(recommendationsQb);
 
@@ -246,7 +250,9 @@ describe('LearnerHomeService', () => {
 
     expect(res.continueLearning?.course_id).toBe(10);
     expect(res.continueLearning?.progressPercent).toBe(0);
-    expect(res.myCourses).toEqual([{ course_id: 10, title: 'C1', progressPercent: 50 }]);
+    expect(res.myCourses).toEqual([
+      { course_id: 10, title: 'C1', progressPercent: 50 },
+    ]);
     expect(res.notifications.unreadCount).toBe(2);
     expect(res.recommendations.courses).toEqual([
       {
@@ -273,8 +279,10 @@ describe('LearnerHomeService', () => {
   });
 
   it('fetches profile when authorization provided and not internalCall', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 1 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 1 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -294,11 +302,11 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
-    (courseRepo.createQueryBuilder as jest.Mock).mockReturnValue({
+    courseRepo.createQueryBuilder.mockReturnValue({
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
@@ -311,16 +319,21 @@ describe('LearnerHomeService', () => {
     const res = await service.getHome('u1', 'Bearer x');
 
     expect(configService.get).toHaveBeenCalled();
-    expect(httpService.axiosRef.get).toHaveBeenCalledWith('http://auth/api/users/profile', {
-      headers: { Authorization: 'Bearer x', 'X-Internal-Call': 'true' },
-    });
+    expect(httpService.axiosRef.get).toHaveBeenCalledWith(
+      'http://auth/api/users/profile',
+      {
+        headers: { Authorization: 'Bearer x', 'X-Internal-Call': 'true' },
+      },
+    );
     expect(res.header.avatarUrl).toBe('ava');
     expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
   });
 
   it('returns latest created courses for new users', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 0 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -340,7 +353,7 @@ describe('LearnerHomeService', () => {
       where: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
@@ -356,14 +369,18 @@ describe('LearnerHomeService', () => {
           course_imageUrl: null,
           course_levels: [
             {
-              level_chapters: [{ isPublished: true }, { isPublished: true }, { isPublished: true }],
+              level_chapters: [
+                { isPublished: true },
+                { isPublished: true },
+                { isPublished: true },
+              ],
             },
           ],
         },
       ]),
     };
 
-    (courseRepo.createQueryBuilder as jest.Mock).mockReturnValue(recommendationsQb);
+    courseRepo.createQueryBuilder.mockReturnValue(recommendationsQb);
 
     const res = await service.getHome('u2', 'Bearer x', 'true');
 
@@ -382,8 +399,10 @@ describe('LearnerHomeService', () => {
   });
 
   it('ignores view-only progress records with zero percent on learner home', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 0 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -429,11 +448,11 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
-    (courseRepo.createQueryBuilder as jest.Mock).mockReturnValue({
+    courseRepo.createQueryBuilder.mockReturnValue({
       leftJoinAndSelect: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
@@ -449,18 +468,18 @@ describe('LearnerHomeService', () => {
   });
 
   it('falls back to defaults when subcalls throw', async () => {
-    (streakService.getStreak as jest.Mock).mockRejectedValue(new Error('boom'));
-    (notificationsService.getUnreadCount as jest.Mock).mockRejectedValue(new Error('boom'));
+    streakService.getStreak.mockRejectedValue(new Error('boom'));
+    notificationsService.getUnreadCount.mockRejectedValue(new Error('boom'));
 
     userXpRepo.createQueryBuilder.mockImplementation(() => {
       throw new Error('boom');
     });
 
-    (lessonProgressRepo.createQueryBuilder as jest.Mock).mockImplementation(() => {
+    lessonProgressRepo.createQueryBuilder.mockImplementation(() => {
       throw new Error('boom');
     });
 
-    (courseRepo.createQueryBuilder as jest.Mock).mockImplementation(() => {
+    courseRepo.createQueryBuilder.mockImplementation(() => {
       throw new Error('boom');
     });
 
@@ -477,8 +496,10 @@ describe('LearnerHomeService', () => {
   });
 
   it('excludes draft chapters and lessons from progress calculations', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 0 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -505,9 +526,9 @@ describe('LearnerHomeService', () => {
               chapter_title: 'Published Chapter',
               level: {
                 level_title: 'L1',
-                course: { 
-                  course_id: 10, 
-                  course_title: 'Course with Draft Content' 
+                course: {
+                  course_id: 10,
+                  course_title: 'Course with Draft Content',
                 },
               },
             },
@@ -525,9 +546,9 @@ describe('LearnerHomeService', () => {
               chapter_title: 'Published Chapter',
               level: {
                 level_title: 'L1',
-                course: { 
-                  course_id: 10, 
-                  course_title: 'Course with Draft Content' 
+                course: {
+                  course_id: 10,
+                  course_title: 'Course with Draft Content',
                 },
               },
             },
@@ -550,7 +571,10 @@ describe('LearnerHomeService', () => {
               chapter_id: 1,
               isPublished: true,
               level: {
-                course: { course_id: 10, course_title: 'Course with Draft Content' },
+                course: {
+                  course_id: 10,
+                  course_title: 'Course with Draft Content',
+                },
               },
             },
           },
@@ -565,7 +589,10 @@ describe('LearnerHomeService', () => {
               chapter_id: 1,
               isPublished: true,
               level: {
-                course: { course_id: 10, course_title: 'Course with Draft Content' },
+                course: {
+                  course_id: 10,
+                  course_title: 'Course with Draft Content',
+                },
               },
             },
           },
@@ -581,7 +608,10 @@ describe('LearnerHomeService', () => {
               isPublished: false, // Draft chapter
               chapter_title: 'Draft Chapter',
               level: {
-                course: { course_id: 10, course_title: 'Course with Draft Content' },
+                course: {
+                  course_id: 10,
+                  course_title: 'Course with Draft Content',
+                },
               },
             },
           },
@@ -589,7 +619,7 @@ describe('LearnerHomeService', () => {
       ]),
     };
 
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
@@ -607,14 +637,14 @@ describe('LearnerHomeService', () => {
                 {
                   isPublished: true, // Published chapter
                   lessons: [
-                    { lesson_id: 101, isPublished: true },  // Published lesson
+                    { lesson_id: 101, isPublished: true }, // Published lesson
                     { lesson_id: 102, isPublished: false }, // Draft lesson
                   ],
                 },
                 {
                   isPublished: false, // Draft chapter (should be filtered out by query)
                   lessons: [
-                    { lesson_id: 103, isPublished: true },  // Lesson in draft chapter
+                    { lesson_id: 103, isPublished: true }, // Lesson in draft chapter
                   ],
                 },
               ],
@@ -631,7 +661,7 @@ describe('LearnerHomeService', () => {
       take: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
-    (courseRepo.createQueryBuilder as jest.Mock)
+    courseRepo.createQueryBuilder
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(recommendationsQb);
@@ -641,21 +671,25 @@ describe('LearnerHomeService', () => {
     // Verify that only published content is counted
     expect(res.continueLearning?.course_id).toBe(10);
     expect(res.continueLearning?.progressPercent).toBe(100); // Chapter 100% (1/1 published lesson completed)
-    
+
     // Only published lessons should count: 1 completed out of 1 published lesson = 100%
-    expect(res.myCourses).toEqual([{ 
-      course_id: 10, 
-      title: 'Course with Draft Content', 
-      progressPercent: 100 // Only published lessons counted
-    }]);
+    expect(res.myCourses).toEqual([
+      {
+        course_id: 10,
+        title: 'Course with Draft Content',
+        progressPercent: 100, // Only published lessons counted
+      },
+    ]);
 
     // Verify that the query filters were applied correctly
     expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(3);
   });
 
   it('handles course with only draft content gracefully', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 0 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -682,9 +716,9 @@ describe('LearnerHomeService', () => {
               chapter_title: 'Draft Chapter Only',
               level: {
                 level_title: 'L1',
-                course: { 
-                  course_id: 20, 
-                  course_title: 'All Draft Course' 
+                course: {
+                  course_id: 20,
+                  course_title: 'All Draft Course',
                 },
               },
             },
@@ -715,7 +749,7 @@ describe('LearnerHomeService', () => {
       ]),
     };
 
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
@@ -732,9 +766,7 @@ describe('LearnerHomeService', () => {
               level_chapters: [
                 {
                   isPublished: false, // Only draft chapters
-                  lessons: [
-                    { lesson_id: 201, isPublished: true },
-                  ],
+                  lessons: [{ lesson_id: 201, isPublished: true }],
                 },
               ],
             },
@@ -742,7 +774,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    (courseRepo.createQueryBuilder as jest.Mock)
+    courseRepo.createQueryBuilder
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(courseStructureQb);
 
@@ -757,8 +789,10 @@ describe('LearnerHomeService', () => {
   });
 
   it('calculates correct progress when course has mixed published/draft chapters', async () => {
-    (streakService.getStreak as jest.Mock).mockResolvedValue({ streak: { currentStreak: 0 } });
-    (notificationsService.getUnreadCount as jest.Mock).mockResolvedValue(0);
+    streakService.getStreak.mockResolvedValue({
+      streak: { currentStreak: 0 },
+    });
+    notificationsService.getUnreadCount.mockResolvedValue(0);
 
     const userXpQb: any = {
       select: jest.fn().mockReturnThis(),
@@ -785,9 +819,9 @@ describe('LearnerHomeService', () => {
               chapter_title: 'Published Chapter 1',
               level: {
                 level_title: 'L1',
-                course: { 
-                  course_id: 30, 
-                  course_title: 'Mixed Content Course' 
+                course: {
+                  course_id: 30,
+                  course_title: 'Mixed Content Course',
                 },
               },
             },
@@ -848,7 +882,7 @@ describe('LearnerHomeService', () => {
       ]),
     };
 
-    (lessonProgressRepo.createQueryBuilder as jest.Mock)
+    lessonProgressRepo.createQueryBuilder
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
@@ -866,21 +900,21 @@ describe('LearnerHomeService', () => {
                 {
                   isPublished: true,
                   lessons: [
-                    { lesson_id: 301, isPublished: true },  // Count: completed
+                    { lesson_id: 301, isPublished: true }, // Count: completed
                     { lesson_id: 302, isPublished: false }, // Count: excluded (draft)
-                    { lesson_id: 304, isPublished: true },  // Count: not completed
+                    { lesson_id: 304, isPublished: true }, // Count: not completed
                   ],
                 },
                 {
                   isPublished: true,
                   lessons: [
-                    { lesson_id: 305, isPublished: true },  // Count: not completed
+                    { lesson_id: 305, isPublished: true }, // Count: not completed
                   ],
                 },
                 {
                   isPublished: false, // Excluded by query filter
                   lessons: [
-                    { lesson_id: 303, isPublished: true },  // Would be in draft chapter
+                    { lesson_id: 303, isPublished: true }, // Would be in draft chapter
                   ],
                 },
               ],
@@ -889,7 +923,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    (courseRepo.createQueryBuilder as jest.Mock)
+    courseRepo.createQueryBuilder
       .mockReturnValueOnce(courseStructureQb)
       .mockReturnValueOnce(courseStructureQb);
 
@@ -903,10 +937,12 @@ describe('LearnerHomeService', () => {
     // Progress = 1/3 * 100 = 33%
     expect(res.continueLearning?.course_id).toBe(30);
     expect(res.continueLearning?.progressPercent).toBe(33); // Chapter 100% (1/1 published lesson completed in current chapter)
-    expect(res.myCourses).toEqual([{ 
-      course_id: 30, 
-      title: 'Mixed Content Course', 
-      progressPercent: 33 // Only published lessons counted
-    }]);
+    expect(res.myCourses).toEqual([
+      {
+        course_id: 30,
+        title: 'Mixed Content Course',
+        progressPercent: 33, // Only published lessons counted
+      },
+    ]);
   });
 });

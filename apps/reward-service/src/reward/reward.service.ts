@@ -1,18 +1,26 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateRewardDto } from './dto/create-reward.dto';
-import { UpdateRewardDto } from './dto/update-reward.dto';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { Reward } from './entities/rewards.entity';
 import { DataSource, QueryRunner, Raw, Repository } from 'typeorm';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { RewardRedemption } from './entities/reward-redemption';
-import { User } from 'apps/auth-service/src/users/entities';
 import { UserXp } from 'apps/course-service/src/quizs/entities/user-xp.entity';
 import { randomUUID } from 'crypto';
 import { RewardStatusService } from './reward-status.service';
-import { serializeReward, serializeRewardRedemption } from './reward-response.util';
+import {
+  serializeReward,
+  serializeRewardRedemption,
+} from './reward-response.util';
 
 @Injectable()
 export class RewardService {
+  private readonly logger = new Logger(RewardService.name);
+
   constructor(
     @InjectDataSource('reward')
     private readonly rewardDataSource: DataSource,
@@ -30,7 +38,7 @@ export class RewardService {
     private readonly userxpRepository: Repository<UserXp>,
 
     private readonly rewardStatusService: RewardStatusService,
-  ) { }
+  ) {}
 
   async getAllReward() {
     await this.rewardStatusService.syncExpiredRewards();
@@ -75,7 +83,9 @@ export class RewardService {
       where: {
         userId,
         isUsed: false,
-        expire_at: Raw((alias) => `${alias} > (NOW() AT TIME ZONE 'Asia/Bangkok')`),
+        expire_at: Raw(
+          (alias) => `${alias} > (NOW() AT TIME ZONE 'Asia/Bangkok')`,
+        ),
       },
     });
 
@@ -89,10 +99,6 @@ export class RewardService {
       where: { userId },
       relations: ['reward'],
     });
-
-    if (!redeems.length) {
-      throw new NotFoundException('Redemption not found');
-    }
 
     return redeems.map(serializeRewardRedemption);
   }
@@ -120,6 +126,7 @@ export class RewardService {
   async redeemReward(userId: string, rewardId: number) {
     const rewardRunner = this.rewardDataSource.createQueryRunner();
     const courseRunner = this.courseDataSource.createQueryRunner();
+    let rewardCommitted = false;
 
     await rewardRunner.connect();
     await courseRunner.connect();
@@ -128,10 +135,7 @@ export class RewardService {
     await courseRunner.startTransaction();
 
     try {
-      const reward = await this.validateReward(
-        rewardRunner,
-        rewardId,
-      );
+      const reward = await this.validateReward(rewardRunner, rewardId);
 
       const userXp = await this.validateUserXp(
         courseRunner,
@@ -143,31 +147,44 @@ export class RewardService {
       userXp.xpTotal -= reward.required_points;
       await courseRunner.manager.save(userXp);
 
+      const redeemToken = randomUUID();
+
       if (reward.total_limit != null && reward.remain != null) {
         reward.remain -= 1;
       }
 
       await rewardRunner.manager.save(reward);
-      const redemption = rewardRunner.manager.create(
-        RewardRedemption,
-        {
-          userId,
-          reward,
-          used_points: reward.required_points,
-          expire_at: reward.redeem_end_date,
-          redeem_token: randomUUID(),
-        },
-      );
-      await rewardRunner.manager.save(redemption);
-      await courseRunner.commitTransaction();
+      const redemption = rewardRunner.manager.create(RewardRedemption, {
+        userId,
+        reward,
+        used_points: reward.required_points,
+        expire_at: reward.redeem_end_date,
+        redeem_token: redeemToken,
+      });
+      const savedRedemption = await rewardRunner.manager.save(redemption);
       await rewardRunner.commitTransaction();
+      rewardCommitted = true;
+
+      try {
+        await courseRunner.commitTransaction();
+      } catch {
+        await this.compensateRewardRedemption(reward.id, redeemToken);
+        throw new InternalServerErrorException(
+          'Redeem failed during finalization and reward changes were compensated',
+        );
+      }
+
       return {
         message: 'Redeem success',
-        data: serializeRewardRedemption(redemption),
+        data: serializeRewardRedemption(savedRedemption),
       };
     } catch (error) {
-      await courseRunner.rollbackTransaction();
-      await rewardRunner.rollbackTransaction();
+      await this.safeRollback(courseRunner);
+
+      if (!rewardCommitted) {
+        await this.safeRollback(rewardRunner);
+      }
+
       throw error;
     } finally {
       await courseRunner.release();
@@ -185,8 +202,12 @@ export class RewardService {
       where: { id: rewardId },
       lock: { mode: 'pessimistic_write' },
     });
-    if (!reward || !reward.is_active) {
-      throw new BadRequestException('Reward not found');
+    if (!reward) {
+      throw new NotFoundException('Reward not found');
+    }
+
+    if (!reward.is_active) {
+      throw new BadRequestException('Reward is inactive');
     }
 
     if (this.rewardStatusService.isExpired(reward.redeem_end_date, now)) {
@@ -219,7 +240,7 @@ export class RewardService {
     });
 
     if (!user) {
-      throw new BadRequestException('User not found');
+      throw new NotFoundException('User not found');
     }
 
     if (user.xpTotal < requiredPoints) {
@@ -250,4 +271,61 @@ export class RewardService {
     }
   }
 
+  private async safeRollback(runner: QueryRunner) {
+    try {
+      await runner.rollbackTransaction();
+    } catch {
+      return;
+    }
+  }
+
+  private async compensateRewardRedemption(
+    rewardId: number,
+    redeemToken: string,
+  ) {
+    const compensationRunner = this.rewardDataSource.createQueryRunner();
+
+    await compensationRunner.connect();
+    await compensationRunner.startTransaction();
+
+    try {
+      const reward = await compensationRunner.manager.findOne(Reward, {
+        where: { id: rewardId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!reward) {
+        throw new NotFoundException('Reward not found during compensation');
+      }
+
+      const deleteResult = await compensationRunner.manager.delete(
+        RewardRedemption,
+        {
+          redeem_token: redeemToken,
+        },
+      );
+
+      if (
+        (deleteResult.affected ?? 0) > 0 &&
+        reward.total_limit != null &&
+        reward.remain != null
+      ) {
+        reward.remain += 1;
+        await compensationRunner.manager.save(reward);
+      }
+
+      await compensationRunner.commitTransaction();
+    } catch (error) {
+      await this.safeRollback(compensationRunner);
+      this.logger.error(
+        'Failed to compensate reward redemption after course commit failure',
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new InternalServerErrorException(
+        'Redeem failed after partial commit and compensation was unsuccessful',
+      );
+    } finally {
+      await compensationRunner.release();
+    }
+  }
 }

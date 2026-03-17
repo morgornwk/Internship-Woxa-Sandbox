@@ -25,7 +25,19 @@ import { WebsocketModule } from '../gateway/websocket.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuthAccount, AdminInvitation], 'auth'),
-    TypeOrmModule.forFeature([Course, Level, Chapter, Lesson, Article, LessonProgress, UserStreak, UserXp], 'course'),
+    TypeOrmModule.forFeature(
+      [
+        Course,
+        Level,
+        Chapter,
+        Lesson,
+        Article,
+        LessonProgress,
+        UserStreak,
+        UserXp,
+      ],
+      'course',
+    ),
     HttpModule,
     ConfigModule,
     forwardRef(() => AuthModule),
@@ -35,4 +47,4 @@ import { WebsocketModule } from '../gateway/websocket.module';
   providers: [UsersService],
   exports: [UsersService],
 })
-export class UsersModule { }
+export class UsersModule {}

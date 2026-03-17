@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
 
-export class ChangeAnnouncementsDatesToTimestamp20260304000004
-  implements MigrationInterface
-{
+export class ChangeAnnouncementsDatesToTimestamp20260304000004 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const tableName = 'announcements';
     const indexName = 'idx_announcements_date_range';
@@ -23,7 +21,7 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
       // timestamptz in Postgres is reported as "timestamp with time zone"
       if (type.includes('with time zone')) {
         await queryRunner.query(
-          "ALTER TABLE \"announcements\" ALTER COLUMN \"start_date\" TYPE timestamp without time zone USING \"start_date\" AT TIME ZONE 'UTC'",
+          'ALTER TABLE "announcements" ALTER COLUMN "start_date" TYPE timestamp without time zone USING "start_date" AT TIME ZONE \'UTC\'',
         );
       }
     }
@@ -32,7 +30,7 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
       const type = String(endCol.type).toLowerCase();
       if (type.includes('with time zone')) {
         await queryRunner.query(
-          "ALTER TABLE \"announcements\" ALTER COLUMN \"end_date\" TYPE timestamp without time zone USING \"end_date\" AT TIME ZONE 'UTC'",
+          'ALTER TABLE "announcements" ALTER COLUMN "end_date" TYPE timestamp without time zone USING "end_date" AT TIME ZONE \'UTC\'',
         );
       }
     }
@@ -44,7 +42,9 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
     const hasEndDate = refreshed.columns.some((c) => c.name === 'end_date');
 
     if (hasStartDate && hasEndDate) {
-      const indexExistsNow = refreshed.indices.some((i) => i.name === indexName);
+      const indexExistsNow = refreshed.indices.some(
+        (i) => i.name === indexName,
+      );
       if (!indexExistsNow) {
         await queryRunner.createIndex(
           tableName,
@@ -77,7 +77,7 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
       // timestamp without time zone in Postgres is reported as "timestamp"
       if (!type.includes('with time zone')) {
         await queryRunner.query(
-          "ALTER TABLE \"announcements\" ALTER COLUMN \"start_date\" TYPE timestamptz USING \"start_date\" AT TIME ZONE 'UTC'",
+          'ALTER TABLE "announcements" ALTER COLUMN "start_date" TYPE timestamptz USING "start_date" AT TIME ZONE \'UTC\'',
         );
       }
     }
@@ -86,7 +86,7 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
       const type = String(endCol.type).toLowerCase();
       if (!type.includes('with time zone')) {
         await queryRunner.query(
-          "ALTER TABLE \"announcements\" ALTER COLUMN \"end_date\" TYPE timestamptz USING \"end_date\" AT TIME ZONE 'UTC'",
+          'ALTER TABLE "announcements" ALTER COLUMN "end_date" TYPE timestamptz USING "end_date" AT TIME ZONE \'UTC\'',
         );
       }
     }
@@ -98,7 +98,9 @@ export class ChangeAnnouncementsDatesToTimestamp20260304000004
     const hasEndDate = refreshed.columns.some((c) => c.name === 'end_date');
 
     if (hasStartDate && hasEndDate) {
-      const indexExistsNow = refreshed.indices.some((i) => i.name === indexName);
+      const indexExistsNow = refreshed.indices.some(
+        (i) => i.name === indexName,
+      );
       if (!indexExistsNow) {
         await queryRunner.createIndex(
           tableName,

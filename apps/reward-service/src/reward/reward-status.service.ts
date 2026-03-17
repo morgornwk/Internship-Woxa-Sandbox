@@ -35,22 +35,34 @@ export class RewardStatusService {
     return affected;
   }
 
-  isExpired(redeemEndDate?: Date | string | null, now: Date = new Date()): boolean {
+  isExpired(
+    redeemEndDate?: Date | string | null,
+    now: Date = new Date(),
+  ): boolean {
     if (!redeemEndDate) {
       return false;
     }
 
-    const comparison = compareStoredRewardTimestampToBangkokNow(redeemEndDate, now);
+    const comparison = compareStoredRewardTimestampToBangkokNow(
+      redeemEndDate,
+      now,
+    );
 
     return comparison !== null && comparison < 0;
   }
 
-  hasStarted(redeemStartDate?: Date | string | null, now: Date = new Date()): boolean {
+  hasStarted(
+    redeemStartDate?: Date | string | null,
+    now: Date = new Date(),
+  ): boolean {
     if (!redeemStartDate) {
       return true;
     }
 
-    const comparison = compareStoredRewardTimestampToBangkokNow(redeemStartDate, now);
+    const comparison = compareStoredRewardTimestampToBangkokNow(
+      redeemStartDate,
+      now,
+    );
 
     return comparison !== null && comparison <= 0;
   }

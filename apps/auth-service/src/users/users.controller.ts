@@ -1,4 +1,14 @@
-import { Controller, Get, Patch, Body, UseGuards, UseInterceptors, UploadedFile, Param, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Param,
+  Headers,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
@@ -7,7 +17,14 @@ import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto';
 import { JwtAuthGuard, CurrentUserId } from '@auth';
 
-import { ApiTags, ApiBearerAuth, ApiConsumes, ApiBody, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiConsumes,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { avatarUploadOptions } from './avatar-upload.config';
 
 @ApiTags('User')
@@ -19,18 +36,21 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly httpService: HttpService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   // Profile
   @Get('profile')
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'User profile retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getProfile(
     @CurrentUserId() userId: string,
-    @Headers('authorization') authorization: string
+    @Headers('authorization') authorization: string,
   ) {
     const user = await this.usersService.getStudentProfile(userId);
 
@@ -49,7 +69,10 @@ export class UsersController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Update current user profile' })
   @ApiBody({ type: UpdateUserDto })
-  @ApiResponse({ status: 200, description: 'User profile updated successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile updated successfully.',
+  })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
@@ -63,7 +86,10 @@ export class UsersController {
   // Avatar Upload
   @Get('avatar-options')
   @ApiOperation({ summary: 'Get available avatar options' })
-  @ApiResponse({ status: 200, description: 'Avatar options retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Avatar options retrieved successfully.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })
   async getAvatarOptions() {
@@ -95,7 +121,10 @@ export class UsersController {
 
   @Get('avatar/:id')
   @ApiOperation({ summary: 'Get user avatar by ID' })
-  @ApiResponse({ status: 200, description: 'User avatar retrieved successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'User avatar retrieved successfully.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   @ApiResponse({ status: 404, description: 'User not found.' })
   @ApiResponse({ status: 500, description: 'Internal Server Error.' })

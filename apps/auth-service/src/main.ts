@@ -42,7 +42,10 @@ async function bootstrap() {
     .setTitle('Skillr Auth Service API')
     .setDescription('Official API documentation for Skllr Platform')
     .setVersion('1.0.0')
-    .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'access-token')
+    .addBearerAuth(
+      { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
+      'access-token',
+    )
     .addServer('https://api.skllracademy.com/s1/api')
     .addServer('http://localhost:3001/api')
     .build();
@@ -50,7 +53,7 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('docs', app, document, {
     swaggerOptions: {
-      docExpansion: 'none',      // ปิด expand ทั้งหมด
+      docExpansion: 'none', // ปิด expand ทั้งหมด
       persistAuthorization: true,
       displayRequestDuration: true,
       filter: true,

@@ -5,7 +5,6 @@ import { RewardModule } from './reward/reward.module';
 import * as path from 'path';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { getDatabaseConfig } from '@config/database.config';
 import { AdminModule } from './reward-admin/reward-admin.module';
 import { UserXp } from 'apps/course-service/src/quizs/entities/user-xp.entity';
 

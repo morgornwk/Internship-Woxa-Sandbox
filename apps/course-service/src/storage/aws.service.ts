@@ -1,8 +1,29 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
-import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  HeadObjectCommand,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { randomUUID } from 'crypto';
 import { lookup } from 'mime-types';
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function isNotFoundError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'NotFound';
+}
 
 // AWS S3 Storage Service
 @Injectable()
@@ -29,20 +50,23 @@ export class AwsS3StorageService {
     this._bucket = process.env.AWS_S3_BUCKET;
     this.cloudfrontDomain = process.env.AWS_CLOUDFRONT_DOMAIN;
 
-    // อนุญาตให้ใช้ AWS credentials จาก environment variables หรือจาก IAM role 
-    const credentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
-      ? {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      }
-      : undefined;
+    // อนุญาตให้ใช้ AWS credentials จาก environment variables หรือจาก IAM role
+    const credentials =
+      process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY
+        ? {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+          }
+        : undefined;
 
     this.s3 = new S3Client({
       region: this.region,
       ...(credentials && { credentials }),
     });
 
-    this.logger.log(`AWS S3 initialized → bucket: ${this._bucket}, region: ${this.region}, CDN: ${this.cloudfrontDomain}`);
+    this.logger.log(
+      `AWS S3 initialized → bucket: ${this._bucket}, region: ${this.region}, CDN: ${this.cloudfrontDomain}`,
+    );
   }
 
   // getter สำหรับ bucket เพื่อให้สามารถเข้าถึงได้จากภายนอก
@@ -74,8 +98,11 @@ export class AwsS3StorageService {
       await this.s3.send(cmd);
       this.logger.debug(`Uploaded: s3://${bucket || this._bucket}/${key}`);
     } catch (error) {
-      this.logger.error(`Failed to upload ${key}: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to upload file: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Failed to upload ${key}: ${message}`);
+      throw new InternalServerErrorException(
+        `Failed to upload file: ${message}`,
+      );
     }
   }
 
@@ -86,9 +113,16 @@ export class AwsS3StorageService {
     bucket?: string;
   }): Promise<{ key: string; url: string }> {
     const bucket = params.bucket || this._bucket;
-    const contentType = params.contentType || this.detectContentType(params.key);
+    const contentType =
+      params.contentType || this.detectContentType(params.key);
 
-    await this.putObject(bucket, params.key, params.body, params.body.length, contentType);
+    await this.putObject(
+      bucket,
+      params.key,
+      params.body,
+      params.body.length,
+      contentType,
+    );
 
     return {
       key: params.key,
@@ -107,8 +141,11 @@ export class AwsS3StorageService {
       await this.s3.send(cmd);
       this.logger.debug(`Deleted: s3://${bucket || this._bucket}/${key}`);
     } catch (error) {
-      this.logger.error(`Failed to delete ${key}: ${error.message}`);
-      throw new InternalServerErrorException(`Failed to delete file: ${error.message}`);
+      const message = getErrorMessage(error);
+      this.logger.error(`Failed to delete ${key}: ${message}`);
+      throw new InternalServerErrorException(
+        `Failed to delete file: ${message}`,
+      );
     }
   }
 
@@ -117,7 +154,7 @@ export class AwsS3StorageService {
     return `https://${this.cloudfrontDomain}/${encodeURI(key)}`;
   }
 
-  // สำหรับกรณีที่ต้องการ S3 URL ตรงๆ 
+  // สำหรับกรณีที่ต้องการ S3 URL ตรงๆ
   getS3Url(bucket: string, key: string): string {
     return `https://${bucket || this._bucket}.s3.${this.region}.amazonaws.com/${encodeURI(key)}`;
   }
@@ -139,7 +176,9 @@ export class AwsS3StorageService {
 
       return await getSignedUrl(this.s3, cmd, { expiresIn });
     } catch (error) {
-      this.logger.error(`Failed to generate presigned PUT URL: ${error.message}`);
+      this.logger.error(
+        `Failed to generate presigned PUT URL: ${getErrorMessage(error)}`,
+      );
       throw new InternalServerErrorException('Failed to generate upload URL');
     }
   }
@@ -155,7 +194,7 @@ export class AwsS3StorageService {
       await this.s3.send(cmd);
       return true;
     } catch (error) {
-      if (error.name === 'NotFound') {
+      if (isNotFoundError(error)) {
         return false;
       }
       throw error;
@@ -219,7 +258,7 @@ export class AwsS3StorageService {
   //   return this.cachedMcEndpoint;
   // }
 
-  // สร้างงาน MediaConvert เพื่อแปลงวิดีโอ (เพื่อใช้ในฟีเจอร์ Video Transcoding ในอนาคต) 
+  // สร้างงาน MediaConvert เพื่อแปลงวิดีโอ (เพื่อใช้ในฟีเจอร์ Video Transcoding ในอนาคต)
   // async createMediaConvertJob(inputS3Url: string, outputS3Prefix: string, roleArn: string) {
   //   const endpoint = await this.getMediaConvertEndpoint();
   //   const mc = new MediaConvertClient({

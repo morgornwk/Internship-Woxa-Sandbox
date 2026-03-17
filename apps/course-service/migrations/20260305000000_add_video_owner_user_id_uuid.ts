@@ -49,7 +49,9 @@ export class AddVideoOwnerUserIdUuid20260305000000 implements MigrationInterface
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX IF EXISTS "idx_video_owner_user_id";`);
 
-    await queryRunner.query(`ALTER TABLE "video" DROP COLUMN IF EXISTS "owner_user_id";`);
+    await queryRunner.query(
+      `ALTER TABLE "video" DROP COLUMN IF EXISTS "owner_user_id";`,
+    );
 
     await queryRunner.query(`
       DO $$

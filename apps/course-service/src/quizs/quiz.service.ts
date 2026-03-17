@@ -1,17 +1,33 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Quizs } from './entities/quizs.entity';
 import { QuizsCheckpoint } from './entities/checkpoint.entity';
-import { QuizsResult, QuizsResultType, QuizsStatus } from './entities/quizs-result.entity';
-import { CreateQuizsDto, CreateCheckpointDto, UpdateQuizsDto, UpdateCheckpointDto } from './dto';
+import {
+  QuizsResult,
+  QuizsResultType,
+  QuizsStatus,
+} from './entities/quizs-result.entity';
+import {
+  CreateQuizsDto,
+  CreateCheckpointDto,
+  UpdateQuizsDto,
+  UpdateCheckpointDto,
+} from './dto';
 import { Lesson, LessonType } from '../lessons/entities/lesson.entity';
 import { Chapter } from '../chapters/entities/chapter.entity';
 import { UserXp } from './entities/user-xp.entity';
 
 @Injectable()
 export class QuizService {
-  private checkpointScoreFromLevelOrderIndex(levelOrderIndex?: number | null): number {
+  private checkpointScoreFromLevelOrderIndex(
+    levelOrderIndex?: number | null,
+  ): number {
     const levelNumber = (levelOrderIndex ?? 0) + 1;
     const scoreByLevel: Record<number, number> = { 1: 5, 2: 10, 3: 15 };
     return scoreByLevel[levelNumber] ?? 5;
@@ -30,14 +46,18 @@ export class QuizService {
     private readonly chapterRepository: Repository<Chapter>,
     @InjectRepository(UserXp)
     private readonly userXpRepository: Repository<UserXp>,
-  ) { }
+  ) {}
 
-  private async syncChapterIsPublishedByChapterId(chapterId: number): Promise<void> {
+  private async syncChapterIsPublishedByChapterId(
+    chapterId: number,
+  ): Promise<void> {
     const hasPublishedLesson = await this.lessonRepository.exist({
       where: { chapter_id: chapterId, isPublished: true },
     });
 
-    await this.chapterRepository.update(chapterId, { isPublished: hasPublishedLesson });
+    await this.chapterRepository.update(chapterId, {
+      isPublished: hasPublishedLesson,
+    });
   }
 
   async createQuizs(dto: CreateQuizsDto): Promise<Quizs> {
@@ -119,7 +139,10 @@ export class QuizService {
       lesson_id: quiz.lessonId,
       quizs_answer: quiz.quizsAnswer,
       quizs_explanation: quiz.quizsExplanation,
-      status: result.status === QuizsStatus.PENDING ? QuizsStatus.COMPLETED : result.status,
+      status:
+        result.status === QuizsStatus.PENDING
+          ? QuizsStatus.COMPLETED
+          : result.status,
       user_answer: result.userAnswer,
       is_correct: result.isCorrect,
       completed_at: result.updatedAt,
@@ -127,11 +150,7 @@ export class QuizService {
   }
 
   // ตรวจคำตอบ quiz และบันทึกผล
-  async checkAndSaveAnswer(
-    lessonId: number,
-    userId: string,
-    answer: unknown,
-  ) {
+  async checkAndSaveAnswer(lessonId: number, userId: string, answer: unknown) {
     const quiz = await this.quizsRepository.findOne({
       where: { lessonId },
     });
@@ -151,15 +170,14 @@ export class QuizService {
       const alreadyFinal = existingResult.status === QuizsStatus.COMPLETED;
 
       if (alreadyAttempted || alreadyFinal) {
-        throw new ConflictException('This quiz has already been attempted and cannot be answered again.');
+        throw new ConflictException(
+          'This quiz has already been attempted and cannot be answered again.',
+        );
       }
     }
 
     // ตรวจคำตอบว่าถูกมั้ย
-    const isCorrect = isEqual(
-      quiz.quizsAnswer,
-      answer,
-    );
+    const isCorrect = isEqual(quiz.quizsAnswer, answer);
 
     // เช็คว่าผู้ใช้มีผลลัพธ์ของ quiz นี้อยู่แล้วหรือไม่ ถ้ามีให้ update ถ้าไม่มีให้สร้างใหม่
     let result = existingResult;
@@ -194,10 +212,13 @@ export class QuizService {
         });
 
         // คำนวณ XP ของบทนั้น ๆ โดยดูจาก checkpoint ทั้งหมดในบท (ถ้าบทไหนไม่มี checkpoint เลยจะใช้ค่า default เป็น 5 XP ต่อบท)
-        const lessonsInChapter = await this.lessonRepository.find({ where: { chapter_id: lesson.chapter_id } });
+        const lessonsInChapter = await this.lessonRepository.find({
+          where: { chapter_id: lesson.chapter_id },
+        });
         const lessonIds = lessonsInChapter.map((l) => l.lesson_id);
-        const checkpointsInChapter = await this.checkpointRepository.find({ where: { lessonId: In(lessonIds) } });
-        const chapterTotalXp = checkpointsInChapter.reduce((s, c) => s + (c.checkpointScore ?? 5), 0);
+        const checkpointsInChapter = await this.checkpointRepository.find({
+          where: { lessonId: In(lessonIds) },
+        });
 
         // ถ้ายังไม่มี user_xp ของบทนี้ → สร้างใหม่ (xpEarned/xpTotal)
         if (!userXp) {
@@ -205,7 +226,9 @@ export class QuizService {
             .createQueryBuilder('ux')
             .select('COALESCE(SUM(ux.xpEarned), 0)', 'sum')
             .where('ux.userId = :userId', { userId })
-            .andWhere('ux.chapterId != :chapterId', { chapterId: lesson.chapter_id })
+            .andWhere('ux.chapterId != :chapterId', {
+              chapterId: lesson.chapter_id,
+            })
             .getRawOne<{ sum: string }>();
 
           const sumOther = Number(otherRaw?.sum ?? 0);
@@ -227,7 +250,9 @@ export class QuizService {
             .createQueryBuilder('ux')
             .select('COALESCE(SUM(ux.xpEarned), 0)', 'sum')
             .where('ux.userId = :userId', { userId })
-            .andWhere('ux.chapterId != :chapterId', { chapterId: lesson.chapter_id })
+            .andWhere('ux.chapterId != :chapterId', {
+              chapterId: lesson.chapter_id,
+            })
             .getRawOne<{ sum: string }>();
 
           const sumOther = Number(otherRaw?.sum ?? 0);
@@ -250,7 +275,6 @@ export class QuizService {
     };
   }
 
-
   // ข้าม quiz โดยบันทึกสถานะเป็น SKIPPED
   async skipQuiz(lessonId: number, userId: string) {
     let result = await this.resultRepository.findOne({
@@ -272,7 +296,14 @@ export class QuizService {
   }
 
   // CRUD operations สำหรับ quiz และ checkpoint
-  async findAllQuizs(): Promise<Array<{ quiz_id: number; lessonId: number; quizs_type: string; quizs_question: string }>> {
+  async findAllQuizs(): Promise<
+    Array<{
+      quiz_id: number;
+      lessonId: number;
+      quizs_type: string;
+      quizs_question: string;
+    }>
+  > {
     const rows = await this.quizsRepository.find();
     return rows.map((q) => ({
       quiz_id: q.quizsId,
@@ -289,10 +320,7 @@ export class QuizService {
     return quiz;
   }
 
-  async findOneCheckpointById(
-    checkpointId: number,
-  ): Promise<QuizsCheckpoint> {
-
+  async findOneCheckpointById(checkpointId: number): Promise<QuizsCheckpoint> {
     const checkpoint = await this.checkpointRepository.findOne({
       where: { checkpointId },
     });
@@ -316,7 +344,9 @@ export class QuizService {
       throw new NotFoundException('Checkpoint not found');
     }
 
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: lessonId } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: lessonId },
+    });
     if (!lesson || lesson.lesson_type !== LessonType.CHECKPOINT) {
       throw new NotFoundException('Checkpoint not found');
     }
@@ -325,7 +355,10 @@ export class QuizService {
   }
 
   // อัปเดต quiz ตาม lesson ID
-  async updateQuizs(lessonId: number, dto: Partial<UpdateQuizsDto>): Promise<Quizs> {
+  async updateQuizs(
+    lessonId: number,
+    dto: Partial<UpdateQuizsDto>,
+  ): Promise<Quizs> {
     const quiz = await this.findOneQuizsByLesson(lessonId);
     Object.assign(quiz, {
       quizsType: dto.quizs_type ?? quiz.quizsType,
@@ -342,7 +375,6 @@ export class QuizService {
     checkpointId: number,
     dto: Partial<UpdateCheckpointDto>,
   ): Promise<QuizsCheckpoint> {
-
     const checkpoint = await this.checkpointRepository.findOne({
       where: { checkpointId },
     });
@@ -367,10 +399,12 @@ export class QuizService {
     // อัปเดตข้อมูล checkpoint ตาม DTO ที่ส่งมา (ถ้า field ไหนใน DTO เป็น undefined ให้เก็บค่าเดิมไว้)
     Object.assign(checkpoint, {
       checkpointType: dto.checkpoint_type ?? checkpoint.checkpointType,
-      checkpointQuestions: dto.checkpoint_questions ?? checkpoint.checkpointQuestions,
+      checkpointQuestions:
+        dto.checkpoint_questions ?? checkpoint.checkpointQuestions,
       checkpointOption: dto.checkpoint_option ?? checkpoint.checkpointOption,
       checkpointAnswer: dto.checkpoint_answer ?? checkpoint.checkpointAnswer,
-      checkpointExplanation: dto.checkpoint_explanation ?? checkpoint.checkpointExplanation,
+      checkpointExplanation:
+        dto.checkpoint_explanation ?? checkpoint.checkpointExplanation,
     });
 
     return this.checkpointRepository.save(checkpoint);
@@ -381,7 +415,10 @@ export class QuizService {
     dto: Partial<UpdateCheckpointDto>,
   ): Promise<QuizsCheckpoint> {
     const checkpoint = await this.findOneCheckpointByLessonId(lessonId);
-    const updatedCheckpoint = await this.updateCheckpoint(checkpoint.checkpointId, dto);
+    const updatedCheckpoint = await this.updateCheckpoint(
+      checkpoint.checkpointId,
+      dto,
+    );
 
     await this.lessonRepository.update(lessonId, { isPublished: true });
 
@@ -400,10 +437,15 @@ export class QuizService {
     await this.quizsRepository.remove(quiz);
 
     // ลบค่า lesson_description ของ lesson ที่ผูกกับ quiz
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: lessonId } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: lessonId },
+    });
     let descCleared = false;
     if (lesson) {
-      if (lesson.lesson_description !== null && lesson.lesson_description !== undefined) {
+      if (
+        lesson.lesson_description !== null &&
+        lesson.lesson_description !== undefined
+      ) {
         lesson.lesson_description = null;
         await this.lessonRepository.save(lesson);
         descCleared = true;
@@ -417,15 +459,22 @@ export class QuizService {
     return { message: msg };
   }
 
-  async removeCheckpointByLessonId(lessonId: number): Promise<{ message: string }> {
+  async removeCheckpointByLessonId(
+    lessonId: number,
+  ): Promise<{ message: string }> {
     const checkpoint = await this.findOneCheckpointByLessonId(lessonId);
     await this.checkpointRepository.remove(checkpoint);
 
     // ลบค่า lesson_description ของ lesson ที่ผูกกับ checkpoint
-    const lesson = await this.lessonRepository.findOne({ where: { lesson_id: lessonId } });
+    const lesson = await this.lessonRepository.findOne({
+      where: { lesson_id: lessonId },
+    });
     let descCleared = false;
     if (lesson) {
-      if (lesson.lesson_description !== null && lesson.lesson_description !== undefined) {
+      if (
+        lesson.lesson_description !== null &&
+        lesson.lesson_description !== undefined
+      ) {
         lesson.lesson_description = null;
         await this.lessonRepository.save(lesson);
         descCleared = true;
@@ -446,7 +495,6 @@ export class QuizService {
     return { message: msg };
   }
 
-
   // Checkpoint CRUD operations
   async createCheckpoint(dto: CreateCheckpointDto): Promise<QuizsCheckpoint> {
     const lesson = await this.lessonRepository.findOne({
@@ -462,7 +510,9 @@ export class QuizService {
     }
 
     const checkpointScore = lesson?.chapter?.level
-      ? this.checkpointScoreFromLevelOrderIndex(lesson.chapter.level.level_orderIndex)
+      ? this.checkpointScoreFromLevelOrderIndex(
+          lesson.chapter.level.level_orderIndex,
+        )
       : 5;
 
     const existing = await this.checkpointRepository.findOne({
@@ -504,10 +554,7 @@ export class QuizService {
     return saved;
   }
 
-  async findCheckpointsByLesson(
-    lessonId: number,
-    userId: string,
-  ) {
+  async findCheckpointsByLesson(lessonId: number, userId: string) {
     const lesson = await this.lessonRepository.findOne({
       where: { lesson_id: lessonId },
     });
@@ -540,10 +587,10 @@ export class QuizService {
         type: QuizsResultType.CHECKPOINT,
         checkpointId: In(checkpointIds),
       },
-    })
+    });
 
     const resultByCheckpointId = new Map(
-      results.map((r) => [r.checkpointId, r] as const)
+      results.map((r) => [r.checkpointId, r] as const),
     );
 
     // รวมข้อมูล checkpoint กับผลลัพธ์ของผู้ใช้เพื่อส่งกลับไปให้ frontend แสดงสถานะการทำ checkpoint ของผู้ใช้แต่ละข้อ
@@ -554,7 +601,11 @@ export class QuizService {
       const isCorrect = attempted ? r?.isCorrect === true : false;
       const isSkipped = r?.status === QuizsStatus.SKIPPED;
 
-      const checkpointStatus = isCorrect ? 'COMPLETED' : isSkipped ? 'SKIPPED' : 'PENDING';
+      const checkpointStatus = isCorrect
+        ? 'COMPLETED'
+        : isSkipped
+          ? 'SKIPPED'
+          : 'PENDING';
 
       // ถ้ายังไม่เคยตอบ ไม่ต้องแสดงคำตอบที่ถูกต้องและเฉลย
       const correctScore = c.checkpointScore ?? 5;
@@ -573,13 +624,27 @@ export class QuizService {
           correct_answer: showSolution ? c.checkpointAnswer : null,
           user_answer: r?.userAnswer ?? null,
           is_correct: attempted ? (r?.isCorrect ?? null) : null,
-          feedback: isSkipped ? 'ข้ามแล้ว' : attempted ? (isCorrect ? 'ผ่านแล้ว' : 'เกือบถูกแล้ว !') : null,
+          feedback: isSkipped
+            ? 'ข้ามแล้ว'
+            : attempted
+              ? isCorrect
+                ? 'ผ่านแล้ว'
+                : 'เกือบถูกแล้ว !'
+              : null,
           checkpoint_status: checkpointStatus,
         },
 
         // ข้อมูลสำหรับแสดงเฉลยและคำอธิบายของ checkpoint (ถ้ายังไม่เคยตอบ ไม่ต้องแสดงคำตอบที่ถูกต้องและเฉลย)
-        checkpoint_explanation: showSolution ? (c.checkpointExplanation ?? null) : null,
-        score: attempted ? (isCorrect ? correctScore : 0) : isSkipped ? 0 : null,
+        checkpoint_explanation: showSolution
+          ? (c.checkpointExplanation ?? null)
+          : null,
+        score: attempted
+          ? isCorrect
+            ? correctScore
+            : 0
+          : isSkipped
+            ? 0
+            : null,
       };
     });
   }
@@ -604,7 +669,9 @@ export class QuizService {
 
     // ถ้าตอบถูกไปแล้วไม่ว่าจะถูกหรือผิดก็ไม่ให้ข้ามอีก และถ้าตอบไปแล้วจะไม่ให้แก้ไขคำตอบ
     if (existing?.isCorrect === true && existing.userAnswer != null) {
-      throw new ConflictException('This checkpoint has already been completed and cannot be skipped.');
+      throw new ConflictException(
+        'This checkpoint has already been completed and cannot be skipped.',
+      );
     }
 
     // ถ้าข้ามไปแล้วไม่ว่าจะถูกหรือผิดก็ไม่ให้ข้ามซ้ำอีก (single attempt) และถ้าข้ามไปแล้วจะไม่ให้แก้ไขคำตอบ
@@ -632,7 +699,7 @@ export class QuizService {
         checkpointId,
       });
 
-    // ถ้าไม่มีผลลัพธ์เดิมเลย ให้สร้างใหม่โดยกำหนด type เป็น CHECKPOINT และ checkpointId ตาม checkpoint ที่กำลังข้าม
+      // ถ้าไม่มีผลลัพธ์เดิมเลย ให้สร้างใหม่โดยกำหนด type เป็น CHECKPOINT และ checkpointId ตาม checkpoint ที่กำลังข้าม
     } else {
       toSave.type = QuizsResultType.CHECKPOINT;
       toSave.checkpointId = checkpoint.checkpointId;
@@ -657,10 +724,7 @@ export class QuizService {
     };
   }
 
-  private async syncUserXp(
-    userId: string,
-    chapterId: number,
-  ) {
+  private async syncUserXp(userId: string, chapterId: number) {
     // โหลดข้อมูล checkpoint ทั้งหมดในบทนี้เพื่อคำนวณ XP สูงสุดที่ผู้ใช้จะได้รับจากบทนี้
     const lessonsInChapter = await this.lessonRepository.find({
       where: { chapter_id: chapterId },
@@ -670,10 +734,15 @@ export class QuizService {
 
     // ถ้าไม่มีบทเรียนในบทนี้เลยก็ไม่ต้องคำนวณ XP
     const checkpoints = lessonIds.length
-      ? await this.checkpointRepository.find({ where: { lessonId: In(lessonIds) } })
+      ? await this.checkpointRepository.find({
+          where: { lessonId: In(lessonIds) },
+        })
       : [];
 
-    const totalXp = checkpoints.reduce((sum, c) => sum + (c.checkpointScore ?? 5), 0);
+    const totalXp = checkpoints.reduce(
+      (sum, c) => sum + (c.checkpointScore ?? 5),
+      0,
+    );
 
     // โหลดผลลัพธ์ของผู้ใช้สำหรับ checkpoint ทั้งหมดในบทนี้
     const checkpointIds = checkpoints.map((c) => c.checkpointId);
@@ -681,12 +750,12 @@ export class QuizService {
     // ถ้าไม่มี checkpoint เลยก็ไม่ต้องคำนวณ XP และไม่ต้องอัปเดต user_xp
     const results = checkpointIds.length
       ? await this.resultRepository.find({
-        where: {
-          userId,
-          type: QuizsResultType.CHECKPOINT,
-          checkpointId: In(checkpointIds),
-        },
-      })
+          where: {
+            userId,
+            type: QuizsResultType.CHECKPOINT,
+            checkpointId: In(checkpointIds),
+          },
+        })
       : [];
 
     // คำนวณ XP ที่ผู้ใช้ได้รับจากบทนี้โดยการรวมคะแนนของ checkpoint ที่ตอบถูกทั้งหมดในบทนี้
@@ -724,7 +793,7 @@ export class QuizService {
         completedAt: earnedXp === totalXp ? new Date() : null,
         lastAttemptAt: new Date(),
       });
-    // ถ้ามีอยู่แล้วอัพเดต (xpEarned, xpTotal, checkpointStatus, completedAt, lastAttemptAt)
+      // ถ้ามีอยู่แล้วอัพเดต (xpEarned, xpTotal, checkpointStatus, completedAt, lastAttemptAt)
     } else {
       userXp.xpEarned = earnedXp;
       userXp.xpTotal = cumulativeTotal;
@@ -803,9 +872,7 @@ export class QuizService {
     // บันทึกคำตอบและสถานะ (ถ้าตอบแล้วจะเปลี่ยนสถานะเป็น COMPLETED ไม่ว่าจะถูกหรือผิด)
     toSave.userAnswer = answer;
     toSave.isCorrect = isCorrect;
-    toSave.status = isCorrect
-      ? QuizsStatus.COMPLETED
-      : QuizsStatus.PENDING;
+    toSave.status = isCorrect ? QuizsStatus.COMPLETED : QuizsStatus.PENDING;
 
     await this.resultRepository.save(toSave);
 
@@ -815,10 +882,7 @@ export class QuizService {
     });
 
     if (lesson) {
-      await this.syncUserXp(
-        userId,
-        lesson.chapter_id,
-      );
+      await this.syncUserXp(userId, lesson.chapter_id);
     }
 
     return {
@@ -829,14 +893,9 @@ export class QuizService {
       is_correct: isCorrect,
       score,
       correct_answer: checkpoint.checkpointAnswer,
-      checkpoint_explanation:
-        checkpoint.checkpointExplanation ?? null,
-      feedback: isCorrect
-        ? 'ยอดเยี่ยมมาก !'
-        : 'เกือบถูกแล้ว !',
-      checkpoint_status: isCorrect
-        ? 'COMPLETED'
-        : 'PENDING',
+      checkpoint_explanation: checkpoint.checkpointExplanation ?? null,
+      feedback: isCorrect ? 'ยอดเยี่ยมมาก !' : 'เกือบถูกแล้ว !',
+      checkpoint_status: isCorrect ? 'COMPLETED' : 'PENDING',
     };
   }
 }
@@ -863,16 +922,19 @@ function normalize(value: unknown): unknown {
   }
 
   if (Array.isArray(value)) {
-    return value.map(item => normalize(item)).sort();
+    return value.map((item) => normalize(item)).sort();
   }
 
   if (value && typeof value === 'object') {
     return Object.keys(value)
       .sort()
-      .reduce((acc, key) => {
-        acc[key] = normalize((value as Record<string, unknown>)[key]);
-        return acc;
-      }, {} as Record<string, unknown>);
+      .reduce(
+        (acc, key) => {
+          acc[key] = normalize((value as Record<string, unknown>)[key]);
+          return acc;
+        },
+        {} as Record<string, unknown>,
+      );
   }
 
   return value;

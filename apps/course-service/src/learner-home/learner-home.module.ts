@@ -36,4 +36,4 @@ import { QuizsModule } from '../quizs/quizs.module';
   controllers: [LearnerHomeController],
   providers: [LearnerHomeService, StreakService, ProgressService],
 })
-export class LearnerHomeModule { }
+export class LearnerHomeModule {}

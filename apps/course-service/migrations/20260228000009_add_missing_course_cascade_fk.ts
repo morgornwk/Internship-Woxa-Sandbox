@@ -5,7 +5,9 @@ export class AddMissingCourseCascadeFK20260228000009 implements MigrationInterfa
     // 1. ตรวจสอบและเพิ่ม FK lessons.chapter_id → chapters.chapter_id (CASCADE)
     const lessonsTable = await queryRunner.getTable('lessons');
     const lessonsFK = lessonsTable?.foreignKeys.find(
-      fk => fk.columnNames.includes('chapter_id') && fk.referencedTableName === 'chapters'
+      (fk) =>
+        fk.columnNames.includes('chapter_id') &&
+        fk.referencedTableName === 'chapters',
     );
 
     if (!lessonsFK) {
@@ -25,7 +27,9 @@ export class AddMissingCourseCascadeFK20260228000009 implements MigrationInterfa
     // 2. ตรวจสอบและเพิ่ม FK chapters.level_id → levels.level_id (CASCADE)
     const chaptersTable = await queryRunner.getTable('chapters');
     const chaptersFK = chaptersTable?.foreignKeys.find(
-      fk => fk.columnNames.includes('level_id') && fk.referencedTableName === 'levels'
+      (fk) =>
+        fk.columnNames.includes('level_id') &&
+        fk.referencedTableName === 'levels',
     );
 
     if (!chaptersFK) {
@@ -45,7 +49,9 @@ export class AddMissingCourseCascadeFK20260228000009 implements MigrationInterfa
     // 3. ตรวจสอบและเพิ่ม FK levels.course_id → courses.course_id (CASCADE)
     const levelsTable = await queryRunner.getTable('levels');
     const levelsFK = levelsTable?.foreignKeys.find(
-      fk => fk.columnNames.includes('course_id') && fk.referencedTableName === 'courses'
+      (fk) =>
+        fk.columnNames.includes('course_id') &&
+        fk.referencedTableName === 'courses',
     );
 
     if (!levelsFK) {

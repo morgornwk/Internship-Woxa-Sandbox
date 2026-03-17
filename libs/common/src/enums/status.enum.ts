@@ -3,5 +3,5 @@ export enum Status {
   EXPIRED = 'expired',
   INVITED = 'invited',
   SUSPEND = 'suspend',
-  INACTIVE = 'inactive'
+  INACTIVE = 'inactive',
 }

@@ -44,14 +44,18 @@ describe('AuthController', () => {
 
   it('refresh delegates to AuthService.refreshTokens', async () => {
     authService.refreshTokens.mockResolvedValue({ accessToken: 'a' });
-    await expect(controller.refresh({ refreshToken: 'rt' } as any)).resolves.toEqual({
+    await expect(
+      controller.refresh({ refreshToken: 'rt' } as any),
+    ).resolves.toEqual({
       accessToken: 'a',
     });
   });
 
   it('logout delegates to AuthService.logout and returns message', async () => {
     authService.logout.mockResolvedValue(undefined);
-    await expect(controller.logout('u1', { refreshToken: 'rt' } as any)).resolves.toEqual({
+    await expect(
+      controller.logout('u1', { refreshToken: 'rt' } as any),
+    ).resolves.toEqual({
       message: 'Logged out successfully',
     });
     expect(authService.logout).toHaveBeenCalledWith('u1', 'rt');
@@ -67,7 +71,9 @@ describe('AuthController', () => {
 
   it('forgotPassword delegates to AuthService.forgotPassword', async () => {
     authService.forgotPassword.mockResolvedValue({ message: 'ok' });
-    await expect(controller.forgotPassword({ email: 'a@b.com' } as any)).resolves.toEqual({
+    await expect(
+      controller.forgotPassword({ email: 'a@b.com' } as any),
+    ).resolves.toEqual({
       message: 'ok',
     });
   });

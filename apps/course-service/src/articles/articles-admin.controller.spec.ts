@@ -32,7 +32,9 @@ describe('ArticlesAdminController', () => {
 
   it('create delegates to ArticlesService.create', async () => {
     svc.create.mockResolvedValue({ article_id: 1 } as any);
-    await expect(controller.create({ lesson_id: 1 } as any)).resolves.toEqual({ article_id: 1 });
+    await expect(controller.create({ lesson_id: 1 } as any)).resolves.toEqual({
+      article_id: 1,
+    });
     expect(svc.create).toHaveBeenCalledWith({ lesson_id: 1 });
   });
 
@@ -50,13 +52,17 @@ describe('ArticlesAdminController', () => {
 
   it('findByLesson delegates to ArticlesService.findByLesson', async () => {
     svc.findByLesson.mockResolvedValue([{ article_id: 1 } as any]);
-    await expect(controller.findByLesson(10)).resolves.toEqual([{ article_id: 1 }]);
+    await expect(controller.findByLesson(10)).resolves.toEqual([
+      { article_id: 1 },
+    ]);
     expect(svc.findByLesson).toHaveBeenCalledWith(10);
   });
 
   it('update delegates to ArticlesService.update', async () => {
     svc.update.mockResolvedValue({ article_id: 1, article_content: [] } as any);
-    await expect(controller.update(1, { article_content: [] } as any)).resolves.toEqual({
+    await expect(
+      controller.update(1, { article_content: [] } as any),
+    ).resolves.toEqual({
       article_id: 1,
       article_content: [],
     });

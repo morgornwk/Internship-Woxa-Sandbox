@@ -1,4 +1,9 @@
-import { BadRequestException, HttpException, NotFoundException, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import axios from 'axios';
@@ -92,25 +97,41 @@ describe('AiQuizService', () => {
   describe('generateQuizFromLesson', () => {
     it('throws when lesson not found', async () => {
       (lessonRepo.findOne as jest.Mock).mockResolvedValue(null);
-      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws when lesson content empty (no description and no title)', async () => {
-      (lessonRepo.findOne as jest.Mock).mockResolvedValue({ lesson_id: 1, lesson_title: '   ', lesson_description: '   ' } as any);
-      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(BadRequestException);
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_title: '   ',
+        lesson_description: '   ',
+      } as any);
+      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('throws ServiceUnavailableException when HUGGINGFACE_API_KEY missing', async () => {
       delete process.env.HUGGINGFACE_API_KEY;
-      (lessonRepo.findOne as jest.Mock).mockResolvedValue({ lesson_id: 1, lesson_description: 'content' } as any);
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'content',
+      } as any);
 
-      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(ServiceUnavailableException);
+      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
     });
 
     it('saves PENDING generation when AI returns valid JSON', async () => {
       process.env.HUGGINGFACE_API_KEY = 'k';
       process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
-      (lessonRepo.findOne as jest.Mock).mockResolvedValue({ lesson_id: 1, lesson_description: 'content' } as any);
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'content',
+      } as any);
 
       axiosPostMock.mockResolvedValue({
         data: {
@@ -135,9 +156,12 @@ describe('AiQuizService', () => {
       });
 
       (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
-      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x as any);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
 
-      const res = await service.generateQuizFromLesson(1, { language: 'TH', difficulty: 'easy' } as any);
+      const res = await service.generateQuizFromLesson(1, {
+        language: 'TH',
+        difficulty: 'easy',
+      } as any);
 
       expect(res.status).toBe('PENDING');
       expect(res.lessonId).toBe(1);
@@ -147,7 +171,10 @@ describe('AiQuizService', () => {
     it('persists REJECTED and maps quota errors to HttpException(429)', async () => {
       process.env.HUGGINGFACE_API_KEY = 'k';
       process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
-      (lessonRepo.findOne as jest.Mock).mockResolvedValue({ lesson_id: 1, lesson_description: 'content' } as any);
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'content',
+      } as any);
 
       axiosPostMock.mockRejectedValue({
         isAxiosError: true,
@@ -160,9 +187,11 @@ describe('AiQuizService', () => {
       });
 
       (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
-      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x as any);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
 
-      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(HttpException);
+      await expect(service.generateQuizFromLesson(1)).rejects.toBeInstanceOf(
+        HttpException,
+      );
 
       const savedCalls = (aiRepo.save as jest.Mock).mock.calls;
       const lastSaved = savedCalls[savedCalls.length - 1][0];
@@ -173,12 +202,19 @@ describe('AiQuizService', () => {
   describe('approveAiQuiz', () => {
     it('throws when AI quiz not found', async () => {
       (aiRepo.findOne as jest.Mock).mockResolvedValue(null);
-      await expect(service.approveAiQuiz(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.approveAiQuiz(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('throws when already approved', async () => {
-      (aiRepo.findOne as jest.Mock).mockResolvedValue({ ai_quiz_id: 1, status: 'APPROVED' } as any);
-      await expect(service.approveAiQuiz(1)).rejects.toBeInstanceOf(BadRequestException);
+      (aiRepo.findOne as jest.Mock).mockResolvedValue({
+        ai_quiz_id: 1,
+        status: 'APPROVED',
+      } as any);
+      await expect(service.approveAiQuiz(1)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
     });
 
     it('creates quiz when none exists and marks APPROVED', async () => {
@@ -199,14 +235,19 @@ describe('AiQuizService', () => {
       } as any);
       (quizRepo.findOne as jest.Mock).mockResolvedValue(null);
       (quizRepo.create as jest.Mock).mockImplementation((x: any) => x);
-      (quizRepo.save as jest.Mock).mockImplementation(async (x) => ({ ...x, quizsId: 99 }) as any);
-      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x as any);
+      (quizRepo.save as jest.Mock).mockImplementation(async (x) => ({
+        ...x,
+        quizsId: 99,
+      }));
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
 
       const quiz = await service.approveAiQuiz(1);
 
       expect(quizRepo.create).toHaveBeenCalled();
       expect(quiz.quizsId).toBe(99);
-      expect(aiRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'APPROVED' }));
+      expect(aiRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'APPROVED' }),
+      );
     });
 
     it('updates existing quiz when exists', async () => {
@@ -228,14 +269,16 @@ describe('AiQuizService', () => {
 
       const existing = { quizsId: 1, lessonId: 10 } as any;
       (quizRepo.findOne as jest.Mock).mockResolvedValue(existing);
-      (quizRepo.save as jest.Mock).mockImplementation(async (x) => x as any);
-      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x as any);
+      (quizRepo.save as jest.Mock).mockImplementation(async (x) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
 
       const quiz = await service.approveAiQuiz(1);
 
       expect(quizRepo.create).not.toHaveBeenCalled();
       expect(quiz.lessonId).toBe(10);
-      expect(aiRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: 'APPROVED' }));
+      expect(aiRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'APPROVED' }),
+      );
     });
   });
 });

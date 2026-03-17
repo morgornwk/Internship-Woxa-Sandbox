@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
 export enum LessonProgressStatus {
@@ -34,9 +43,14 @@ export class LessonProgress {
   })
   status: LessonProgressStatus;
 
-  @Column({ name: 'progress_percent', type: 'numeric', precision: 5, scale: 2, default: 0 })
+  @Column({
+    name: 'progress_percent',
+    type: 'numeric',
+    precision: 5,
+    scale: 2,
+    default: 0,
+  })
   progressPercent: number;
-
 
   @Column({ name: 'map_lesson_id', type: 'int', nullable: true })
   mapLessonId?: number | null;

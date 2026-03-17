@@ -128,7 +128,12 @@ describe('AuthService', () => {
           provide: getRepositoryToken(PasswordResetToken, 'auth'),
           useValue: {
             update: jest.fn(),
-            create: jest.fn((dto) => ({ id: 'prt-1', isUsed: false, createdAt: fixedNow, ...dto })),
+            create: jest.fn((dto) => ({
+              id: 'prt-1',
+              isUsed: false,
+              createdAt: fixedNow,
+              ...dto,
+            })),
             save: jest.fn(async (t) => t),
             find: jest.fn(),
           },
@@ -251,11 +256,12 @@ describe('AuthService', () => {
         service.login({ email: 'a@b.com', password: 'x' } as any),
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
-      expect(usersService.findAuthAccountByProviderAndEmail).toHaveBeenCalledWith(
-        AuthProvider.LOCAL,
+      expect(
+        usersService.findAuthAccountByProviderAndEmail,
+      ).toHaveBeenCalledWith(AuthProvider.LOCAL, 'a@b.com');
+      expect(loginAttemptsService.recordFailure).toHaveBeenCalledWith(
         'a@b.com',
       );
-      expect(loginAttemptsService.recordFailure).toHaveBeenCalledWith('a@b.com');
     });
 
     it('records failure and throws lock message when failure causes lock', async () => {
@@ -284,7 +290,9 @@ describe('AuthService', () => {
         service.login({ email: 'a@b.com', password: 'x' } as any),
       ).rejects.toBeInstanceOf(UnauthorizedException);
 
-      expect(loginAttemptsService.recordFailure).toHaveBeenCalledWith('a@b.com');
+      expect(loginAttemptsService.recordFailure).toHaveBeenCalledWith(
+        'a@b.com',
+      );
     });
 
     it('throws UnauthorizedException when account inactive', async () => {
@@ -315,7 +323,9 @@ describe('AuthService', () => {
         'ip',
       );
 
-      expect(loginAttemptsService.resetAttempts).toHaveBeenCalledWith('a@b.com');
+      expect(loginAttemptsService.resetAttempts).toHaveBeenCalledWith(
+        'a@b.com',
+      );
       expect(result.user).toEqual(expect.objectContaining({ id: 'u-login' }));
       expect(result.tokens.accessToken).toBe('access-token');
       expect(sessionRepo.save).toHaveBeenCalled();
@@ -429,7 +439,9 @@ describe('AuthService', () => {
 
       const result = await service.forgotPassword('nope@example.com');
 
-      expect(result).toEqual({ message: 'If the email exists, an OTP will be sent.' });
+      expect(result).toEqual({
+        message: 'If the email exists, an OTP will be sent.',
+      });
       expect(resetTokenRepo.update).not.toHaveBeenCalled();
       expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
     });
@@ -447,7 +459,10 @@ describe('AuthService', () => {
         expect.objectContaining({ userId: 'u-otp', token: 'bcrypt-hash' }),
       );
       expect(resetTokenRepo.save).toHaveBeenCalled();
-      expect(emailService.sendOtpEmail).toHaveBeenCalledWith('e@example.com', '100000');
+      expect(emailService.sendOtpEmail).toHaveBeenCalledWith(
+        'e@example.com',
+        '100000',
+      );
       expect(result.message).toBe('If the email exists, an OTP will be sent.');
     });
   });
@@ -455,9 +470,9 @@ describe('AuthService', () => {
   describe('verifyOtp', () => {
     it('throws BadRequestException when user not found', async () => {
       usersService.findAuthAccountByProviderAndEmail.mockResolvedValue(null);
-      await expect(service.verifyOtp('e@example.com', '123456')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.verifyOtp('e@example.com', '123456'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('throws BadRequestException when no token matches', async () => {
@@ -469,9 +484,9 @@ describe('AuthService', () => {
       ]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.verifyOtp('e@example.com', '123456')).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.verifyOtp('e@example.com', '123456'),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('replaces OTP token with reset token and returns plain reset token', async () => {
@@ -518,7 +533,9 @@ describe('AuthService', () => {
       resetTokenRepo.find.mockResolvedValue([token]);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
-      const logoutAllSpy = jest.spyOn(service, 'logoutAll').mockResolvedValue(undefined);
+      const logoutAllSpy = jest
+        .spyOn(service, 'logoutAll')
+        .mockResolvedValue(undefined);
 
       const result = await service.resetPassword('plain-reset', 'newPass');
 
@@ -527,8 +544,12 @@ describe('AuthService', () => {
         expect.objectContaining({ id: 't1', isUsed: true }),
       );
       expect(logoutAllSpy).toHaveBeenCalledWith('u1');
-      expect(emailService.sendPasswordChangedEmail).toHaveBeenCalledWith('e@example.com');
-      expect(result).toEqual({ message: 'Password has been reset successfully' });
+      expect(emailService.sendPasswordChangedEmail).toHaveBeenCalledWith(
+        'e@example.com',
+      );
+      expect(result).toEqual({
+        message: 'Password has been reset successfully',
+      });
     });
   });
 });

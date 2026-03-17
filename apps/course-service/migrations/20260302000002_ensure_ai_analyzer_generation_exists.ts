@@ -6,9 +6,7 @@ import {
   TableIndex,
 } from 'typeorm';
 
-export class EnsureAiAnalyzerGenerationExists20260302000002
-  implements MigrationInterface
-{
+export class EnsureAiAnalyzerGenerationExists20260302000002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const oldName = 'ai_quiz_generations';
     const tableName = 'ai_analyzer_generation';
@@ -89,7 +87,8 @@ export class EnsureAiAnalyzerGenerationExists20260302000002
 
     const hasFk = table.foreignKeys.some(
       (fk) =>
-        fk.columnNames.includes('lesson_id') && fk.referencedTableName === 'lessons',
+        fk.columnNames.includes('lesson_id') &&
+        fk.referencedTableName === 'lessons',
     );
 
     if (!hasFk) {

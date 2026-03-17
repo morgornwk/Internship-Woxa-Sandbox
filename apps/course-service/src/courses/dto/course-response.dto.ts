@@ -7,7 +7,10 @@ export class CourseResponseDto {
   @ApiProperty({ description: 'Owner user ID', example: 1 })
   course_ownerId: number;
 
-  @ApiProperty({ description: 'Course title', example: 'Introduction to TypeScript' })
+  @ApiProperty({
+    description: 'Course title',
+    example: 'Introduction to TypeScript',
+  })
   course_title: string;
 
   @ApiPropertyOptional({ description: 'Course description' })

@@ -1,4 +1,12 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { Lesson } from '../../lessons/entities/lesson.entity';
 
 @Entity('quizs')
@@ -6,7 +14,12 @@ export class Quizs {
   @PrimaryGeneratedColumn({ name: 'quizs_id' })
   quizsId: number;
 
-  @Column({ name: 'quizs_type', type: 'enum', enum: ['multiple_choice', 'true_false'], default: 'multiple_choice' })
+  @Column({
+    name: 'quizs_type',
+    type: 'enum',
+    enum: ['multiple_choice', 'true_false'],
+    default: 'multiple_choice',
+  })
   quizsType: string;
 
   @Column({ name: 'quizs_questions', type: 'text' })
@@ -16,7 +29,7 @@ export class Quizs {
   quizsOption: string[];
 
   @Column({ name: 'quizs_answer', type: 'jsonb' })
-  quizsAnswer: any;
+  quizsAnswer: unknown;
 
   @Column({ name: 'quizs_explanation', type: 'text', nullable: true })
   quizsExplanation: string;

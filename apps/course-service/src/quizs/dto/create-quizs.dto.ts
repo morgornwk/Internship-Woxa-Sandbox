@@ -1,10 +1,18 @@
-import { IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, IsArray, ValidateIf } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsArray,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { toInt, toStringArray, toString } from './transformers';
 
 const QuizType = ['multiple_choice', 'true_false'] as const;
-type QuizType = typeof QuizType[number];
+type QuizType = (typeof QuizType)[number];
 
 export class CreateQuizsDto {
   @ApiProperty({ example: 1 })
@@ -25,7 +33,10 @@ export class CreateQuizsDto {
     type: [String],
     example: ['Superset ของ JavaScript', 'ชื่อตัวละคร', 'ยี่ห้อกาแฟ'],
   })
-  @ValidateIf((o) => o.quizs_type === 'multiple_choice')
+  @ValidateIf(
+    (object: { quizs_type?: QuizType }) =>
+      object.quizs_type === 'multiple_choice',
+  )
   @Transform(toStringArray)
   @IsArray()
   @IsString({ each: true })
@@ -38,7 +49,9 @@ export class CreateQuizsDto {
   @IsNotEmpty()
   quizs_answer: string;
 
-  @ApiPropertyOptional({ example: 'TypeScript เป็นภาษาที่สร้างครอบ JS เพื่อเพิ่มระบบ Type' })
+  @ApiPropertyOptional({
+    example: 'TypeScript เป็นภาษาที่สร้างครอบ JS เพื่อเพิ่มระบบ Type',
+  })
   @IsOptional()
   @IsString()
   quizs_explanation?: string;

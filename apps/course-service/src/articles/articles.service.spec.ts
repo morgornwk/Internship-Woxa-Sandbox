@@ -66,27 +66,39 @@ describe('ArticlesService', () => {
   describe('create', () => {
     it('throws when lesson not found', async () => {
       lessonRepo.findOne.mockResolvedValue(null);
-      await expect(service.create({ lesson_id: 1, article_content: [] } as any)).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.create({ lesson_id: 1, article_content: [] } as any),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws when lesson is not ARTICLE', async () => {
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 1, lesson_type: LessonType.QUIZ } as any);
-      await expect(service.create({ lesson_id: 1, article_content: [] } as any)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 1,
+        lesson_type: LessonType.QUIZ,
+      } as any);
+      await expect(
+        service.create({ lesson_id: 1, article_content: [] } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('assigns default order to blocks when missing and saves', async () => {
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 1, lesson_type: LessonType.ARTICLE } as any);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 1,
+        lesson_type: LessonType.ARTICLE,
+      } as any);
 
       const dto: any = {
         lesson_id: 1,
-        article_content: [{ type: 'p', text: 'x' }, { type: 'p', text: 'y', order: 99 }],
+        article_content: [
+          { type: 'p', text: 'x' },
+          { type: 'p', text: 'y', order: 99 },
+        ],
       };
 
-      const created = makeArticle({ article_content: dto.article_content, lesson: { lesson_id: 1 } as any });
+      const created = makeArticle({
+        article_content: dto.article_content,
+        lesson: { lesson_id: 1 } as any,
+      });
       articleRepo.create.mockReturnValue(created);
       articleRepo.save.mockResolvedValue(created);
 
@@ -98,13 +110,22 @@ describe('ArticlesService', () => {
     });
 
     it('treats non-array article_content as empty array', async () => {
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 1, lesson_type: LessonType.ARTICLE } as any);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 1,
+        lesson_type: LessonType.ARTICLE,
+      } as any);
 
-      const created = makeArticle({ article_content: [] as any, lesson: { lesson_id: 1 } as any });
+      const created = makeArticle({
+        article_content: [] as any,
+        lesson: { lesson_id: 1 } as any,
+      });
       articleRepo.create.mockReturnValue(created);
       articleRepo.save.mockResolvedValue(created);
 
-      const result = await service.create({ lesson_id: 1, article_content: null } as any);
+      const result = await service.create({
+        lesson_id: 1,
+        article_content: null,
+      } as any);
 
       expect(articleRepo.create).toHaveBeenCalledWith({
         lesson: { lesson_id: 1 },
@@ -117,7 +138,9 @@ describe('ArticlesService', () => {
   describe('findOne', () => {
     it('throws when not found', async () => {
       articleRepo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findOne(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns dto', async () => {
@@ -133,7 +156,11 @@ describe('ArticlesService', () => {
       const result = await service.findAll({ limit: -1, offset: -1 });
       expect(result).toHaveLength(1);
       expect(articleRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 50, skip: 0, order: { updatedAt: 'DESC' } }),
+        expect.objectContaining({
+          take: 50,
+          skip: 0,
+          order: { updatedAt: 'DESC' },
+        }),
       );
     });
 
@@ -142,14 +169,22 @@ describe('ArticlesService', () => {
 
       await service.findAll({ limit: 9999, offset: 5 });
       expect(articleRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 100, skip: 5, order: { updatedAt: 'DESC' } }),
+        expect.objectContaining({
+          take: 100,
+          skip: 5,
+          order: { updatedAt: 'DESC' },
+        }),
       );
 
       jest.clearAllMocks();
       articleRepo.find.mockResolvedValue([]);
       await service.findAll();
       expect(articleRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 50, skip: 0, order: { updatedAt: 'DESC' } }),
+        expect.objectContaining({
+          take: 50,
+          skip: 0,
+          order: { updatedAt: 'DESC' },
+        }),
       );
     });
   });
@@ -157,15 +192,19 @@ describe('ArticlesService', () => {
   describe('update', () => {
     it('throws when not found', async () => {
       articleRepo.findOne.mockResolvedValue(null);
-      await expect(service.update(1, { article_content: [] } as any)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        service.update(1, { article_content: [] } as any),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('assigns fields and saves', async () => {
       const article = makeArticle({ article_id: 1, article_content: [] });
       articleRepo.findOne.mockResolvedValue(article);
-      articleRepo.save.mockImplementation(async (a) => a as any);
+      articleRepo.save.mockImplementation(async (a) => a);
 
-      const result = await service.update(1, { article_content: [{ type: 'p', text: 'x' }] } as any);
+      const result = await service.update(1, {
+        article_content: [{ type: 'p', text: 'x' }],
+      } as any);
 
       expect(result.article_content).toHaveLength(1);
     });
@@ -191,18 +230,28 @@ describe('ArticlesService', () => {
   describe('findByLesson', () => {
     it('throws when lesson not found', async () => {
       lessonRepo.findOne.mockResolvedValue(null);
-      await expect(service.findByLesson(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findByLesson(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns [] when lesson is not ARTICLE', async () => {
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 1, lesson_type: LessonType.QUIZ } as any);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 1,
+        lesson_type: LessonType.QUIZ,
+      } as any);
       const result = await service.findByLesson(1);
       expect(result).toEqual([]);
     });
 
     it('returns mapped list when ARTICLE', async () => {
-      lessonRepo.findOne.mockResolvedValue({ lesson_id: 1, lesson_type: LessonType.ARTICLE } as any);
-      articleRepo.find.mockResolvedValue([makeArticle({ article_id: 1, lesson: { lesson_id: 1 } as any })]);
+      lessonRepo.findOne.mockResolvedValue({
+        lesson_id: 1,
+        lesson_type: LessonType.ARTICLE,
+      } as any);
+      articleRepo.find.mockResolvedValue([
+        makeArticle({ article_id: 1, lesson: { lesson_id: 1 } as any }),
+      ]);
 
       const result = await service.findByLesson(1);
       expect(result).toHaveLength(1);
@@ -212,7 +261,10 @@ describe('ArticlesService', () => {
 
   describe('toResponseDto', () => {
     it('prefers direct lesson_id field when present', async () => {
-      const article: any = makeArticle({ article_id: 1, lesson: { lesson_id: 10 } as any });
+      const article: any = makeArticle({
+        article_id: 1,
+        lesson: { lesson_id: 10 } as any,
+      });
       article.lesson_id = 99;
 
       articleRepo.findOne.mockResolvedValue(article);

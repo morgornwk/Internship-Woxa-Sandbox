@@ -28,19 +28,27 @@ describe('LessonsStudentController', () => {
   });
 
   it('findByChapter delegates to LessonsService.findPublishedByChapter', async () => {
-    lessonsService.findPublishedByChapter.mockResolvedValue([{ lesson_id: 1 } as any]);
-    await expect(controller.findByChapter(10)).resolves.toEqual([{ lesson_id: 1 }]);
+    lessonsService.findPublishedByChapter.mockResolvedValue([
+      { lesson_id: 1 } as any,
+    ]);
+    await expect(controller.findByChapter(10)).resolves.toEqual([
+      { lesson_id: 1 },
+    ]);
     expect(lessonsService.findPublishedByChapter).toHaveBeenCalledWith(10);
   });
 
   it('findAll delegates to LessonsService.findAllPublished', async () => {
-    lessonsService.findAllPublished.mockResolvedValue([{ lesson_id: 1 } as any]);
+    lessonsService.findAllPublished.mockResolvedValue([
+      { lesson_id: 1 } as any,
+    ]);
     await expect(controller.findAll()).resolves.toEqual([{ lesson_id: 1 }]);
     expect(lessonsService.findAllPublished).toHaveBeenCalledWith();
   });
 
   it('findOne delegates to LessonsService.findOnePublished', async () => {
-    lessonsService.findOnePublished.mockResolvedValue({ lesson_id: 123 } as any);
+    lessonsService.findOnePublished.mockResolvedValue({
+      lesson_id: 123,
+    } as any);
     await expect(controller.findOne(123)).resolves.toEqual({ lesson_id: 123 });
     expect(lessonsService.findOnePublished).toHaveBeenCalledWith(123);
   });

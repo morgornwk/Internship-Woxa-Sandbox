@@ -16,7 +16,9 @@ describe('NotificationsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [NotificationsController],
-      providers: [{ provide: NotificationsService, useValue: notificationsService }],
+      providers: [
+        { provide: NotificationsService, useValue: notificationsService },
+      ],
     }).compile();
 
     controller = module.get(NotificationsController);
@@ -52,7 +54,11 @@ describe('NotificationsController', () => {
 
       const res = await controller.getNotifications('u1', 20, 20);
 
-      expect(notificationsService.getPaginated).toHaveBeenCalledWith('u1', 20, 20);
+      expect(notificationsService.getPaginated).toHaveBeenCalledWith(
+        'u1',
+        20,
+        20,
+      );
       expect(res).toEqual({
         data: [
           {
@@ -85,7 +91,9 @@ describe('NotificationsController', () => {
     it('delegates to service', async () => {
       notificationsService.getUnreadCount.mockResolvedValue(7);
 
-      await expect(controller.getUnreadCount('u1')).resolves.toEqual({ unreadCount: 7 });
+      await expect(controller.getUnreadCount('u1')).resolves.toEqual({
+        unreadCount: 7,
+      });
       expect(notificationsService.getUnreadCount).toHaveBeenCalledWith('u1');
     });
   });

@@ -101,7 +101,11 @@ export class AddAdminIdToMediaAssets20260305000010 implements MigrationInterface
       END $$;
     `);
 
-    await queryRunner.query(`ALTER TABLE "video" DROP COLUMN IF EXISTS "admin_id";`);
-    await queryRunner.query(`ALTER TABLE "image" DROP COLUMN IF EXISTS "admin_id";`);
+    await queryRunner.query(
+      `ALTER TABLE "video" DROP COLUMN IF EXISTS "admin_id";`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "image" DROP COLUMN IF EXISTS "admin_id";`,
+    );
   }
 }

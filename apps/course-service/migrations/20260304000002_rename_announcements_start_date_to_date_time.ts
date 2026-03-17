@@ -1,12 +1,6 @@
-import {
-  MigrationInterface,
-  QueryRunner,
-  TableIndex,
-} from 'typeorm';
+import { MigrationInterface, QueryRunner, TableIndex } from 'typeorm';
 
-export class RenameAnnouncementsStartDateToDateTime20260304000002
-  implements MigrationInterface
-{
+export class RenameAnnouncementsStartDateToDateTime20260304000002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     const tableName = 'announcements';
     const indexName = 'idx_announcements_date_range';
@@ -29,11 +23,15 @@ export class RenameAnnouncementsStartDateToDateTime20260304000002
     const refreshed = await queryRunner.getTable(tableName);
     if (!refreshed) return;
 
-    const hasDateTimeAfter = refreshed.columns.some((c) => c.name === 'date_time');
+    const hasDateTimeAfter = refreshed.columns.some(
+      (c) => c.name === 'date_time',
+    );
     const hasEndDate = refreshed.columns.some((c) => c.name === 'end_date');
 
     if (hasDateTimeAfter && hasEndDate) {
-      const indexExistsNow = refreshed.indices.some((i) => i.name === indexName);
+      const indexExistsNow = refreshed.indices.some(
+        (i) => i.name === indexName,
+      );
       if (!indexExistsNow) {
         await queryRunner.createIndex(
           tableName,
@@ -68,11 +66,15 @@ export class RenameAnnouncementsStartDateToDateTime20260304000002
     const refreshed = await queryRunner.getTable(tableName);
     if (!refreshed) return;
 
-    const hasStartDateAfter = refreshed.columns.some((c) => c.name === 'start_date');
+    const hasStartDateAfter = refreshed.columns.some(
+      (c) => c.name === 'start_date',
+    );
     const hasEndDate = refreshed.columns.some((c) => c.name === 'end_date');
 
     if (hasStartDateAfter && hasEndDate) {
-      const indexExistsNow = refreshed.indices.some((i) => i.name === indexName);
+      const indexExistsNow = refreshed.indices.some(
+        (i) => i.name === indexName,
+      );
       if (!indexExistsNow) {
         await queryRunner.createIndex(
           tableName,

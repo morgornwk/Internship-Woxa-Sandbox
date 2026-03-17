@@ -127,7 +127,10 @@ describe('LoginAttemptsService', () => {
       const result = await service.recordFailure('a@b.com');
 
       expect(repo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ lockedUntil: expect.any(Date), failedAttempts: 0 }),
+        expect.objectContaining({
+          lockedUntil: expect.any(Date),
+          failedAttempts: 0,
+        }),
       );
       expect(result.isLocked).toBe(true);
       expect(result.remainingMs).toBeGreaterThan(0);
@@ -153,7 +156,11 @@ describe('LoginAttemptsService', () => {
       await service.resetAttempts('a@b.com');
 
       expect(repo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ failedAttempts: 0, lockedUntil: null, lastFailedAt: null }),
+        expect.objectContaining({
+          failedAttempts: 0,
+          lockedUntil: null,
+          lastFailedAt: null,
+        }),
       );
     });
   });

@@ -1,10 +1,18 @@
-import {IsEnum,IsInt,IsNotEmpty,IsOptional,IsString,IsArray,ValidateIf,} from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsArray,
+  ValidateIf,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { toInt, toStringArray, toString } from './transformers';
 
 const QuizType = ['multiple_choice', 'true_false'] as const;
-type QuizType = typeof QuizType[number];
+type QuizType = (typeof QuizType)[number];
 
 export class CreateCheckpointDto {
   @ApiProperty({ example: 1 })
@@ -22,7 +30,10 @@ export class CreateCheckpointDto {
   checkpoint_questions: string;
 
   @ApiPropertyOptional({ type: [String], example: ['1', '2', '3'] })
-  @ValidateIf((o) => o.checkpoint_type === 'multiple_choice')
+  @ValidateIf(
+    (object: { checkpoint_type?: QuizType }) =>
+      object.checkpoint_type === 'multiple_choice',
+  )
   @Transform(toStringArray)
   @IsArray()
   @IsString({ each: true })

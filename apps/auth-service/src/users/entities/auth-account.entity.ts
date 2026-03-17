@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index, Check } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  Check,
+} from 'typeorm';
 import { AuthProvider } from '@common/enums';
 import { User } from './user.entity';
 
@@ -6,8 +15,12 @@ import { User } from './user.entity';
 @Index(['provider', 'providerUserId'], { unique: true })
 @Index(['provider', 'email'], { unique: true })
 @Check(`"provider" IN ('LOCAL','GOOGLE')`)
-@Check(`("provider" = 'LOCAL' AND "password_hash" IS NOT NULL) OR ("provider" <> 'LOCAL')`)
-@Check(`("provider" <> 'LOCAL' AND "provider_user_id" IS NOT NULL) OR ("provider" = 'LOCAL')`)
+@Check(
+  `("provider" = 'LOCAL' AND "password_hash" IS NOT NULL) OR ("provider" <> 'LOCAL')`,
+)
+@Check(
+  `("provider" <> 'LOCAL' AND "provider_user_id" IS NOT NULL) OR ("provider" = 'LOCAL')`,
+)
 export class AuthAccount {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -22,7 +35,12 @@ export class AuthAccount {
   @Column({ type: 'varchar', length: 20 })
   provider: AuthProvider;
 
-  @Column({ name: 'provider_user_id', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'provider_user_id',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   providerUserId: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })

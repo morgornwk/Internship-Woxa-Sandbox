@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, Index, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  CreateDateColumn,
+  Index,
+  JoinColumn,
+} from 'typeorm';
 import { Chapter } from '../../chapters/entities/chapter.entity';
 import { Article } from '../../articles/entities/article.entity';
 import { Quizs } from '../../quizs/entities/quizs.entity';
@@ -36,13 +45,25 @@ export class Lesson {
   @Column({ name: 'is_published', type: 'boolean', default: false })
   isPublished: boolean;
 
-  @Column({ name: 'lesson_image_url', type: 'varchar', length: 2048, nullable: true })
+  @Column({
+    name: 'lesson_image_url',
+    type: 'varchar',
+    length: 2048,
+    nullable: true,
+  })
   lesson_ImageUrl?: string | null;
 
-  @Column({ name: 'lesson_video_url', type: 'varchar', length: 2048, nullable: true })
+  @Column({
+    name: 'lesson_video_url',
+    type: 'varchar',
+    length: 2048,
+    nullable: true,
+  })
   lesson_videoUrl?: string | null;
 
-  @ManyToOne(() => Chapter, (chapter) => chapter.lessons, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Chapter, (chapter) => chapter.lessons, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'chapter_id', referencedColumnName: 'chapter_id' })
   chapter: Chapter;
   @Column({ name: 'chapter_id', type: 'int' })
@@ -57,7 +78,9 @@ export class Lesson {
   lesson_quizs: Quizs[];
 
   // ความสัมพันธ์กับ QuizsCheckpoint
-  @OneToMany(() => QuizsCheckpoint, (checkpoint) => checkpoint.lesson, { cascade: true })
+  @OneToMany(() => QuizsCheckpoint, (checkpoint) => checkpoint.lesson, {
+    cascade: true,
+  })
   lesson_checkpoints: QuizsCheckpoint[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })

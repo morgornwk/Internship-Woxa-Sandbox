@@ -2,27 +2,27 @@ import { ApiProperty } from '@nestjs/swagger';
 import { NotificationResponseDto } from './notification-response.dto';
 
 export class PaginatedNotificationsDto {
-  @ApiProperty({ 
+  @ApiProperty({
     type: [NotificationResponseDto],
-    description: 'Array of notifications for the current page'
+    description: 'Array of notifications for the current page',
   })
   data: NotificationResponseDto[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 25,
-    description: 'Total number of notifications for the user'
+    description: 'Total number of notifications for the user',
   })
   total: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 1,
-    description: 'Current page number (1-based)'
+    description: 'Current page number (1-based)',
   })
   page: number;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 10,
-    description: 'Number of items per page'
+    description: 'Number of items per page',
   })
   limit: number;
 }

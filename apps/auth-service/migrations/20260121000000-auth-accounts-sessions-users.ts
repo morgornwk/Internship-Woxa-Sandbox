@@ -33,7 +33,8 @@ export class AuthAccountsSessionsUsers20260121000000 implements MigrationInterfa
 
     // If there are foreign keys (besides sessions/password_reset_tokens) that already reference
     // users(id), we must not attempt to drop/replace the users.id column.
-    const userIdFkRefs: Array<{ table_name: string }> = await queryRunner.query(`
+    const userIdFkRefs: Array<{ table_name: string }> =
+      await queryRunner.query(`
       SELECT tc.table_name AS table_name
       FROM information_schema.table_constraints tc
       JOIN information_schema.constraint_column_usage ccu
@@ -47,27 +48,42 @@ export class AuthAccountsSessionsUsers20260121000000 implements MigrationInterfa
     `);
 
     const hasOtherUserIdDependents = userIdFkRefs.some(
-      (r) => r.table_name !== 'sessions' && r.table_name !== 'password_reset_tokens',
+      (r) =>
+        r.table_name !== 'sessions' && r.table_name !== 'password_reset_tokens',
     );
     const rewriteUserIds = !hasOtherUserIdDependents;
 
     // We can backfill auth_accounts from legacy columns either way; choose correct user id source.
     const userIdExpr = rewriteUserIds ? 'u.id_new' : 'u.id';
-    await queryRunner.query(`ALTER TABLE users ALTER COLUMN email DROP NOT NULL`);
+    await queryRunner.query(
+      `ALTER TABLE users ALTER COLUMN email DROP NOT NULL`,
+    );
 
     if (rewriteUserIds) {
-      await queryRunner.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS id_new UUID`);
-      await queryRunner.query(`UPDATE users SET id_new = gen_random_uuid() WHERE id_new IS NULL`);
-      await queryRunner.query(`ALTER TABLE users ALTER COLUMN id_new SET DEFAULT gen_random_uuid()`);
+      await queryRunner.query(
+        `ALTER TABLE users ADD COLUMN IF NOT EXISTS id_new UUID`,
+      );
+      await queryRunner.query(
+        `UPDATE users SET id_new = gen_random_uuid() WHERE id_new IS NULL`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE users ALTER COLUMN id_new SET DEFAULT gen_random_uuid()`,
+      );
 
-      await queryRunner.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id_new UUID`);
+      await queryRunner.query(
+        `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS user_id_new UUID`,
+      );
       await queryRunner.query(
         `ALTER TABLE password_reset_tokens ADD COLUMN IF NOT EXISTS user_id_new UUID`,
       );
     }
 
-    await queryRunner.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS refresh_token_hash TEXT`);
-    await queryRunner.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ`);
+    await queryRunner.query(
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS refresh_token_hash TEXT`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ`,
+    );
 
     if (rewriteUserIds) {
       await queryRunner.query(`
@@ -178,28 +194,46 @@ export class AuthAccountsSessionsUsers20260121000000 implements MigrationInterfa
         END$$;
       `);
 
-      await queryRunner.query(`ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pkey`);
+      await queryRunner.query(
+        `ALTER TABLE users DROP CONSTRAINT IF EXISTS users_pkey`,
+      );
       await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS id`);
       await queryRunner.query(`ALTER TABLE users RENAME COLUMN id_new TO id`);
       await queryRunner.query(`ALTER TABLE users ADD PRIMARY KEY (id)`);
 
-      await queryRunner.query(`ALTER TABLE sessions DROP COLUMN IF EXISTS user_id`);
-      await queryRunner.query(`ALTER TABLE sessions RENAME COLUMN user_id_new TO user_id`);
-      await queryRunner.query(`ALTER TABLE sessions ALTER COLUMN user_id SET NOT NULL`);
+      await queryRunner.query(
+        `ALTER TABLE sessions DROP COLUMN IF EXISTS user_id`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE sessions RENAME COLUMN user_id_new TO user_id`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE sessions ALTER COLUMN user_id SET NOT NULL`,
+      );
       await queryRunner.query(
         `ALTER TABLE sessions ADD CONSTRAINT fk_sessions_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`,
       );
 
-      await queryRunner.query(`ALTER TABLE password_reset_tokens DROP COLUMN IF EXISTS user_id`);
-      await queryRunner.query(`ALTER TABLE password_reset_tokens RENAME COLUMN user_id_new TO user_id`);
-      await queryRunner.query(`ALTER TABLE password_reset_tokens ALTER COLUMN user_id SET NOT NULL`);
+      await queryRunner.query(
+        `ALTER TABLE password_reset_tokens DROP COLUMN IF EXISTS user_id`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE password_reset_tokens RENAME COLUMN user_id_new TO user_id`,
+      );
+      await queryRunner.query(
+        `ALTER TABLE password_reset_tokens ALTER COLUMN user_id SET NOT NULL`,
+      );
       await queryRunner.query(
         `ALTER TABLE password_reset_tokens ADD CONSTRAINT fk_password_reset_tokens_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE`,
       );
     }
 
-    await queryRunner.query(`ALTER TABLE sessions DROP COLUMN IF EXISTS refresh_token`);
-    await queryRunner.query(`ALTER TABLE sessions ALTER COLUMN refresh_token_hash SET NOT NULL`);
+    await queryRunner.query(
+      `ALTER TABLE sessions DROP COLUMN IF EXISTS refresh_token`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE sessions ALTER COLUMN refresh_token_hash SET NOT NULL`,
+    );
     await queryRunner.query(`
       DO $$
       BEGIN
@@ -242,9 +276,15 @@ export class AuthAccountsSessionsUsers20260121000000 implements MigrationInterfa
       END $$;
     `);
 
-    await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS password_hash`);
-    await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS google_id`);
-    await queryRunner.query(`ALTER TABLE users DROP COLUMN IF EXISTS auth_provider`);
+    await queryRunner.query(
+      `ALTER TABLE users DROP COLUMN IF EXISTS password_hash`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE users DROP COLUMN IF EXISTS google_id`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE users DROP COLUMN IF EXISTS auth_provider`,
+    );
 
     await queryRunner.query(`
       DO $$

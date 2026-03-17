@@ -16,7 +16,10 @@ describe('RewardStatusService', () => {
 
   beforeEach(async () => {
     executeMock.mockResolvedValue({ affected: 2 });
-    andWhereMock.mockReturnValue({ andWhere: andWhereMock, execute: executeMock });
+    andWhereMock.mockReturnValue({
+      andWhere: andWhereMock,
+      execute: executeMock,
+    });
     whereMock.mockReturnValue({ andWhere: andWhereMock });
     setMock.mockReturnValue({ where: whereMock });
     updateMock.mockReturnValue({ set: setMock });
@@ -38,7 +41,10 @@ describe('RewardStatusService', () => {
 
     jest.clearAllMocks();
     executeMock.mockResolvedValue({ affected: 2 });
-    andWhereMock.mockReturnValue({ andWhere: andWhereMock, execute: executeMock });
+    andWhereMock.mockReturnValue({
+      andWhere: andWhereMock,
+      execute: executeMock,
+    });
     whereMock.mockReturnValue({ andWhere: andWhereMock });
     setMock.mockReturnValue({ where: whereMock });
     updateMock.mockReturnValue({ set: setMock });
@@ -79,9 +85,17 @@ describe('RewardStatusService', () => {
     expect(createQueryBuilderMock).toHaveBeenCalled();
     expect(updateMock).toHaveBeenCalledWith(Reward);
     expect(setMock).toHaveBeenCalledWith({ is_active: false });
-    expect(whereMock).toHaveBeenCalledWith('is_active = :active', { active: true });
-    expect(andWhereMock).toHaveBeenNthCalledWith(1, 'redeem_end_date IS NOT NULL');
-    expect(andWhereMock).toHaveBeenNthCalledWith(2, `redeem_end_date < (NOW() AT TIME ZONE 'Asia/Bangkok')`);
+    expect(whereMock).toHaveBeenCalledWith('is_active = :active', {
+      active: true,
+    });
+    expect(andWhereMock).toHaveBeenNthCalledWith(
+      1,
+      'redeem_end_date IS NOT NULL',
+    );
+    expect(andWhereMock).toHaveBeenNthCalledWith(
+      2,
+      `redeem_end_date < (NOW() AT TIME ZONE 'Asia/Bangkok')`,
+    );
     expect(affected).toBe(2);
   });
 });

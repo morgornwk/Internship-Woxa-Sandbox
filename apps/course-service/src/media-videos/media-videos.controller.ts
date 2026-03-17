@@ -1,8 +1,24 @@
-import { Body, Controller, Post, Get, Param, Delete, Patch, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Param,
+  Delete,
+  Patch,
+  UseGuards,
+} from '@nestjs/common';
 import { MediaVideosService } from './media-videos.service';
 import { CreateVideoDto } from './dto/create-video.dto';
 import { UpdateVideoDto } from './dto/update-video.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { CurrentUserId, JwtAuthGuard, RolesGuard, Roles } from '@auth';
 import { UserRole } from '@common/enums/user-role.enum';
 
@@ -12,11 +28,13 @@ import { UserRole } from '@common/enums/user-role.enum';
 @Roles(UserRole.ADMIN, UserRole.OWNER)
 @Controller('media/video')
 export class MediaVideosController {
-  constructor(private readonly svc: MediaVideosService) { }
+  constructor(private readonly svc: MediaVideosService) {}
 
   // สร้าง presigned URL สำหรับอัพโหลดวิดีโอ (สำหรับไฟล์ขนาด 1GB)
   @Post()
-  @ApiOperation({ summary: 'สร้าง URL ที่ลงชื่อล่วงหน้าสำหรับการอัปโหลดวิดีโอ' })
+  @ApiOperation({
+    summary: 'สร้าง URL ที่ลงชื่อล่วงหน้าสำหรับการอัปโหลดวิดีโอ',
+  })
   @ApiBody({
     type: CreateVideoDto,
     examples: {
@@ -39,8 +57,14 @@ export class MediaVideosController {
       },
     },
   })
-  @ApiResponse({ status: 201, description: 'Presigned URL created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid input or file size exceeds limit' })
+  @ApiResponse({
+    status: 201,
+    description: 'Presigned URL created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input or file size exceeds limit',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Related entities not found' })
@@ -50,7 +74,9 @@ export class MediaVideosController {
   }
 
   @Post(':id/confirm')
-  @ApiOperation({ summary: 'ยืนยันการอัปโหลดไฟล์วิดีโอและเปลี่ยนสถานะเป็น Ready' })
+  @ApiOperation({
+    summary: 'ยืนยันการอัปโหลดไฟล์วิดีโอและเปลี่ยนสถานะเป็น Ready',
+  })
   @ApiResponse({ status: 200, description: 'Confirmed' })
   @ApiResponse({ status: 400, description: 'File not uploaded yet' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -98,7 +124,10 @@ export class MediaVideosController {
     },
   })
   @ApiResponse({ status: 200, description: 'Updated' })
-  @ApiResponse({ status: 400, description: 'No fields to update / invalid payload' })
+  @ApiResponse({
+    status: 400,
+    description: 'No fields to update / invalid payload',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden' })
   @ApiResponse({ status: 404, description: 'Video not found' })

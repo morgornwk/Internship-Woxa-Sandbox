@@ -25,7 +25,9 @@ describe('AnnouncementsService', () => {
   let repo: AnnouncementRepoMock;
   let mediaImages: MediaImagesServiceMock;
 
-  const makeAnnouncement = (overrides: Partial<Announcement> = {}): Announcement =>
+  const makeAnnouncement = (
+    overrides: Partial<Announcement> = {},
+  ): Announcement =>
     ({
       announcement_id: 1,
       title: 'A',
@@ -72,9 +74,9 @@ describe('AnnouncementsService', () => {
 
   describe('create', () => {
     it('throws on invalid deepLink', async () => {
-      await expect(service.create({ title: 'x', deepLink: 'not-a-url' } as any)).rejects.toBeInstanceOf(
-        BadRequestException,
-      );
+      await expect(
+        service.create({ title: 'x', deepLink: 'not-a-url' } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('creates announcement with relative deepLink', async () => {
@@ -82,7 +84,10 @@ describe('AnnouncementsService', () => {
       repo.create.mockReturnValue(created);
       repo.save.mockResolvedValue(created);
 
-      const result = await service.create({ title: 'x', deepLink: '/path' } as any);
+      const result = await service.create({
+        title: 'x',
+        deepLink: '/path',
+      } as any);
       expect(result.title).toBe('x');
     });
   });
@@ -120,7 +125,7 @@ describe('AnnouncementsService', () => {
         execute: jest.fn().mockResolvedValue({ affected: 1 }),
       };
 
-      (repo.createQueryBuilder as jest.Mock)
+      repo.createQueryBuilder
         .mockReturnValueOnce(qbActivate)
         .mockReturnValueOnce(qbDeactivate);
 
@@ -146,7 +151,11 @@ describe('AnnouncementsService', () => {
         andWhere: jest.fn().mockReturnThis(),
         orderBy: jest.fn().mockReturnThis(),
         addOrderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockResolvedValue([makeAnnouncement({ announcement_id: 1, activeStatus: true })]),
+        getMany: jest
+          .fn()
+          .mockResolvedValue([
+            makeAnnouncement({ announcement_id: 1, activeStatus: true }),
+          ]),
       };
       repo.createQueryBuilder.mockReturnValue(qb);
 
@@ -165,7 +174,9 @@ describe('AnnouncementsService', () => {
   describe('findOne', () => {
     it('throws when not found', async () => {
       repo.findOne.mockResolvedValue(null);
-      await expect(service.findOne(1)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.findOne(1)).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('returns dto when found', async () => {
@@ -179,8 +190,10 @@ describe('AnnouncementsService', () => {
     it('uploads image via MediaImagesService and updates announcement', async () => {
       const entity = makeAnnouncement({ announcement_id: 1 });
       repo.findOne.mockResolvedValue(entity);
-      (mediaImages.uploadImageFileAndPersist as jest.Mock).mockResolvedValue({ url: 'https://x' });
-      repo.save.mockImplementation(async (a) => a as any);
+      mediaImages.uploadImageFileAndPersist.mockResolvedValue({
+        url: 'https://x',
+      });
+      repo.save.mockImplementation(async (a) => a);
 
       const file = { buffer: Buffer.from('x') } as any;
       const result = await service.uploadBannerImage(1, file, 'admin');
@@ -193,15 +206,20 @@ describe('AnnouncementsService', () => {
   describe('update', () => {
     it('throws on invalid deepLink', async () => {
       repo.findOne.mockResolvedValue(makeAnnouncement({ announcement_id: 1 }));
-      await expect(service.update(1, { deepLink: 'bad' } as any)).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.update(1, { deepLink: 'bad' } as any),
+      ).rejects.toBeInstanceOf(BadRequestException);
     });
 
     it('updates fields and saves', async () => {
       const entity = makeAnnouncement({ announcement_id: 1, title: 'Old' });
       repo.findOne.mockResolvedValue(entity);
-      repo.save.mockImplementation(async (a) => a as any);
+      repo.save.mockImplementation(async (a) => a);
 
-      const result = await service.update(1, { title: 'New', activeStatus: true } as any);
+      const result = await service.update(1, {
+        title: 'New',
+        activeStatus: true,
+      } as any);
 
       expect(entity.title).toBe('New');
       expect(entity.activeStatus).toBe(true);

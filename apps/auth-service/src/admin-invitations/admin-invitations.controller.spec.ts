@@ -31,8 +31,10 @@ describe('AdminInvitationsController', () => {
       ],
     }).compile();
 
-    controller = module.get<AdminInvitationsController>(AdminInvitationsController);
-    service = module.get(AdminInvitationsService) as jest.Mocked<AdminInvitationsService>;
+    controller = module.get<AdminInvitationsController>(
+      AdminInvitationsController,
+    );
+    service = module.get(AdminInvitationsService);
   });
 
   describe('suspendUser', () => {
@@ -51,24 +53,32 @@ describe('AdminInvitationsController', () => {
 
   describe('unsuspendUser', () => {
     it('throws BadRequestException when user is not admin', async () => {
-      service.unsuspendUser.mockRejectedValue(new BadRequestException('User is not admin'));
+      service.unsuspendUser.mockRejectedValue(
+        new BadRequestException('User is not admin'),
+      );
 
-      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
       expect(service.unsuspendUser).toHaveBeenCalledWith('user-1');
     });
 
     it('throws BadRequestException when user is not suspended', async () => {
-      service.unsuspendUser.mockRejectedValue(new BadRequestException('User is not suspended'));
+      service.unsuspendUser.mockRejectedValue(
+        new BadRequestException('User is not suspended'),
+      );
 
-      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(BadRequestException);
+      await expect(controller.unsuspendUser('user-1')).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
       expect(service.unsuspendUser).toHaveBeenCalledWith('user-1');
     });
 
     it('unsuspends admin user successfully', async () => {
-      const expectedResult = { 
-        id: 'user-1', 
-        status: 'active', 
-        message: 'User unsuspended successfully' 
+      const expectedResult = {
+        id: 'user-1',
+        status: 'active',
+        message: 'User unsuspended successfully',
       };
       service.unsuspendUser.mockResolvedValue(expectedResult);
 
@@ -178,7 +188,10 @@ describe('AdminInvitationsController', () => {
 
       const result = await controller.resendInvite(invitedByUserId, userId);
 
-      expect(service.resendInvite).toHaveBeenCalledWith(userId, invitedByUserId);
+      expect(service.resendInvite).toHaveBeenCalledWith(
+        userId,
+        invitedByUserId,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -241,7 +254,10 @@ describe('AdminInvitationsController', () => {
 
       const result = await controller.acceptInvite(dto);
 
-      expect(service.acceptInvite).toHaveBeenCalledWith(dto.token, dto.newPassword);
+      expect(service.acceptInvite).toHaveBeenCalledWith(
+        dto.token,
+        dto.newPassword,
+      );
       expect(result).toEqual(expectedResult);
     });
 
@@ -259,7 +275,10 @@ describe('AdminInvitationsController', () => {
 
       const result = await controller.acceptInvite(dto);
 
-      expect(service.acceptInvite).toHaveBeenCalledWith(dto.token, dto.newPassword);
+      expect(service.acceptInvite).toHaveBeenCalledWith(
+        dto.token,
+        dto.newPassword,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -334,9 +353,15 @@ describe('AdminInvitationsController', () => {
         emailSent: true,
       });
 
-      const resendResult = await controller.resendInvite(invitedByUserId, userId);
+      const resendResult = await controller.resendInvite(
+        invitedByUserId,
+        userId,
+      );
       expect(resendResult.emailSent).toBe(true);
-      expect(service.resendInvite).toHaveBeenCalledWith(userId, invitedByUserId);
+      expect(service.resendInvite).toHaveBeenCalledWith(
+        userId,
+        invitedByUserId,
+      );
     });
   });
 });

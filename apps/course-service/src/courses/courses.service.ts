@@ -9,7 +9,7 @@ import {
   CourseStructureResponseDto,
   LevelStructureDto,
   ChapterStructureDto,
-  LessonStructureDto
+  LessonStructureDto,
 } from './dto';
 import { LessonType } from '../lessons/entities/lesson.entity';
 import { RedisCacheService } from '../cache/redis-cache.service';
@@ -25,7 +25,7 @@ export class CoursesService {
     private readonly courseRepository: Repository<Course>,
     @Optional()
     private readonly redisCacheService?: RedisCacheService,
-  ) { }
+  ) {}
 
   async create(createCourseDto: CreateCourseDto): Promise<CourseResponseDto> {
     const course = this.courseRepository.create({
@@ -103,18 +103,27 @@ export class CoursesService {
   }
 
   // Update Course by ID
-  async update(id: number, updateCourseDto: UpdateCourseDto): Promise<CourseResponseDto> {
-    const course = await this.courseRepository.findOne({ where: { course_id: id } });
+  async update(
+    id: number,
+    updateCourseDto: UpdateCourseDto,
+  ): Promise<CourseResponseDto> {
+    const course = await this.courseRepository.findOne({
+      where: { course_id: id },
+    });
 
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
     }
 
     // Update fields if specified
-    if (updateCourseDto.course_title !== undefined) course.course_title = updateCourseDto.course_title;
-    if (updateCourseDto.course_description !== undefined) course.course_description = updateCourseDto.course_description;
-    if (updateCourseDto.course_imageUrl !== undefined) course.course_imageUrl = updateCourseDto.course_imageUrl;
-    if (updateCourseDto.course_tags !== undefined) course.course_tags = updateCourseDto.course_tags ?? null;
+    if (updateCourseDto.course_title !== undefined)
+      course.course_title = updateCourseDto.course_title;
+    if (updateCourseDto.course_description !== undefined)
+      course.course_description = updateCourseDto.course_description;
+    if (updateCourseDto.course_imageUrl !== undefined)
+      course.course_imageUrl = updateCourseDto.course_imageUrl;
+    if (updateCourseDto.course_tags !== undefined)
+      course.course_tags = updateCourseDto.course_tags ?? null;
 
     if (updateCourseDto.isPublished !== undefined) {
       course.isPublished = updateCourseDto.isPublished;
@@ -183,7 +192,8 @@ export class CoursesService {
       );
     }
 
-    const limit = params?.limit && params.limit > 0 ? Math.min(params.limit, 100) : 50;
+    const limit =
+      params?.limit && params.limit > 0 ? Math.min(params.limit, 100) : 50;
     const offset = params?.offset && params.offset >= 0 ? params.offset : 0;
 
     query.orderBy('course.createdAt', 'DESC').take(limit).skip(offset);
@@ -197,7 +207,9 @@ export class CoursesService {
   }
 
   private async findOneWithoutCache(id: number): Promise<CourseResponseDto> {
-    const course = await this.courseRepository.findOne({ where: { course_id: id } });
+    const course = await this.courseRepository.findOne({
+      where: { course_id: id },
+    });
 
     if (!course) {
       throw new NotFoundException(`Course with ID ${id} not found`);
@@ -252,12 +264,14 @@ export class CoursesService {
           .map((chapter) => {
             const lessons: LessonStructureDto[] = (chapter.lessons || [])
               .filter((lesson) => {
-                const isPublished = this.resolveLessonStructurePublishedState(lesson);
+                const isPublished =
+                  this.resolveLessonStructurePublishedState(lesson);
                 return includeUnpublishedLessons || isPublished;
               })
               .sort((a, b) => a.orderIndex - b.orderIndex)
               .map((lesson) => {
-                const isPublished = this.resolveLessonStructurePublishedState(lesson);
+                const isPublished =
+                  this.resolveLessonStructurePublishedState(lesson);
                 const dto: LessonStructureDto = {
                   lesson_id: lesson.lesson_id,
                   lesson_title: lesson.lesson_title,
@@ -290,7 +304,9 @@ export class CoursesService {
               lessons,
             } as ChapterStructureDto;
           })
-          .filter((chapter): chapter is ChapterStructureDto => chapter !== null);
+          .filter(
+            (chapter): chapter is ChapterStructureDto => chapter !== null,
+          );
 
         // Admin view: แสดง level ว่างด้วย | Student view: ซ่อน level ที่ไม่มี chapter
         if (!chapters.length && !includeUnpublishedLessons) {
