@@ -113,6 +113,10 @@ export class AdminInvitationsService {
       throw new BadRequestException('User is not admin');
     }
 
+    if (String(user.status ?? '').toLowerCase() === 'active') {
+      throw new BadRequestException('Admin already active');
+    }
+
     const temporaryPassword = this.generateTemporaryPassword();
     await this.usersService.updatePassword(user.id, temporaryPassword);
 

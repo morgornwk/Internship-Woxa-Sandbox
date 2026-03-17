@@ -385,6 +385,9 @@ describe('UsersService', () => {
         select: jest.fn().mockReturnThis(),
         addSelect: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
+        addGroupBy: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        setParameter: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([
           {
             lesson_progress_id: 1,

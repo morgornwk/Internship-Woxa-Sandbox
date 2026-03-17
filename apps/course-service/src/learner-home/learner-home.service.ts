@@ -349,8 +349,8 @@ export class LearnerHomeService {
         this.logger.error(`Failed to get total XP for user ${userId}: ${error.message}`);
         return 0;
       }),
-      this.getLatestLearn(userId).catch((error) => {
-        this.logger.error(`Failed to get latest learn for user ${userId}: ${error.message}`);
+      this.getContinueLearning(userId).catch((error) => {
+        this.logger.error(`Failed to get continue learning for user ${userId}: ${error.message}`);
         return null;
       }),
       this.getMyCourses(userId).catch((error) => {

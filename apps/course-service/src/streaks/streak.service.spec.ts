@@ -130,6 +130,8 @@ describe('StreakService', () => {
     });
 
     it('returns isFlameOn false when not completed today (gap = 1)', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date('2026-03-05T10:00:00.000Z'));
       const last = new Date('2026-03-04T10:00:00.000Z');
       const streak = makeStreak({ currentStreak: 2, lastCompletedAt: last, rewardShownAt: null });
       repo.findOne.mockResolvedValue(streak);
@@ -139,6 +141,8 @@ describe('StreakService', () => {
       expect(res.isReward).toBe(false);
       expect(res.streak.currentStreak).toBe(2);
       expect(repo.save).not.toHaveBeenCalled();
+
+      jest.useRealTimers();
     });
   });
 

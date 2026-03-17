@@ -5,6 +5,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { LevelsService } from './levels.service';
 import { Level } from './entities/level.entity';
 import { Course } from '../courses/entities/course.entity';
+import { CoursesService } from '../courses/courses.service';
 
 describe('LevelsService', () => {
   let service: LevelsService;
@@ -55,6 +56,12 @@ describe('LevelsService', () => {
           provide: getRepositoryToken(Course),
           useValue: {
             findOne: jest.fn(),
+          },
+        },
+        {
+          provide: CoursesService,
+          useValue: {
+            invalidateCourseCaches: jest.fn(),
           },
         },
       ],

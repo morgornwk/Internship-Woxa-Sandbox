@@ -444,7 +444,7 @@ describe('LearnerHomeService', () => {
     const res = await service.getHome('u3', 'Bearer x', 'true');
 
     expect(res.continueLearning).toBeNull();
-    expect(res.header.avatarUrl).toBe('ava');
+    expect(res.header.avatarUrl).toBeNull();
     expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
   });
 

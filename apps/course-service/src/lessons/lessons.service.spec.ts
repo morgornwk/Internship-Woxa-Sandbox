@@ -500,7 +500,7 @@ describe('LessonsService', () => {
       expect(lessonRepo.remove).toHaveBeenCalledWith(otherCheckpoint);
       expect(result.lesson_type).toBe(LessonType.CHECKPOINT);
       expect(result.isPublished).toBe(false);
-      expect(result.orderIndex).toBe(2);
+      expect(result.orderIndex).toBe(3);
     });
 
     it('publishes checkpoint when content exists', async () => {

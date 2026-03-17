@@ -137,7 +137,7 @@ export class AnalyticsService {
     const result = await this.userStreakRepo
       .createQueryBuilder('us')
       .select('COUNT(DISTINCT us.userId)', 'count')
-      .where('us.updatedAt < CURRENT_DATE - interval \'7 days\'')  
+      .where('us.updatedAt >= CURRENT_DATE - interval \'7 days\'')
       .getRawOne<{ count: string }>();
 
       // console.log('Active users in last 7 days:', result);
