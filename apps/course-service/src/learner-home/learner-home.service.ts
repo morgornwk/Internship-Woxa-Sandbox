@@ -13,6 +13,7 @@ import { StreakService } from '../streaks/streak.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 import { LessonProgress } from '../progress/entities/progress.entity';
+import { LessonProgressStatus } from '../progress/entities/progress.entity';
 import { UserXp } from '../quizs/entities/user-xp.entity';
 import { Course } from '../courses/entities/course.entity';
 import { RedisCacheService } from '../cache/redis-cache.service';
@@ -24,11 +25,31 @@ interface UserProfile {
   avatarUrl: string | null;
 }
 
+type AuthProfileResponse = {
+  avatarUrl?: string | null;
+};
+
 @Injectable()
 export class LearnerHomeService {
   private readonly logger = new Logger(LearnerHomeService.name);
   private static readonly HOME_TTL_SECONDS = 120;
   private static readonly RECOMMENDATIONS_TTL_SECONDS = 300;
+
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return String(error);
+  }
+
+  private logFallback(context: string, error: unknown, details?: string): void {
+    const suffix = details ? ` ${details}` : '';
+    this.logger.error(
+      `${context}${suffix}: ${this.getErrorMessage(error)}`,
+      error instanceof Error ? error.stack : undefined,
+    );
+  }
 
   constructor(
     private readonly httpService: HttpService,
@@ -93,8 +114,10 @@ export class LearnerHomeService {
         },
       );
 
-      return { avatarUrl: response.data?.avatarUrl ?? null };
-    } catch {
+      const data = response.data as AuthProfileResponse;
+      return { avatarUrl: data.avatarUrl ?? null };
+    } catch (error) {
+      this.logFallback('Failed to get user profile from auth', error);
       return null;
     }
   }
@@ -144,7 +167,7 @@ export class LearnerHomeService {
     const course = level.course;
 
     // คำนวณ progress ของ chapter ปัจจุบัน
-    const chapterProgress = await this.getChapterProgress(
+    const chapterProgress = this.getChapterProgress(
       chapter.chapter_id,
       progressList,
     );
@@ -266,7 +289,8 @@ export class LearnerHomeService {
             const progress = progressMap.get(lesson.lesson_id.toString());
             if (
               progress &&
-              (progress.status === 'COMPLETED' || progress.status === 'SKIPPED')
+              (progress.status === LessonProgressStatus.COMPLETED ||
+                progress.status === LessonProgressStatus.SKIPPED)
             ) {
               completedLessons++;
             }
@@ -285,10 +309,10 @@ export class LearnerHomeService {
     return courseProgressMap;
   }
 
-  private async getChapterProgress(
+  private getChapterProgress(
     chapterId: number,
     progressList: LessonProgress[],
-  ) {
+  ): number {
     // หา progress records ทั้งหมดใน chapter นี้
     const chapterProgressRecords = progressList.filter(
       (progress) => progress.lesson?.chapter?.chapter_id === chapterId,
@@ -299,7 +323,8 @@ export class LearnerHomeService {
     // นับ completed/skipped lessons ใน chapter
     const completedLessons = chapterProgressRecords.filter(
       (progress) =>
-        progress.status === 'COMPLETED' || progress.status === 'SKIPPED',
+        progress.status === LessonProgressStatus.COMPLETED ||
+        progress.status === LessonProgressStatus.SKIPPED,
     ).length;
 
     // คำนวณ percent ของ chapter
@@ -309,8 +334,8 @@ export class LearnerHomeService {
   private hasStartedLearning(progress: LessonProgress) {
     return (
       Number(progress.progressPercent ?? 0) > 0 ||
-      progress.status === 'COMPLETED' ||
-      progress.status === 'SKIPPED'
+      progress.status === LessonProgressStatus.COMPLETED ||
+      progress.status === LessonProgressStatus.SKIPPED
     );
   }
 
@@ -347,40 +372,40 @@ export class LearnerHomeService {
       userProfile,
     ] = await Promise.all([
       this.getStreak(userId).catch((error) => {
-        this.logger.error(
-          `Failed to get streak for user ${userId}: ${error.message}`,
-        );
+        this.logFallback('Failed to get streak', error, `for user ${userId}`);
         return { currentStreak: 0 };
       }),
       this.getTotalXp(userId).catch((error) => {
-        this.logger.error(
-          `Failed to get total XP for user ${userId}: ${error.message}`,
-        );
+        this.logFallback('Failed to get total XP', error, `for user ${userId}`);
         return 0;
       }),
       this.getContinueLearning(userId).catch((error) => {
-        this.logger.error(
-          `Failed to get continue learning for user ${userId}: ${error.message}`,
+        this.logFallback(
+          'Failed to get continue learning',
+          error,
+          `for user ${userId}`,
         );
         return null;
       }),
       this.getMyCourses(userId).catch((error) => {
-        this.logger.error(
-          `Failed to get my courses for user ${userId}: ${error.message}`,
+        this.logFallback(
+          'Failed to get my courses',
+          error,
+          `for user ${userId}`,
         );
         return [];
       }),
       this.getNotifications(userId).catch((error) => {
-        this.logger.error(
-          `Failed to get notifications for user ${userId}: ${error.message}`,
+        this.logFallback(
+          'Failed to get notifications',
+          error,
+          `for user ${userId}`,
         );
         return { unreadCount: 0 };
       }),
       !shouldSkipProfile
         ? this.getUserProfileFromAuth(authorization).catch((error) => {
-            this.logger.error(
-              `Failed to get user profile from auth: ${error.message}`,
-            );
+            this.logFallback('Failed to get user profile from auth', error);
             return null;
           })
         : null,
@@ -388,7 +413,10 @@ export class LearnerHomeService {
 
     const isNewUser = continueLearning === null && myCourses.length === 0;
     const recommendations = await this.getRecommendations(isNewUser).catch(
-      () => ({ courses: [] }),
+      (error) => {
+        this.logFallback('Failed to get recommendations', error);
+        return { courses: [] };
+      },
     );
 
     return {
@@ -489,7 +517,7 @@ export class LearnerHomeService {
       .orderBy('MAX(lesson_progress.updated_at)', 'DESC')
       .setParameter('userId', userId)
       .limit(1)
-      .getRawOne();
+      .getRawOne<Record<string, unknown>>();
 
     return result;
   }

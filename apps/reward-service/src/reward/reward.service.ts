@@ -21,6 +21,14 @@ import {
 export class RewardService {
   private readonly logger = new Logger(RewardService.name);
 
+  private getErrorMessage(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+
+    return String(error);
+  }
+
   constructor(
     @InjectDataSource('reward')
     private readonly rewardDataSource: DataSource,
@@ -167,7 +175,11 @@ export class RewardService {
 
       try {
         await courseRunner.commitTransaction();
-      } catch {
+      } catch (error) {
+        this.logger.error(
+          `Course transaction commit failed after reward commit: ${this.getErrorMessage(error)}`,
+          error instanceof Error ? error.stack : undefined,
+        );
         await this.compensateRewardRedemption(reward.id, redeemToken);
         throw new InternalServerErrorException(
           'Redeem failed during finalization and reward changes were compensated',
@@ -179,10 +191,10 @@ export class RewardService {
         data: serializeRewardRedemption(savedRedemption),
       };
     } catch (error) {
-      await this.safeRollback(courseRunner);
+      await this.safeRollback(courseRunner, 'course transaction');
 
       if (!rewardCommitted) {
-        await this.safeRollback(rewardRunner);
+        await this.safeRollback(rewardRunner, 'reward transaction');
       }
 
       throw error;
@@ -271,11 +283,17 @@ export class RewardService {
     }
   }
 
-  private async safeRollback(runner: QueryRunner) {
+  private async safeRollback(
+    runner: QueryRunner,
+    context: string,
+  ): Promise<void> {
     try {
       await runner.rollbackTransaction();
-    } catch {
-      return;
+    } catch (error) {
+      this.logger.warn(
+        `Rollback failed for ${context}: ${this.getErrorMessage(error)}`,
+        error instanceof Error ? error.stack : undefined,
+      );
     }
   }
 
@@ -316,7 +334,10 @@ export class RewardService {
 
       await compensationRunner.commitTransaction();
     } catch (error) {
-      await this.safeRollback(compensationRunner);
+      await this.safeRollback(
+        compensationRunner,
+        'reward compensation transaction',
+      );
       this.logger.error(
         'Failed to compensate reward redemption after course commit failure',
         error instanceof Error ? error.stack : String(error),

@@ -212,14 +212,6 @@ export class QuizService {
         });
 
         // คำนวณ XP ของบทนั้น ๆ โดยดูจาก checkpoint ทั้งหมดในบท (ถ้าบทไหนไม่มี checkpoint เลยจะใช้ค่า default เป็น 5 XP ต่อบท)
-        const lessonsInChapter = await this.lessonRepository.find({
-          where: { chapter_id: lesson.chapter_id },
-        });
-        const lessonIds = lessonsInChapter.map((l) => l.lesson_id);
-        const checkpointsInChapter = await this.checkpointRepository.find({
-          where: { lessonId: In(lessonIds) },
-        });
-
         // ถ้ายังไม่มี user_xp ของบทนี้ → สร้างใหม่ (xpEarned/xpTotal)
         if (!userXp) {
           const otherRaw = await this.userXpRepository

@@ -362,7 +362,7 @@ export class ProgressService {
     }
 
     // ถ้าบทเรียนนี้เป็น checkpoint ให้ข้ามบท checkpoint ที่เกี่ยวข้องทั้งหมดด้วย
-    if (currentLesson.lesson_type === 'checkpoint') {
+    if (currentLesson.lesson_type === LessonType.CHECKPOINT) {
       await this.quizService.skipCheckpointsByLesson(lessonId, userId);
     }
 

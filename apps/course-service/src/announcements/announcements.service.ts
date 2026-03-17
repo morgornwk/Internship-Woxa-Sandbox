@@ -245,7 +245,11 @@ export class AnnouncementsService {
 
       // ถ้าไม่ใช่ relative path ให้ตรวจสอบว่าเป็น absolute URL ที่ถูกต้องหรือไม่
       new URL(value);
-    } catch {
+    } catch (error) {
+      this.logger.warn(
+        `Invalid deepLink received: ${value}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new BadRequestException('Invalid deepLink');
     }
   }

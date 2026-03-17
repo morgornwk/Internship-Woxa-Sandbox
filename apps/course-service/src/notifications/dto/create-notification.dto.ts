@@ -1,12 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import {
-  IsString,
-  IsOptional,
-  IsEnum,
-  IsUUID,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsEnum, IsUUID } from 'class-validator';
 
 export class CreateNotificationDto {
   @ApiPropertyOptional({
@@ -50,5 +43,5 @@ export class CreateNotificationDto {
     description: 'Additional notification metadata',
   })
   @IsOptional()
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
