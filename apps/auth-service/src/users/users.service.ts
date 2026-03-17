@@ -406,7 +406,7 @@ export class UsersService {
           }),
         );
       } catch (err) {
-        this.logger.warn(`Failed to delete old avatar: ${oldAvatarKey}`);
+        this.logger.warn(`Failed to delete old avatar: ${oldAvatarKey}`, err);
       }
     }
 
