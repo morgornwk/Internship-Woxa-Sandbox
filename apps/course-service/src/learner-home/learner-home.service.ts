@@ -54,16 +54,9 @@ export class LearnerHomeService {
     }
 
     const shouldSkipProfile = internalCall === 'true';
-    const cacheKey = `learner-home:${LearnerHomeService.CACHE_VERSION}:user:${userId}:profile:${shouldSkipProfile ? 'off' : 'on'}`;
 
-    return (
-      this.redisCacheService?.wrap(
-        cacheKey,
-        LearnerHomeService.HOME_TTL_SECONDS,
-        async () =>
-          this.buildHomeResponse(userId, authorization, shouldSkipProfile),
-      ) ?? this.buildHomeResponse(userId, authorization, shouldSkipProfile)
-    );
+    // ข้อมูลความคืบหน้าต่างๆ ควรเป็น Real-time จะได้ไม่อัปเดตช้า (ดีเลย์)
+    return this.buildHomeResponse(userId, authorization, shouldSkipProfile);
   }
 
   // ดึง profile ผ่าน Auth Service แบบ internal call (ส่ง X-Internal-Call header กัน loop)
@@ -435,7 +428,7 @@ export class LearnerHomeService {
           JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
           WHERE l2.chapter_id = chapter.chapter_id
           AND lp2.user_id = :userId
-          AND lp2.status IN ('COMPLETED', 'SKIPPED')
+          AND lp2.status = 'COMPLETED'
         ) * 100 /
         (
           SELECT COUNT(*)
