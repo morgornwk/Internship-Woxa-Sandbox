@@ -76,20 +76,68 @@ describe('LearnerHomeService', () => {
         {
           provide: getRepositoryToken(LessonProgress),
           useValue: {
-            createQueryBuilder: jest.fn(),
+            createQueryBuilder: jest.fn(() => ({
+              select: jest.fn().mockReturnThis(),
+              from: jest.fn().mockReturnThis(),
+              leftJoin: jest.fn().mockReturnThis(),
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              groupBy: jest.fn().mockReturnThis(),
+              having: jest.fn().mockReturnThis(),
+              take: jest.fn().mockReturnThis(),
+              skip: jest.fn().mockReturnThis(),
+              getRawOne: jest.fn().mockResolvedValue(null),
+              getRawMany: jest.fn().mockResolvedValue([]),
+              getOne: jest.fn().mockResolvedValue(null),
+              getMany: jest.fn().mockResolvedValue([]),
+            })),
           },
         },
         {
           provide: getRepositoryToken(UserXp),
           useValue: {
-            createQueryBuilder: jest.fn(),
+            createQueryBuilder: jest.fn(() => ({
+              select: jest.fn().mockReturnThis(),
+              from: jest.fn().mockReturnThis(),
+              leftJoin: jest.fn().mockReturnThis(),
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              groupBy: jest.fn().mockReturnThis(),
+              having: jest.fn().mockReturnThis(),
+              take: jest.fn().mockReturnThis(),
+              skip: jest.fn().mockReturnThis(),
+              getRawOne: jest.fn().mockResolvedValue(null),
+              getRawMany: jest.fn().mockResolvedValue([]),
+              getOne: jest.fn().mockResolvedValue(null),
+              getMany: jest.fn().mockResolvedValue([]),
+            })),
           },
         },
         {
           provide: getRepositoryToken(Course),
           useValue: {
-            createQueryBuilder: jest.fn(),
-            find: jest.fn(),
+            createQueryBuilder: jest.fn(() => ({
+              select: jest.fn().mockReturnThis(),
+              from: jest.fn().mockReturnThis(),
+              leftJoin: jest.fn().mockReturnThis(),
+              leftJoinAndSelect: jest.fn().mockReturnThis(),
+              where: jest.fn().mockReturnThis(),
+              andWhere: jest.fn().mockReturnThis(),
+              orderBy: jest.fn().mockReturnThis(),
+              groupBy: jest.fn().mockReturnThis(),
+              having: jest.fn().mockReturnThis(),
+              take: jest.fn().mockReturnThis(),
+              skip: jest.fn().mockReturnThis(),
+              getRawOne: jest.fn().mockResolvedValue(null),
+              getRawMany: jest.fn().mockResolvedValue([]),
+              getOne: jest.fn().mockResolvedValue(null),
+              getMany: jest.fn().mockResolvedValue([]),
+            })),
+            find: jest.fn().mockResolvedValue([]),
           },
         },
       ],
@@ -127,28 +175,23 @@ describe('LearnerHomeService', () => {
     userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          status: 'IN_PROGRESS',
-          progressPercent: 40,
-          lesson: {
-            chapter: {
-              chapter_id: 1,
-              chapter_title: 'Ch1',
-              level: {
-                level_title: 'L1',
-                course: {
-                  course_id: 10,
-                  course_title: 'C1',
-                },
-              },
-            },
-          },
-        },
-      ]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        course_id: 10,
+        course_title: 'C1',
+        chapter_title: 'Ch1',
+        level_name: 'L1',
+        progressPercent: 0,
+      }),
     };
 
     const myCoursesQb: any = {
@@ -208,38 +251,11 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-
-    const recommendationsQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          course_id: 1,
-          course_title: 'R1',
-          course_imageUrl: null,
-          course_levels: [
-            {
-              level_chapters: [{ isPublished: true }, { isPublished: true }],
-            },
-          ],
-        },
-        {
-          course_id: 2,
-          course_title: 'R2',
-          course_imageUrl: 'img2',
-          course_levels: [
-            {
-              level_chapters: [{ isPublished: true }],
-            },
-          ],
-        },
-      ]),
-    };
-    courseRepo.createQueryBuilder
-      .mockReturnValueOnce(courseStructureQb)
-      .mockReturnValueOnce(recommendationsQb);
+    courseRepo.createQueryBuilder.mockReturnValueOnce(courseStructureQb);
+    courseRepo.find.mockResolvedValue([
+      { course_id: 1, course_title: 'R1', course_imageUrl: null },
+      { course_id: 2, course_title: 'R2', course_imageUrl: 'img2' },
+    ]);
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
@@ -261,7 +277,7 @@ describe('LearnerHomeService', () => {
         reason: 'คอร์สยอดนิยม',
         course_imageUrl: null,
         level_name: 'ระดับพื้นฐาน',
-        course_totalChapter: 2,
+        course_totalChapter: 6,
       },
       {
         course_id: 2,
@@ -269,11 +285,15 @@ describe('LearnerHomeService', () => {
         reason: 'คอร์สยอดนิยม',
         course_imageUrl: 'img2',
         level_name: 'ระดับพื้นฐาน',
-        course_totalChapter: 1,
+        course_totalChapter: 6,
       },
     ]);
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(2);
+    expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
+    expect(courseRepo.find).toHaveBeenCalledWith({
+      where: { isPublished: true },
+      order: { updatedAt: 'DESC' },
+      take: 3,
+    });
 
     expect(httpService.axiosRef.get).not.toHaveBeenCalled();
   });
@@ -292,10 +312,17 @@ describe('LearnerHomeService', () => {
     userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue(null),
     };
     const myCoursesQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -306,13 +333,7 @@ describe('LearnerHomeService', () => {
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
-    courseRepo.createQueryBuilder.mockReturnValue({
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    });
+    courseRepo.find.mockResolvedValue([]);
 
     httpService.axiosRef.get.mockResolvedValue({ data: { avatarUrl: 'ava' } });
 
@@ -326,7 +347,11 @@ describe('LearnerHomeService', () => {
       },
     );
     expect(res.header.avatarUrl).toBe('ava');
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
+    expect(courseRepo.find).toHaveBeenCalledWith({
+      where: { isPublished: true },
+      order: { createdAt: 'DESC' },
+      take: 3,
+    });
   });
 
   it('returns latest created courses for new users', async () => {
@@ -343,10 +368,17 @@ describe('LearnerHomeService', () => {
     userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue(null),
     };
     const myCoursesQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -357,35 +389,21 @@ describe('LearnerHomeService', () => {
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
-    const recommendationsQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          course_id: 99,
-          course_title: 'Newest',
-          course_imageUrl: null,
-          course_levels: [
-            {
-              level_chapters: [
-                { isPublished: true },
-                { isPublished: true },
-                { isPublished: true },
-              ],
-            },
-          ],
-        },
-      ]),
-    };
-
-    courseRepo.createQueryBuilder.mockReturnValue(recommendationsQb);
+    courseRepo.find.mockResolvedValue([
+      {
+        course_id: 99,
+        course_title: 'Newest',
+        course_imageUrl: null,
+      },
+    ]);
 
     const res = await service.getHome('u2', 'Bearer x', 'true');
 
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
-    expect(recommendationsQb.take).toHaveBeenCalledWith(4);
+    expect(courseRepo.find).toHaveBeenCalledWith({
+      where: { isPublished: true },
+      order: { createdAt: 'DESC' },
+      take: 3,
+    });
     expect(res.recommendations.courses).toEqual([
       {
         course_id: 99,
@@ -393,7 +411,7 @@ describe('LearnerHomeService', () => {
         reason: 'คอร์สใหม่ล่าสุด',
         course_imageUrl: null,
         level_name: 'ระดับพื้นฐาน',
-        course_totalChapter: 3,
+        course_totalChapter: 6,
       },
     ]);
   });
@@ -412,24 +430,17 @@ describe('LearnerHomeService', () => {
     userXpRepo.createQueryBuilder.mockReturnValue(userXpQb);
 
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          status: 'IN_PROGRESS',
-          progressPercent: 0,
-          lesson: {
-            chapter: {
-              chapter_title: 'Preview Chapter',
-              level: {
-                level_title: 'L1',
-                course: { course_id: 22, course_title: 'Preview Course' },
-              },
-            },
-          },
-        },
-      ]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue(null),
     };
     const myCoursesQb: any = {
       leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -452,19 +463,17 @@ describe('LearnerHomeService', () => {
       .mockReturnValueOnce(continueLearningQb)
       .mockReturnValueOnce(myCoursesQb);
 
-    courseRepo.createQueryBuilder.mockReturnValue({
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    });
-
     courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u3', 'Bearer x', 'true');
 
     expect(res.continueLearning).toBeNull();
     expect(res.header.avatarUrl).toBeNull();
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledWith('course');
+    expect(courseRepo.find).toHaveBeenCalledWith({
+      where: { isPublished: true },
+      order: { createdAt: 'DESC' },
+      take: 3,
+    });
   });
 
   it('falls back to defaults when subcalls throw', async () => {
@@ -510,51 +519,23 @@ describe('LearnerHomeService', () => {
 
     // Mock progress data: includes both published and draft lessons
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          lessonId: 101, // Published lesson
-          status: 'COMPLETED',
-          lesson: {
-            lesson_id: 101,
-            isPublished: true,
-            chapter: {
-              chapter_id: 1,
-              isPublished: true,
-              chapter_title: 'Published Chapter',
-              level: {
-                level_title: 'L1',
-                course: {
-                  course_id: 10,
-                  course_title: 'Course with Draft Content',
-                },
-              },
-            },
-          },
-        },
-        {
-          lessonId: 102, // Draft lesson (should not count)
-          status: 'COMPLETED',
-          lesson: {
-            lesson_id: 102,
-            isPublished: false,
-            chapter: {
-              chapter_id: 1,
-              isPublished: true,
-              chapter_title: 'Published Chapter',
-              level: {
-                level_title: 'L1',
-                course: {
-                  course_id: 10,
-                  course_title: 'Course with Draft Content',
-                },
-              },
-            },
-          },
-        },
-      ]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        course_id: 10,
+        course_title: 'Course with Draft Content',
+        chapter_title: 'Published Chapter',
+        level_name: 'L1',
+        progressPercent: 100,
+      }),
     };
 
     const myCoursesQb: any = {
@@ -654,17 +635,8 @@ describe('LearnerHomeService', () => {
       ]),
     };
 
-    const recommendationsQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      orderBy: jest.fn().mockReturnThis(),
-      take: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    };
-    courseRepo.createQueryBuilder
-      .mockReturnValueOnce(courseStructureQb)
-      .mockReturnValueOnce(courseStructureQb)
-      .mockReturnValueOnce(recommendationsQb);
+    courseRepo.createQueryBuilder.mockReturnValueOnce(courseStructureQb);
+    courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
@@ -681,8 +653,7 @@ describe('LearnerHomeService', () => {
       },
     ]);
 
-    // Verify that the query filters were applied correctly
-    expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(3);
+    expect(courseRepo.createQueryBuilder).toHaveBeenCalledTimes(1);
   });
 
   it('handles course with only draft content gracefully', async () => {
@@ -700,31 +671,23 @@ describe('LearnerHomeService', () => {
 
     // Mock progress data for draft content only
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          lessonId: 201,
-          status: 'COMPLETED',
-          lesson: {
-            lesson_id: 201,
-            isPublished: true,
-            chapter: {
-              chapter_id: 3,
-              isPublished: false, // Draft chapter
-              chapter_title: 'Draft Chapter Only',
-              level: {
-                level_title: 'L1',
-                course: {
-                  course_id: 20,
-                  course_title: 'All Draft Course',
-                },
-              },
-            },
-          },
-        },
-      ]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        course_id: 20,
+        course_title: 'All Draft Course',
+        chapter_title: 'Draft Chapter Only',
+        level_name: 'L1',
+        progressPercent: 0,
+      }),
     };
 
     const myCoursesQb: any = {
@@ -774,9 +737,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    courseRepo.createQueryBuilder
-      .mockReturnValueOnce(courseStructureQb)
-      .mockReturnValueOnce(courseStructureQb);
+    courseRepo.createQueryBuilder.mockReturnValueOnce(courseStructureQb);
 
     courseRepo.find.mockResolvedValue([]);
 
@@ -803,31 +764,23 @@ describe('LearnerHomeService', () => {
 
     // Mock progress where user completed lessons in both published and draft chapters
     const continueLearningQb: any = {
-      leftJoinAndSelect: jest.fn().mockReturnThis(),
+      leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      addSelect: jest.fn().mockReturnThis(),
+      groupBy: jest.fn().mockReturnThis(),
+      addGroupBy: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([
-        {
-          lessonId: 301,
-          status: 'COMPLETED',
-          lesson: {
-            lesson_id: 301,
-            isPublished: true,
-            chapter: {
-              chapter_id: 4,
-              isPublished: true,
-              chapter_title: 'Published Chapter 1',
-              level: {
-                level_title: 'L1',
-                course: {
-                  course_id: 30,
-                  course_title: 'Mixed Content Course',
-                },
-              },
-            },
-          },
-        },
-      ]),
+      setParameter: jest.fn().mockReturnThis(),
+      limit: jest.fn().mockReturnThis(),
+      getRawOne: jest.fn().mockResolvedValue({
+        course_id: 30,
+        course_title: 'Mixed Content Course',
+        chapter_title: 'Published Chapter 1',
+        level_name: 'L1',
+        progressPercent: 33,
+      }),
     };
 
     const myCoursesQb: any = {
@@ -923,15 +876,13 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    courseRepo.createQueryBuilder
-      .mockReturnValueOnce(courseStructureQb)
-      .mockReturnValueOnce(courseStructureQb);
+    courseRepo.createQueryBuilder.mockReturnValueOnce(courseStructureQb);
 
     courseRepo.find.mockResolvedValue([]);
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
-    // Only published content should be counted:
+    // Completed published lessons: 301 = 1 completed:
     // Published lessons: 301, 304, 305 = 3 total
     // Completed published lessons: 301 = 1 completed
     // Progress = 1/3 * 100 = 33%

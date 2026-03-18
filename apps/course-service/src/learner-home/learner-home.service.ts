@@ -23,6 +23,7 @@ interface UserProfile {
 export class LearnerHomeService {
   private static readonly HOME_TTL_SECONDS = 120;
   private static readonly RECOMMENDATIONS_TTL_SECONDS = 300;
+  private static readonly CACHE_VERSION = 'v3';
 
   constructor(
     private readonly httpService: HttpService,
@@ -53,7 +54,7 @@ export class LearnerHomeService {
     }
 
     const shouldSkipProfile = internalCall === 'true';
-    const cacheKey = `learner-home:user:${userId}:profile:${shouldSkipProfile ? 'off' : 'on'}`;
+    const cacheKey = `learner-home:${LearnerHomeService.CACHE_VERSION}:user:${userId}:profile:${shouldSkipProfile ? 'off' : 'on'}`;
 
     return (
       this.redisCacheService?.wrap(
@@ -316,7 +317,7 @@ export class LearnerHomeService {
 
   // ดึงข้อมูล Course Recommendations เพื่อแสดงในส่วนแนะนำคอร์สของหน้าแรก
   private async getRecommendations(isNewUser = false) {
-    const cacheKey = `learner-home:recommendations:${isNewUser ? 'new' : 'active'}`;
+    const cacheKey = `learner-home:${LearnerHomeService.CACHE_VERSION}:recommendations:${isNewUser ? 'new' : 'active'}`;
 
     return (
       this.redisCacheService?.wrap(
@@ -370,21 +371,36 @@ export class LearnerHomeService {
   }
 
   private async getRecommendationsWithoutCache(isNewUser: boolean) {
-    const take = 3;
+    const take = 4;
 
-    const recommendedCourses = await this.courseRepository.find({
-      where: { isPublished: true },
-      order: isNewUser ? { createdAt: 'DESC' } : { updatedAt: 'DESC' },
-      take,
-    });
+    const query = this.courseRepository.createQueryBuilder('course');
 
-    const courses = recommendedCourses.map((course) => ({
+    query
+      .addSelect(
+        (subQuery) =>
+          subQuery
+            .select('COUNT(ch.chapter_id)', 'cnt')
+            .from('chapters', 'ch')
+            .innerJoin('levels', 'l', 'l.level_id = ch.level_id')
+            .where('l.course_id = course.course_id'),
+        'course_totalChapter',
+      )
+      .where('course.isPublished = :isPublished', { isPublished: true })
+      .orderBy(
+        isNewUser ? 'course.createdAt' : 'course.updatedAt',
+        'DESC',
+      )
+      .take(take);
+
+    const { entities, raw } = await query.getRawAndEntities();
+
+    const courses = entities.map((course, index) => ({
       course_id: course.course_id,
       course_title: course.course_title,
       reason: isNewUser ? 'คอร์สใหม่ล่าสุด' : 'คอร์สยอดนิยม',
       course_imageUrl: course.course_imageUrl ?? null,
       level_name: 'ระดับพื้นฐาน',
-      course_totalChapter: 6,
+      course_totalChapter: Number(raw[index]?.course_totalChapter ?? 0) || 0,
     }));
 
     return { courses };

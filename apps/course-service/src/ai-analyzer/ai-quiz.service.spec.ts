@@ -74,6 +74,7 @@ describe('AiQuizService', () => {
               orderBy: jest.fn().mockReturnThis(),
               limit: jest.fn().mockReturnThis(),
               getOne: jest.fn().mockResolvedValue(null),
+              getMany: jest.fn().mockResolvedValue([]),
             })),
           },
         },
@@ -148,6 +149,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockArticle),
+        getMany: jest.fn().mockResolvedValue([mockArticle]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -216,6 +218,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockArticle),
+        getMany: jest.fn().mockResolvedValue([mockArticle]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -281,6 +284,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockArticle),
+        getMany: jest.fn().mockResolvedValue([mockArticle]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -337,6 +341,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
+        getMany: jest.fn().mockResolvedValue([]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -392,6 +397,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
+        getMany: jest.fn().mockResolvedValue([]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -454,6 +460,7 @@ describe('AiQuizService', () => {
         orderBy: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockArticle),
+        getMany: jest.fn().mockResolvedValue([mockArticle]),
       };
 
       (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
@@ -513,6 +520,19 @@ describe('AiQuizService', () => {
         lesson_description: 'content',
       } as any);
 
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
       axiosPostMock.mockResolvedValue({
         data: {
           choices: [
@@ -555,6 +575,19 @@ describe('AiQuizService', () => {
         lesson_id: 1,
         lesson_description: 'content',
       } as any);
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+        getMany: jest.fn().mockResolvedValue([]),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
 
       axiosPostMock.mockRejectedValue({
         isAxiosError: true,
