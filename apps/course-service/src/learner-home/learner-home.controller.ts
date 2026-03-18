@@ -105,10 +105,4 @@ export class LearnerHomeController {
   ): Promise<LearnerHomeResponseDto> {
     return this.learnerHomeService.getHome(userId, authorization, internalCall);
   }
-
-  @Get('test')
-  async getTest(@CurrentUserId() userId: string) {
-    // return 'test';
-    return this.learnerHomeService.getLatestLearn(userId);
-  }
 }

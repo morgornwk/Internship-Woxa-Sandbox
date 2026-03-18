@@ -428,7 +428,7 @@ export class LearnerHomeService {
 
       .addSelect(
         `
-      ROUND(
+      (
         (
           SELECT COUNT(*)
           FROM progress lp2
@@ -436,14 +436,14 @@ export class LearnerHomeService {
           WHERE l2.chapter_id = chapter.chapter_id
           AND lp2.user_id = :userId
           AND lp2.status = 'COMPLETED'
-        ) * 100.0 /
+        ) * 100 /
         (
           SELECT COUNT(*)
           FROM lessons l
           WHERE l.chapter_id = chapter.chapter_id
           AND l.is_published = true
         )
-      ,2)
+      )
     `,
         'progressPercent',
       )
