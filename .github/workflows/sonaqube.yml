@@ -32,8 +32,15 @@ jobs:
         run: pnpm test:cov
         continue-on-error: true
 
+      - name: Check coverage file
+        run: ls -la coverage
+
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v2
+        with:
+          args: >
+            -Dsonar.projectKey=skllr-backend
+            -Dsonar.branch.name=main
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
