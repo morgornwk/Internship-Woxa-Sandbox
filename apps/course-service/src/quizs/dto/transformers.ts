@@ -5,6 +5,9 @@ export const toInt = ({
   value,
 }: TransformFnParams): number | string | undefined => {
   if (value === null || value === undefined || value === '') return undefined;
+  if (typeof value === 'number') {
+    return Number.isInteger(value) ? value : String(value);
+  }
   if (typeof value !== 'string') {
     return String(value);
   }
@@ -34,9 +37,9 @@ export const toStringArray = ({
     } catch {
       return trimmed.includes(',')
         ? trimmed
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
         : [trimmed];
     }
 
