@@ -373,38 +373,40 @@ export class LearnerHomeService {
   private async getRecommendationsWithoutCache(isNewUser: boolean) {
     const take = 4;
 
-    const query = this.courseRepository.createQueryBuilder('course');
-
-    query
-      .addSelect(
-        (subQuery) =>
-          subQuery
-            .select('COUNT(ch.chapter_id)', 'cnt')
-            .from('chapters', 'ch')
-            .innerJoin('levels', 'l', 'l.level_id = ch.level_id')
-            .where('l.course_id = course.course_id')
-            .andWhere('ch.isPublished = true'),
-        'course_totalChapter',
-      )
+    const courses = await this.courseRepository
+      .createQueryBuilder('course')
       .where('course.isPublished = :isPublished', { isPublished: true })
-      .orderBy(
-        isNewUser ? 'course.createdAt' : 'course.updatedAt',
-        'DESC',
-      )
-      .take(take);
+      .orderBy(isNewUser ? 'course.createdAt' : 'course.updatedAt', 'DESC')
+      .take(take)
+      .getMany();
 
-    const { entities, raw } = await query.getRawAndEntities();
+    // Get chapter counts for each course
+    const courseIds = courses.map(c => c.course_id);
+    
+    const chapterCounts = await this.courseRepository
+      .createQueryBuilder('course')
+      .select('course.course_id', 'course_id')
+      .addSelect('COUNT(ch.chapter_id)', 'course_totalChapter')
+      .innerJoin('levels', 'l', 'l.course_id = course.course_id')
+      .innerJoin('chapters', 'ch', 'ch.level_id = l.level_id AND ch.is_published = true')
+      .where('course.course_id IN (:...courseIds)', { courseIds })
+      .groupBy('course.course_id')
+      .getRawMany();
 
-    const courses = entities.map((course, index) => ({
+    const countMap = new Map(
+      chapterCounts.map(cc => [cc.course_id, Number(cc.course_totalChapter) || 0])
+    );
+
+    const result = courses.map(course => ({
       course_id: course.course_id,
       course_title: course.course_title,
       reason: isNewUser ? 'คอร์สใหม่ล่าสุด' : 'คอร์สยอดนิยม',
       course_imageUrl: course.course_imageUrl ?? null,
       level_name: 'ระดับพื้นฐาน',
-      course_totalChapter: Number(raw[index]?.course_totalChapter ?? 0) || 0,
+      course_totalChapter: countMap.get(course.course_id) || 0,
     }));
 
-    return { courses };
+    return { courses: result };
   }
 
   async getLatestLearn(userId: string) {
