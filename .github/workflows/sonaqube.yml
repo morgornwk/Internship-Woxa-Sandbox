@@ -1,45 +1,36 @@
-name: Sonaqube
+name: SonarQube Scan
 
 on:
   push:
     branches:
       - main
   pull_request:
-    branches:
-      - main
-  workflow_dispatch:
 
 jobs:
   sonarqube:
-    name: SonarQube Backend
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: pnpm/action-setup@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: pnpm
+          node-version: 20
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9 --activate
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install
 
-      - name: Run tests with coverage
-        run: pnpm test:cov
+      - name: Run tests
+        run: pnpm test -- --coverage
         continue-on-error: true
-
-      - name: Check coverage file
-        run: ls -la coverage
 
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v2
-        with:
-          args: >
-            -Dsonar.projectKey=skllr-backend
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
