@@ -75,14 +75,14 @@ export class AiQuizService {
           {
             role: 'system',
             content:
-              'You are an expert educational quiz generator. Return ONLY JSON.',
+              'You are an expert educational quiz generator. You MUST extract exact facts from the provided content and use them as the correct answer. NEVER invent or approximate values. Return ONLY valid JSON without markdown formatting.',
           },
           {
             role: 'user',
             content: prompt,
           },
         ],
-        temperature: 0.4,
+        temperature: 0.2,
         max_tokens: 500,
       },
       {
@@ -219,40 +219,47 @@ export class AiQuizService {
       throw new NotFoundException('Lesson not found');
     }
 
-    const article = await this.articleRepo
+    const articles = await this.articleRepo
       .createQueryBuilder('article')
       .select(['article.article_content', 'article.article_id'])
       .where('article.lesson_id = :lessonId', { lessonId })
-      .orderBy('article.updatedAt', 'DESC')
-      .limit(1)
-      .getOne();
+      .orderBy('article.article_id', 'ASC')
+      .getMany();
 
     let content = '';
 
-    if (article && Array.isArray(article.article_content)) {
-      const blocks = article.article_content
-        .map((block: any) => {
-          if (typeof block === 'string') {
-            return block.trim();
-          }
+    if (articles && articles.length > 0) {
+      const allBlocks: string[] = [];
 
-          if (block && typeof block === 'object') {
-            const text = block.article || block.text || block.content || '';
-            return typeof text === 'string' ? text.trim() : '';
-          }
+      for (const article of articles) {
+        if (Array.isArray(article.article_content)) {
+          const blocks = article.article_content
+            .map((block: any) => {
+              if (typeof block === 'string') {
+                return block.trim();
+              }
 
-          return '';
-        })
-        .filter((text) => text.length > 0);
+              if (block && typeof block === 'object') {
+                const text = block.article || block.text || block.content || '';
+                return typeof text === 'string' ? text.trim() : '';
+              }
 
-      content = blocks.join('\n\n').trim();
+              return '';
+            })
+            .filter((text) => text.length > 0);
+
+          allBlocks.push(...blocks);
+        }
+      }
+
+      content = allBlocks.join('\n\n').trim();
 
       Logger.debug(
-        `[AI Quiz] Lesson ${lessonId}: Found article ${article.article_id} with ${blocks.length} content blocks, total ${content.length} chars`,
+        `[AI Quiz] Lesson ${lessonId}: Found ${articles.length} article(s) with ${allBlocks.length} total content blocks, ${content.length} chars`,
       );
     } else {
       Logger.warn(
-        `[AI Quiz] Lesson ${lessonId}: No article found or article_content is not an array`,
+        `[AI Quiz] Lesson ${lessonId}: No articles found`,
       );
     }
 
@@ -507,25 +514,60 @@ export class AiQuizService {
       .filter(Boolean)
       .join('\n');
 
-    return `Generate 1 quiz question from the lesson below.
+    return `<task>Generate 1 quiz question by carefully analyzing the lesson content below.</task>
 
-${meta ? `Constraints:\n${meta}\n` : ''}
+${meta ? `<constraints>\n${meta}\n</constraints>\n` : ''}
+<instructions>
+YOU MUST FOLLOW THESE STEPS IN ORDER:
+
+STEP 1: ANALYZE THE CONTENT
+- Read ALL of the <lesson_content> carefully
+- Identify specific facts: numbers, names, dates, terms, definitions
+- Note the EXACT values as they appear (do not modify them)
+
+STEP 2: SELECT ONE FACT
+- Choose ONE clear, specific fact from the content
+- The fact must be explicitly stated (not implied or inferred)
+- Prefer facts with concrete values (numbers, specific names, dates)
+
+STEP 3: EXTRACT THE EXACT VALUE
+- Copy the EXACT value from the content (word-for-word, number-for-number)
+- If it's a number, use the PRECISE number (e.g., "180" not "200" or "150")
+- If it's a name/term, use the EXACT spelling
+
+STEP 4: CREATE THE QUESTION
+- Write a clear question testing this specific fact
+- The question should have only ONE correct answer
+
+STEP 5: CREATE ANSWER CHOICES
+- Choice 1: Use the EXACT value you extracted (this is the correct answer)
+- Choices 2-4: Create plausible but clearly wrong alternatives
+- All choices must be in the same format and language
 
 CRITICAL RULES:
-- Return ONLY JSON (no markdown, no extra text)
-- Read the Lesson Content carefully
-- Question MUST test a SPECIFIC FACT explicitly stated in the Lesson Content below
-- DO NOT ask meta questions (e.g., "What type of article?", "What is the main topic?")
-- DO NOT ask general questions (e.g., "What is the main idea?")
-- DO NOT invent information outside the Lesson Content
-- The correct answer MUST be a fact directly stated in the Lesson Content
-- Provide 3 realistic but clearly wrong answers
-- Write everything (question, choices, explanation) in ${targetLanguage}
-- Use natural, grammatically correct ${targetLanguage}
-- Keep the same language as the content - do NOT translate facts
-- Do not mix languages
+- Return ONLY valid JSON (no markdown code blocks, no extra text)
+- The correct answer MUST use the EXACT value from <lesson_content>
+- If the content says "180 กิโลกรัม", one choice MUST be "180 กิโลกรัม" or "ประมาณ 180 กิโลกรัม"
+- DO NOT round numbers (180 is NOT 200, NOT 150, NOT 100)
+- DO NOT approximate or modify the value
+- DO NOT create new numbers that don't appear in the content
+- Wrong choices must be plausible alternative values (e.g., other numbers, other names, other dates)
+- DO NOT use meta answers like "ไม่มีข้อมูล", "ไม่ทราบ", "ทั้งหมดข้างต้น", "ไม่มีคำตอบที่ถูกต้อง"
+- Wrong choices must be clearly different from the correct value (not close approximations)
+- The "explanation" field is REQUIRED and must explain why the correct answer is right, referencing the lesson content
 
-Return format:
+LANGUAGE RULES (CRITICAL):
+- ALL content must be in ${targetLanguage} ONLY
+- Question must be in ${targetLanguage}
+- ALL choices must be in ${targetLanguage}
+- Explanation must be in ${targetLanguage}
+- DO NOT mix languages (e.g., English question with Thai choices, or vice versa)
+- If language is English, write "kilograms" not "กิโลกรัม"
+- If language is Thai, write "กิโลกรัม" not "kilograms"
+- Translate units and terms to match the target language
+</instructions>
+
+<output_format>
 {
   "questions": [
     {
@@ -537,8 +579,10 @@ Return format:
     }
   ]
 }
+</output_format>
 
-Lesson Content:
-${content}`;
+<lesson_content>
+${content}
+</lesson_content>`;
   }
 }
