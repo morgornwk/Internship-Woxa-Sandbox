@@ -42,7 +42,7 @@ export class LearnerHomeService {
 
     @Optional()
     private readonly redisCacheService?: RedisCacheService,
-  ) {}
+  ) { }
 
   async getHome(
     userId: string,
@@ -382,7 +382,7 @@ export class LearnerHomeService {
 
     // Get chapter counts for each course
     const courseIds = courses.map(c => c.course_id);
-    
+
     const chapterCounts = await this.courseRepository
       .createQueryBuilder('course')
       .select('course.course_id', 'course_id')
@@ -435,7 +435,7 @@ export class LearnerHomeService {
           JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
           WHERE l2.chapter_id = chapter.chapter_id
           AND lp2.user_id = :userId
-          AND lp2.status = 'COMPLETED'
+          AND lp2.status IN ('COMPLETED', 'SKIPPED')
         ) * 100 /
         (
           SELECT COUNT(*)
