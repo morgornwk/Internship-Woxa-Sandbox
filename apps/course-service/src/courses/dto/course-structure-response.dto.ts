@@ -23,8 +23,6 @@ export class LessonStructureDto {
   })
   isPublished?: boolean;
 
-  @ApiProperty({ description: 'Checkpoint data when present', required: false })
-  checkpoint?: any;
 }
 
 // DTO สำหรับโครงสร้างบทที่มีบทเรียน

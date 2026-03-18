@@ -106,56 +106,13 @@ export class LearnerHomeService {
     return totalXp;
   }
 
-  // ดึงข้อมูลบทเรียนล่าสุดที่ผู้ใช้กำลังเรียนอยู่ (ยังไม่จบ) เพื่อแสดงในส่วน Continue Learning ของหน้าแรก โดยเรียงลำดับจากบทเรียนที่มีการอัปเดตล่าสุด
-  private async getContinueLearning(userId: string) {
-    const progressList = await this.lessonProgressRepository
-      .createQueryBuilder('lp')
-      .leftJoinAndSelect('lp.lesson', 'lesson')
-      .leftJoinAndSelect('lesson.chapter', 'chapter')
-      .leftJoinAndSelect('chapter.level', 'level')
-      .leftJoinAndSelect('level.course', 'course')
-      .where('lp.userId = :userId', { userId })
-      .orderBy('lp.lastViewedAt', 'DESC')
-      .getMany();
-
-    const latest = progressList.find((progress) =>
-      this.hasStartedLearning(progress),
-    );
-
-    // ถ้าไม่มีบทเรียนที่กำลังเรียนอยู่เลย หรือข้อมูลไม่ครบถ้วน ให้คืนค่า null เพื่อให้ frontend แสดงผลแบบไม่มีบทเรียนที่กำลังเรียนอยู่
-    if (!latest?.lesson?.chapter?.level?.course) return null;
-
-    // ดึงข้อมูลที่จำเป็นจาก entity ที่เชื่อมโยงกันมาแสดงในส่วน Continue Learning โดยมี fallback ค่าเริ่มต้นสำหรับข้อมูลที่อาจจะไม่มี
-    const lesson = latest.lesson;
-    const chapter = lesson.chapter;
-    const level = chapter.level;
-    const course = level.course;
-
-    // คำนวณ progress ของ chapter ปัจจุบัน
-    const chapterProgress = await this.getChapterProgress(
-      chapter.chapter_id,
-      progressList,
-    );
-
-    // ถ้า chapter ยังไม่ 100% ให้ progressPercent = 0
-    // ถ้า chapter 100% แล้ว ให้คำนวณจากทั้งคอร์ส
-    let progressPercent = 0;
-    if (chapterProgress >= 100) {
-      const courseProgressMap = await this.getCourseProgressMap(
-        [latest],
-        progressList,
-      );
-      progressPercent =
-        courseProgressMap.get(course.course_id)?.progressPercent ?? 0;
+  private resolveRoadmapLessonPublishedState(
+    lesson: { lesson_type: string; lesson_videoUrl?: string | null; isPublished: boolean },
+  ): boolean {
+    if (lesson.lesson_type === 'video') {
+      return Boolean(lesson.lesson_videoUrl?.trim());
     }
-
-    return {
-      course_id: course.course_id,
-      course_title: course.course_title,
-      chapter_title: chapter.chapter_title,
-      level_name: level.level_title,
-      progressPercent,
-    };
+    return lesson.isPublished === true;
   }
 
   // ดึงข้อมูลคอร์สที่ผู้ใช้กำลังเรียนอยู่ทั้งหมดพร้อมกับความคืบหน้าของแต่ละคอร์ส โดยเรียงลำดับจากคอร์สที่มีการอัปเดตล่าสุด
@@ -209,19 +166,13 @@ export class LearnerHomeService {
     const courses = await this.courseRepository
       .createQueryBuilder('course')
       .leftJoinAndSelect('course.course_levels', 'level')
-      // A) กรองตั้งแต่ query: ใช้เฉพาะ chapter/lesson ที่เผยแพร่แล้วในการคำนวณเปอร์เซ็นต์
       .leftJoinAndSelect(
         'level.level_chapters',
         'chapter',
         'chapter.isPublished = :chapterPublished',
         { chapterPublished: true },
       )
-      .leftJoinAndSelect(
-        'chapter.lessons',
-        'lesson',
-        'lesson.isPublished = :lessonPublished',
-        { lessonPublished: true },
-      )
+      .leftJoinAndSelect('chapter.lessons', 'lesson')
       .where('course.course_id IN (:...courseIds)', { courseIds })
       .getMany();
 
@@ -239,24 +190,30 @@ export class LearnerHomeService {
 
     for (const course of courses) {
       let totalLessons = 0;
-      let completedLessons = 0;
+      let sumProgress = 0;
 
       for (const level of course.course_levels || []) {
         for (const chapter of level.level_chapters || []) {
-          // B) safe guard เผื่ออนาคต query ถูกแก้ไขแล้วดึง draft กลับมาโดยไม่ตั้งใจ
           if (!chapter.isPublished) continue;
 
           for (const lesson of chapter.lessons || []) {
-            if (!lesson.isPublished) continue;
+            if (!this.resolveRoadmapLessonPublishedState(lesson as any)) continue;
 
             totalLessons++;
 
             const progress = progressMap.get(lesson.lesson_id.toString());
-            if (
-              progress &&
-              (progress.status === 'COMPLETED' || progress.status === 'SKIPPED')
-            ) {
-              completedLessons++;
+            if (progress) {
+              if (
+                progress.status === 'COMPLETED' ||
+                progress.status === 'SKIPPED'
+              ) {
+                sumProgress += 100;
+              } else if (
+                progress.progressPercent != null &&
+                !Number.isNaN(Number(progress.progressPercent))
+              ) {
+                sumProgress += Math.round(Number(progress.progressPercent));
+              }
             }
           }
         }
@@ -265,33 +222,12 @@ export class LearnerHomeService {
       if (totalLessons > 0) {
         courseProgressMap.set(course.course_id, {
           title: course.course_title,
-          progressPercent: Math.round((completedLessons / totalLessons) * 100),
+          progressPercent: Math.round(sumProgress / totalLessons),
         });
       }
     }
 
     return courseProgressMap;
-  }
-
-  private async getChapterProgress(
-    chapterId: number,
-    progressList: LessonProgress[],
-  ) {
-    // หา progress records ทั้งหมดใน chapter นี้
-    const chapterProgressRecords = progressList.filter(
-      (progress) => progress.lesson?.chapter?.chapter_id === chapterId,
-    );
-
-    if (!chapterProgressRecords.length) return 0;
-
-    // นับ completed/skipped lessons ใน chapter
-    const completedLessons = chapterProgressRecords.filter(
-      (progress) =>
-        progress.status === 'COMPLETED' || progress.status === 'SKIPPED',
-    ).length;
-
-    // คำนวณ percent ของ chapter
-    return Math.round((completedLessons / chapterProgressRecords.length) * 100);
   }
 
   private hasStartedLearning(progress: LessonProgress) {
@@ -421,21 +357,27 @@ export class LearnerHomeService {
 
       .addSelect(
         `
-      (
-        (
-          SELECT COUNT(*)
-          FROM progress lp2
-          JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
-          WHERE l2.chapter_id = chapter.chapter_id
-          AND lp2.user_id = :userId
-          AND lp2.status = 'COMPLETED'
-        ) * 100 /
-        (
-          SELECT COUNT(*)
-          FROM lessons l
-          WHERE l.chapter_id = chapter.chapter_id
-          AND l.is_published = true
-        )
+      ROUND(
+        COALESCE(
+          (
+            SELECT SUM(
+              CASE 
+                WHEN lp2.status IN ('COMPLETED', 'SKIPPED') THEN 100
+                ELSE COALESCE(lp2.progress_percent, 0)
+              END
+            )
+            FROM lessons l2
+            LEFT JOIN progress lp2 ON lp2.lesson_id = l2.lesson_id AND lp2.user_id = :userId
+            WHERE l2.chapter_id = chapter.chapter_id
+            AND (l2.is_published = true OR (l2.lesson_type = 'video' AND l2.lesson_video_url IS NOT NULL AND TRIM(l2.lesson_video_url) != ''))
+          ) / 
+          NULLIF((
+            SELECT COUNT(*)
+            FROM lessons l
+            WHERE l.chapter_id = chapter.chapter_id
+            AND (l.is_published = true OR (l.lesson_type = 'video' AND l.lesson_video_url IS NOT NULL AND TRIM(l.lesson_video_url) != ''))
+          ), 0)
+        , 0)
       )
     `,
         'progressPercent',

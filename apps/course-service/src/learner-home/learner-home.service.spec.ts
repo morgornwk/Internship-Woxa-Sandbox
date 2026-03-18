@@ -254,7 +254,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    
+
     // Mock recommendations query
     const coursesQb = {
       where: jest.fn().mockReturnThis(),
@@ -267,7 +267,7 @@ describe('LearnerHomeService', () => {
         { course_id: 4, course_title: 'R4', course_imageUrl: 'img4' },
       ]),
     };
-    
+
     const chapterCountsQb = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -281,7 +281,7 @@ describe('LearnerHomeService', () => {
         { course_id: 4, course_totalChapter: '6' },
       ]),
     };
-    
+
     courseRepo.createQueryBuilder
       .mockReturnValueOnce(courseStructureQb) // For myCourses
       .mockReturnValueOnce(coursesQb) // For recommendations courses
@@ -297,7 +297,7 @@ describe('LearnerHomeService', () => {
     expect(res.continueLearning?.course_id).toBe(10);
     expect(res.continueLearning?.progressPercent).toBe(0);
     expect(res.myCourses).toEqual([
-      { course_id: 10, title: 'C1', progressPercent: 50 },
+      { course_id: 10, title: 'C1', progressPercent: 70 },
     ]);
     expect(res.notifications.unreadCount).toBe(2);
     expect(res.recommendations.courses).toEqual([
@@ -381,7 +381,7 @@ describe('LearnerHomeService', () => {
       take: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
-    
+
     const chapterCountsQb = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -390,7 +390,7 @@ describe('LearnerHomeService', () => {
       groupBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
-    
+
     courseRepo.createQueryBuilder
       .mockReturnValueOnce(coursesQb) // For courses query
       .mockReturnValueOnce(chapterCountsQb); // For chapter counts query
@@ -460,7 +460,7 @@ describe('LearnerHomeService', () => {
         },
       ]),
     };
-    
+
     const chapterCountsQb = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -471,7 +471,7 @@ describe('LearnerHomeService', () => {
         { course_id: 99, course_totalChapter: '6' },
       ]),
     };
-    
+
     courseRepo.createQueryBuilder
       .mockReturnValueOnce(coursesQb) // For recommendations courses
       .mockReturnValueOnce(chapterCountsQb); // For recommendations chapter counts
@@ -547,7 +547,7 @@ describe('LearnerHomeService', () => {
       take: jest.fn().mockReturnThis(),
       getMany: jest.fn().mockResolvedValue([]),
     };
-    
+
     const chapterCountsQb = {
       select: jest.fn().mockReturnThis(),
       addSelect: jest.fn().mockReturnThis(),
@@ -556,7 +556,7 @@ describe('LearnerHomeService', () => {
       groupBy: jest.fn().mockReturnThis(),
       getRawMany: jest.fn().mockResolvedValue([]),
     };
-    
+
     courseRepo.createQueryBuilder
       .mockReturnValueOnce(coursesQb) // For recommendations courses
       .mockReturnValueOnce(chapterCountsQb); // For recommendations chapter counts
@@ -976,10 +976,7 @@ describe('LearnerHomeService', () => {
 
     const res = await service.getHome('u1', 'Bearer x', 'true');
 
-    // Completed published lessons: 301 = 1 completed:
-    // Published lessons: 301, 304, 305 = 3 total
-    // Completed published lessons: 301 = 1 completed
-    // Progress = 1/3 * 100 = 33%
+    // 
     expect(res.continueLearning?.course_id).toBe(30);
     expect(res.continueLearning?.progressPercent).toBe(33); // Chapter 100% (1/1 published lesson completed in current chapter)
     expect(res.myCourses).toEqual([

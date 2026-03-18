@@ -239,23 +239,6 @@ export class CoursesService {
       (a, b) => a.level_orderIndex - b.level_orderIndex,
     );
 
-    const lessonIds: number[] = [];
-    for (const lvl of sortedLevels) {
-      for (const ch of lvl.level_chapters || []) {
-        for (const l of ch.lessons || []) {
-          if (l && typeof l.lesson_id === 'number') lessonIds.push(l.lesson_id);
-        }
-      }
-    }
-
-    const checkpointMap = new Map<number, any>();
-    if (lessonIds.length) {
-      const rows: Array<any> = await this.courseRepository.query(
-        `SELECT lesson_id, checkpoint_id, checkpoint_score, checkpoint_type, checkpoint_questions, checkpoint_option, checkpoint_answer, checkpoint_explanation, created_at, updated_at FROM quizs_checkpoint WHERE lesson_id = ANY($1)`,
-        [lessonIds],
-      );
-      rows.forEach((row) => checkpointMap.set(Number(row.lesson_id), row));
-    }
 
     const finalLevels: LevelStructureDto[] = sortedLevels
       .map((level) => {
@@ -281,12 +264,7 @@ export class CoursesService {
                   isPublished,
                 };
 
-                if (lesson.lesson_type === LessonType.CHECKPOINT) {
-                  const checkpoint = checkpointMap.get(lesson.lesson_id);
-                  if (checkpoint) {
-                    dto.checkpoint = checkpoint;
-                  }
-                }
+
 
                 return dto;
               });

@@ -216,7 +216,7 @@ describe('CoursesService', () => {
       );
     });
 
-    it('returns nested structure with published lessons only and checkpoint attached', async () => {
+    it('returns nested structure with published lessons only', async () => {
       const course = makeCourse({
         course_id: 1,
         course_levels: [
@@ -262,9 +262,6 @@ describe('CoursesService', () => {
       });
 
       repo.findOne.mockResolvedValue(course);
-      repo.query.mockResolvedValue([
-        { lesson_id: 1002, checkpoint_id: 1, checkpoint_score: 5 },
-      ]);
 
       const result = await service.getStructure(1);
 
@@ -272,14 +269,6 @@ describe('CoursesService', () => {
       expect(result.course_levels[0].chapters).toHaveLength(1);
       const lessons = result.course_levels[0].chapters[0].lessons;
       expect(lessons.map((l) => l.lesson_id)).toEqual([1000, 1002]);
-      expect(
-        lessons.find((l) => l.lesson_id === 1002)?.checkpoint,
-      ).toBeTruthy();
-
-      expect(repo.query).toHaveBeenCalledWith(
-        expect.stringContaining('FROM quizs_checkpoint'),
-        [[1000, 1001, 1002]],
-      );
     });
 
     it('treats video lessons with a URL as published in course structure responses', async () => {
@@ -314,7 +303,6 @@ describe('CoursesService', () => {
       });
 
       repo.findOne.mockResolvedValue(course);
-      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructure(1);
 
@@ -390,7 +378,6 @@ describe('CoursesService', () => {
       });
 
       repo.findOne.mockResolvedValue(course);
-      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructure(1);
 
@@ -403,7 +390,7 @@ describe('CoursesService', () => {
       ).toEqual([1201, 1202]);
     });
 
-    it('does not query checkpoints when course has no lessons', async () => {
+    it('returns empty array when course has no lessons', async () => {
       const course = makeCourse({
         course_id: 1,
         course_levels: [
@@ -427,7 +414,6 @@ describe('CoursesService', () => {
 
       const result = await service.getStructure(1);
 
-      expect(repo.query).not.toHaveBeenCalled();
       expect(result.course_levels).toEqual([]);
     });
   });
@@ -469,7 +455,6 @@ describe('CoursesService', () => {
       });
 
       repo.findOne.mockResolvedValue(course);
-      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructureAdmin(1);
 
@@ -479,7 +464,7 @@ describe('CoursesService', () => {
       );
     });
 
-    it('sorts lessons by orderIndex and queries checkpoints when lessons exist', async () => {
+    it('sorts lessons by orderIndex', async () => {
       const course = makeCourse({
         course_id: 1,
         course_levels: [
@@ -515,14 +500,8 @@ describe('CoursesService', () => {
       });
 
       repo.findOne.mockResolvedValue(course);
-      repo.query.mockResolvedValue([]);
 
       const result = await service.getStructureAdmin(1);
-
-      expect(repo.query).toHaveBeenCalledWith(
-        expect.stringContaining('FROM quizs_checkpoint'),
-        [[2, 1]],
-      );
       expect(
         result.course_levels[0].chapters[0].lessons.map((l) => l.lesson_id),
       ).toEqual([1, 2]);
