@@ -382,7 +382,8 @@ export class LearnerHomeService {
             .select('COUNT(ch.chapter_id)', 'cnt')
             .from('chapters', 'ch')
             .innerJoin('levels', 'l', 'l.level_id = ch.level_id')
-            .where('l.course_id = course.course_id'),
+            .where('l.course_id = course.course_id')
+            .andWhere('ch.isPublished = true'),
         'course_totalChapter',
       )
       .where('course.isPublished = :isPublished', { isPublished: true })
