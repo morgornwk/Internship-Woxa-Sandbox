@@ -435,13 +435,13 @@ export class LearnerHomeService {
           JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
           WHERE l2.chapter_id = chapter.chapter_id
           AND lp2.user_id = :userId
-          AND lp2.status = 'COMPLETED'
+          AND lp2.status IN ('COMPLETED', 'SKIPPED')
         ) * 100 /
         (
           SELECT COUNT(*)
-          FROM lessons l
-          WHERE l.chapter_id = chapter.chapter_id
-          AND l.is_published = true
+          FROM progress lp3
+          WHERE lp3.chapter_id = chapter.chapter_id
+          AND lp3.user_id = :userId
         )
       )
     `,
