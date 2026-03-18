@@ -22,19 +22,19 @@ type AiQuizType = 'multiple_choice' | 'true_false';
 
 type AiQuizQuestion =
   | {
-      type: 'multiple_choice';
-      question: string;
-      choices: string[];
-      answerIndex: number;
-      explanation: string;
-    }
+    type: 'multiple_choice';
+    question: string;
+    choices: string[];
+    answerIndex: number;
+    explanation: string;
+  }
   | {
-      type: 'true_false';
-      question: string;
-      choices: string[];
-      answerIndex: number;
-      explanation: string;
-    };
+    type: 'true_false';
+    question: string;
+    choices: string[];
+    answerIndex: number;
+    explanation: string;
+  };
 
 type AiQuizResponse = {
   questions: AiQuizQuestion[];
@@ -56,7 +56,7 @@ export class AiQuizService {
 
     @InjectRepository(Article)
     private readonly articleRepo: Repository<Article>,
-  ) {}
+  ) { }
 
   private async callHuggingFace(prompt: string) {
     const apiKey = process.env.HUGGINGFACE_API_KEY;
@@ -219,10 +219,9 @@ export class AiQuizService {
       throw new NotFoundException('Lesson not found');
     }
 
-    // โหลดเฉพาะ article ของ lesson นี้
     const article = await this.articleRepo
       .createQueryBuilder('article')
-      .select(['article.article_content'])
+      .select(['article.article_content', 'article.article_id'])
       .where('article.lesson_id = :lessonId', { lessonId })
       .orderBy('article.updatedAt', 'DESC')
       .limit(1)
@@ -230,23 +229,38 @@ export class AiQuizService {
 
     let content = '';
 
-    if (Array.isArray(article?.article_content)) {
-      content = article.article_content
+    if (article && Array.isArray(article.article_content)) {
+      const blocks = article.article_content
         .map((block: any) => {
-          if (typeof block === 'string') return block;
+          if (typeof block === 'string') {
+            return block.trim();
+          }
 
-          if (block?.article) return block.article;
-          if (block?.text) return block.text;
-          if (block?.content) return block.content;
+          if (block && typeof block === 'object') {
+            const text = block.article || block.text || block.content || '';
+            return typeof text === 'string' ? text.trim() : '';
+          }
 
           return '';
         })
-        .join('\n')
-        .trim();
+        .filter((text) => text.length > 0);
+
+      content = blocks.join('\n\n').trim();
+
+      Logger.debug(
+        `[AI Quiz] Lesson ${lessonId}: Found article ${article.article_id} with ${blocks.length} content blocks, total ${content.length} chars`,
+      );
+    } else {
+      Logger.warn(
+        `[AI Quiz] Lesson ${lessonId}: No article found or article_content is not an array`,
+      );
     }
 
-    // fallback ไปใช้ lesson description
     if (!content) {
+      Logger.warn(
+        `[AI Quiz] Lesson ${lessonId}: Article content is empty, falling back to lesson description`,
+      );
+
       const description =
         typeof lesson.lesson_description === 'string'
           ? lesson.lesson_description
@@ -258,14 +272,24 @@ export class AiQuizService {
     }
 
     if (!content) {
-      throw new BadRequestException('Lesson content is empty');
+      throw new BadRequestException(
+        `Lesson ${lessonId} has no content. Please add article content or lesson description first.`,
+      );
     }
 
-    // limit length to avoid hitting HuggingFace max input tokens
     const MAX_ARTICLE_LENGTH = 4000;
+    const originalLength = content.length;
     content = content.slice(0, MAX_ARTICLE_LENGTH);
 
-    // this.logger.debug(`Content sent to AI: ${content}`);
+    if (originalLength > MAX_ARTICLE_LENGTH) {
+      Logger.debug(
+        `[AI Quiz] Lesson ${lessonId}: Content truncated from ${originalLength} to ${MAX_ARTICLE_LENGTH} chars`,
+      );
+    }
+
+    Logger.debug(
+      `[AI Quiz] Lesson ${lessonId}: Sending ${content.length} chars to AI`,
+    );
 
     const prompt = this.buildPrompt(content, options);
     const promptForStorage = this.redactLessonContentForStorage(prompt);
@@ -459,7 +483,14 @@ export class AiQuizService {
   private buildPrompt(content: string, options?: GenerateAiQuizDto) {
     const targetLanguage = options?.language || 'English';
 
-    const languageLine = `Language: ${targetLanguage}`;
+    const languageInstruction =
+      targetLanguage.toLowerCase() === 'th' || targetLanguage.toLowerCase() === 'thai'
+        ? 'Thai (ภาษาไทย)'
+        : targetLanguage.toLowerCase() === 'en' || targetLanguage.toLowerCase() === 'english'
+          ? 'English'
+          : targetLanguage;
+
+    const languageLine = `Language: ${languageInstruction}`;
     const difficultyLine = options?.difficulty
       ? `Difficulty: ${options.difficulty}`
       : '';
@@ -476,39 +507,38 @@ export class AiQuizService {
       .filter(Boolean)
       .join('\n');
 
-    return `
-                Generate 1 quiz question from the lesson below.
+    return `Generate 1 quiz question from the lesson below.
 
-                ${meta ? `Constraints:\n${meta}\n` : ''}
+${meta ? `Constraints:\n${meta}\n` : ''}
 
-                Rules:
-                - Return ONLY JSON (no markdown, no extra text)
-                - Question must be based ONLY on the Lesson Content
-                - Do NOT invent information outside the Lesson Content
-                - Use facts from the Lesson Content
-                - Provide realistic wrong answers
-                - Write the question, all choices, and the explanation in ${targetLanguage}
-                - Use natural, grammatically correct wording in ${targetLanguage}
-                - Do NOT use words or phrases from the Lesson Content in their original language
-                - First understand the Lesson Content, then create questions in ${targetLanguage} about the concepts
-                - Translate all concepts and examples into ${targetLanguage} before creating the quiz
-                - Do not mix languages unless absolutely necessary for proper nouns
+CRITICAL RULES:
+- Return ONLY JSON (no markdown, no extra text)
+- Read the Lesson Content carefully
+- Question MUST test a SPECIFIC FACT explicitly stated in the Lesson Content below
+- DO NOT ask meta questions (e.g., "What type of article?", "What is the main topic?")
+- DO NOT ask general questions (e.g., "What is the main idea?")
+- DO NOT invent information outside the Lesson Content
+- The correct answer MUST be a fact directly stated in the Lesson Content
+- Provide 3 realistic but clearly wrong answers
+- Write everything (question, choices, explanation) in ${targetLanguage}
+- Use natural, grammatically correct ${targetLanguage}
+- Keep the same language as the content - do NOT translate facts
+- Do not mix languages
 
-                Return format:
+Return format:
+{
+  "questions": [
+    {
+      "type": "multiple_choice" | "true_false",
+      "question": "",
+      "choices": ["", "", "", ""],
+      "answerIndex": 0,
+      "explanation": ""
+    }
+  ]
+}
 
-                {
-                    "questions": [
-                        {
-                        "type": "multiple_choice" | "true_false",
-                        "question": "",
-                        "choices": ["", "", "", ""],
-                        "answerIndex": 0,
-                        "explanation": ""
-                        }
-                    ]
-                }
-
-                Lesson Content:${content}
-                `;
+Lesson Content:
+${content}`;
   }
 }

@@ -113,6 +113,386 @@ describe('AiQuizService', () => {
       );
     });
 
+    it('parses article_content with article field correctly', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'fallback',
+      } as any);
+
+      const mockArticle = {
+        article_id: 10,
+        article_content: [
+          {
+            imageUrl: 'https://example.com/img1.jpg',
+            article: 'First paragraph content',
+            order: 1,
+          },
+          {
+            imageUrl: 'https://example.com/img2.jpg',
+            article: 'Second paragraph content',
+            order: 2,
+          },
+          {
+            article: 'Third paragraph without image',
+            order: 3,
+          },
+        ],
+      };
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockArticle),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      expect(axiosPostMock).toHaveBeenCalled();
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('First paragraph content');
+      expect(prompt).toContain('Second paragraph content');
+      expect(prompt).toContain('Third paragraph without image');
+      expect(prompt).not.toContain('fallback');
+    });
+
+    it('filters out empty article blocks', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'fallback',
+      } as any);
+
+      const mockArticle = {
+        article_id: 10,
+        article_content: [
+          { article: 'Valid content', order: 1 },
+          { article: '', order: 2 },
+          { article: '   ', order: 3 },
+          { article: 'Another valid content', order: 4 },
+        ],
+      };
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockArticle),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('Valid content');
+      expect(prompt).toContain('Another valid content');
+      expect(prompt).not.toContain('fallback');
+    });
+
+    it('handles article_content with string blocks', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'fallback',
+      } as any);
+
+      const mockArticle = {
+        article_id: 10,
+        article_content: [
+          'String content 1',
+          'String content 2',
+          { article: 'Object content', order: 1 },
+        ],
+      };
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockArticle),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('String content 1');
+      expect(prompt).toContain('String content 2');
+      expect(prompt).toContain('Object content');
+    });
+
+    it('falls back to lesson_description when article not found', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'Lesson description content',
+      } as any);
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('Lesson description content');
+    });
+
+    it('falls back to lesson_title when article and description empty', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_title: 'Lesson Title',
+        lesson_description: '',
+      } as any);
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('Lesson Title');
+    });
+
+    it('falls back to lesson_description when article_content is all empty', async () => {
+      process.env.HUGGINGFACE_API_KEY = 'k';
+      process.env.HUGGINGFACE_MODEL = 'meta-llama/Meta-Llama-3-8B-Instruct';
+
+      (lessonRepo.findOne as jest.Mock).mockResolvedValue({
+        lesson_id: 1,
+        lesson_description: 'Fallback description',
+      } as any);
+
+      const mockArticle = {
+        article_id: 10,
+        article_content: [
+          { article: '', order: 1 },
+          { article: '   ', order: 2 },
+        ],
+      };
+
+      const mockQueryBuilder = {
+        select: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(mockArticle),
+      };
+
+      (articleRepo.createQueryBuilder as jest.Mock).mockReturnValue(
+        mockQueryBuilder,
+      );
+
+      axiosPostMock.mockResolvedValue({
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  questions: [
+                    {
+                      type: 'multiple_choice',
+                      question: 'q',
+                      choices: ['a', 'b', 'c', 'd'],
+                      answerIndex: 1,
+                      explanation: 'e',
+                    },
+                  ],
+                }),
+              },
+            },
+          ],
+        },
+      });
+
+      (aiRepo.create as jest.Mock).mockImplementation((x: any) => x);
+      (aiRepo.save as jest.Mock).mockImplementation(async (x) => x);
+
+      await service.generateQuizFromLesson(1);
+
+      const callArgs = axiosPostMock.mock.calls[0];
+      const prompt = callArgs[1].messages[1].content;
+
+      expect(prompt).toContain('Fallback description');
+    });
+
     it('throws ServiceUnavailableException when HUGGINGFACE_API_KEY missing', async () => {
       delete process.env.HUGGINGFACE_API_KEY;
       (lessonRepo.findOne as jest.Mock).mockResolvedValue({
