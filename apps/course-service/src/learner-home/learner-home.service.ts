@@ -418,8 +418,8 @@ export class LearnerHomeService {
       .leftJoin('level.course', 'course')
 
       .where('lesson_progress.userId = :userId', { userId })
-      .andWhere('lesson.is_published = true')
-      .andWhere('chapter.is_published = true')
+      .andWhere('(lesson.is_published = true OR lesson.is_published IS NULL)')
+      .andWhere('(chapter.is_published = true OR chapter.is_published IS NULL)')
 
       .select('course.course_id', 'course_id')
       .addSelect('course.course_title', 'course_title')
@@ -431,7 +431,7 @@ export class LearnerHomeService {
       (
         (
           SELECT COUNT(*)
-          FROM progress lp2
+          FROM lesson_progress lp2
           JOIN lessons l2 ON lp2.lesson_id = l2.lesson_id
           WHERE l2.chapter_id = chapter.chapter_id
           AND lp2.user_id = :userId
@@ -439,7 +439,7 @@ export class LearnerHomeService {
         ) * 100 /
         (
           SELECT COUNT(*)
-          FROM progress lp3
+          FROM lesson_progress lp3
           WHERE lp3.chapter_id = chapter.chapter_id
           AND lp3.user_id = :userId
         )
