@@ -855,7 +855,7 @@ export class ProgressService {
     }
 
     let nextAvailableLessonId: number | null = null;
-    let previousIsDone = true;
+    let allPreviousDone = true;
 
     // สร้างรายการสถานะของแต่ละบทเรียนในบทนี้ โดยใช้ข้อมูลจาก progressRows เพื่อกำหนดสถานะและเปอร์เซ็นต์ความคืบหน้าของแต่ละบทเรียน
     const items: ItemStatusDto[] = lessons.map((lesson) => {
@@ -866,13 +866,21 @@ export class ProgressService {
       // กำหนดสถานะบทเรียน ถัดไปที่สามารถเข้าถึงได้
       let status = progress?.status;
 
-      // Self-heal: หากบทเรียนก่อนหน้าเสร็จสิ้นแล้ว แต่บทเรียนนี้ยังคงถูกล็อก หรือไม่มีข้อมูล progress ให้สถานะเป็น IN_PROGRESS
-      if (
-        (!status || status === LessonProgressStatus.LOCKED) &&
-        previousIsDone
-      ) {
+      if (!status) {
+        status = LessonProgressStatus.LOCKED;
+      }
+
+      // Self-heal: บังคับให้เป็นไปตามลำดับ (Sequential)
+      if (allPreviousDone && status === LessonProgressStatus.LOCKED) {
+        // 1. หากบทเรียนก่อนหน้าทำเสร็จสมบูรณ์ทุกอัน แล้วบทเรียนนี้ติดล็อกอยู่ ให้ปลดล็อกเป็น IN_PROGRESS
         status = LessonProgressStatus.IN_PROGRESS;
-      } else if (!status) {
+      } else if (
+        !allPreviousDone &&
+        status !== LessonProgressStatus.COMPLETED &&
+        status !== LessonProgressStatus.SKIPPED
+      ) {
+        // 2. หากมีบทเรียนก่อนหน้าที่ยังไม่เสร็จ (allPreviousDone = false) 
+        // ให้บังคับบทเรียนที่ยังไม่ COMPLETED/SKIPPED กลายเป็น LOCKED ทันที เพื่อป้องกันไม่ให้มี IN_PROGRESS หลายอัน
         status = LessonProgressStatus.LOCKED;
       }
 
@@ -888,7 +896,7 @@ export class ProgressService {
         status === LessonProgressStatus.COMPLETED ||
         status === LessonProgressStatus.SKIPPED;
 
-      previousIsDone = isDone;
+      allPreviousDone = allPreviousDone && isDone;
 
       return {
         lessonId: lesson.lesson_id,
