@@ -855,6 +855,7 @@ export class ProgressService {
     }
 
     let nextAvailableLessonId: number | null = null;
+    let previousIsDone = true;
 
     // สร้างรายการสถานะของแต่ละบทเรียนในบทนี้ โดยใช้ข้อมูลจาก progressRows เพื่อกำหนดสถานะและเปอร์เซ็นต์ความคืบหน้าของแต่ละบทเรียน
     const items: ItemStatusDto[] = lessons.map((lesson) => {
@@ -863,7 +864,17 @@ export class ProgressService {
       );
 
       // กำหนดสถานะบทเรียน ถัดไปที่สามารถเข้าถึงได้
-      const status = progress?.status ?? LessonProgressStatus.LOCKED;
+      let status = progress?.status;
+
+      // Self-heal: หากบทเรียนก่อนหน้าเสร็จสิ้นแล้ว แต่บทเรียนนี้ยังคงถูกล็อก หรือไม่มีข้อมูล progress ให้สถานะเป็น IN_PROGRESS
+      if (
+        (!status || status === LessonProgressStatus.LOCKED) &&
+        previousIsDone
+      ) {
+        status = LessonProgressStatus.IN_PROGRESS;
+      } else if (!status) {
+        status = LessonProgressStatus.LOCKED;
+      }
 
       // ถ้าไม่มีบทเรียนที่กำลังทำอยู่ ให้แนะนำบทเรียนแรกที่ยังไม่เสร็จสมบูรณ์ ถ้าบทเรียนนั้นถูกล็อกอยู่ ให้ไม่แนะนำบทเรียนนั้น
       if (
@@ -873,20 +884,24 @@ export class ProgressService {
         nextAvailableLessonId = lesson.lesson_id;
       }
 
+      const isDone =
+        status === LessonProgressStatus.COMPLETED ||
+        status === LessonProgressStatus.SKIPPED;
+
+      previousIsDone = isDone;
+
       return {
         lessonId: lesson.lesson_id,
         lessonTitle: lesson.lesson_title,
         lessonType: lesson.lesson_type,
         isPublished: this.resolveRoadmapLessonPublishedState(lesson),
         status,
-        progressPercent:
-          status === LessonProgressStatus.COMPLETED ||
-          status === LessonProgressStatus.SKIPPED
-            ? 100
-            : progress?.progressPercent != null &&
-                !Number.isNaN(Number(progress.progressPercent))
-              ? Math.round(Number(progress.progressPercent))
-              : 0,
+        progressPercent: isDone
+          ? 100
+          : progress?.progressPercent != null &&
+              !Number.isNaN(Number(progress.progressPercent))
+            ? Math.round(Number(progress.progressPercent))
+            : 0,
         positionSeconds: progress?.positionSeconds ?? null,
         durationSeconds: progress?.durationSeconds ?? null,
         completedAt: progress?.completedAt ?? null,
