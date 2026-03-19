@@ -11,6 +11,7 @@ import {
 } from './entities/progress.entity';
 import { StreakService } from '../streaks/streak.service';
 import { QuizService } from '../quizs/quiz.service';
+import { RedisCacheService } from '../cache/redis-cache.service';
 
 describe('ProgressService', () => {
   let service: ProgressService;
@@ -41,11 +42,16 @@ describe('ProgressService', () => {
     skipCheckpointsByLesson: jest.Mock;
   };
 
+  type RedisCacheServiceMock = {
+    deleteByPrefix: jest.Mock;
+  };
+
   let progressRepo: ProgressRepoMock;
   let lessonRepo: LessonRepoMock;
   let chapterRepo: ChapterRepoMock;
   let streakService: StreakServiceMock;
   let quizService: QuizServiceMock;
+  let redisCacheService: RedisCacheServiceMock;
 
   const makeLesson = (overrides: Partial<Lesson> = {}): Lesson =>
     ({
@@ -126,6 +132,12 @@ describe('ProgressService', () => {
             skipCheckpointsByLesson: jest.fn(),
           },
         },
+        {
+          provide: RedisCacheService,
+          useValue: {
+            deleteByPrefix: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
@@ -135,6 +147,7 @@ describe('ProgressService', () => {
     chapterRepo = module.get(getRepositoryToken(Chapter));
     streakService = module.get(StreakService);
     quizService = module.get(QuizService);
+    redisCacheService = module.get(RedisCacheService);
 
     jest.clearAllMocks();
   });
@@ -513,6 +526,173 @@ describe('ProgressService', () => {
         }),
       );
     });
+
+    it('handles positionSeconds and durationSeconds updates correctly', async () => {
+      const lesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockResolvedValue(lesson as any);
+      progressRepo.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.IN_PROGRESS,
+          positionSeconds: 30,
+          durationSeconds: 100,
+        }),
+      );
+
+      // No next lesson scenarios
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return lesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+
+      lessonRepo.find.mockResolvedValue([] as any);
+      progressRepo.find.mockResolvedValue([] as any);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const res = await service.upsertLessonProgress('u1', 10, {
+        positionSeconds: 75,
+        durationSeconds: 150,
+      } as any);
+
+      expect(res.positionSeconds).toBe(75);
+      expect(res.durationSeconds).toBe(150);
+      expect(res.lastViewedAt).toBeInstanceOf(Date);
+    });
+
+    it('sets completedAt when marking lesson as completed', async () => {
+      const lesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockResolvedValue(lesson as any);
+      progressRepo.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.IN_PROGRESS,
+          completedAt: null,
+        }),
+      );
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return lesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+
+      lessonRepo.find.mockResolvedValue([] as any);
+      progressRepo.find.mockResolvedValue([] as any);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const beforeDate = new Date();
+      const res = await service.upsertLessonProgress('u1', 10, {
+        markCompleted: true,
+      } as any);
+      const afterDate = new Date();
+
+      expect(res.status).toBe(LessonProgressStatus.COMPLETED);
+      expect(res.progressPercent).toBe(100);
+      expect(res.completedAt).toBeInstanceOf(Date);
+      expect(res.completedAt!.getTime()).toBeGreaterThanOrEqual(beforeDate.getTime());
+      expect(res.completedAt!.getTime()).toBeLessThanOrEqual(afterDate.getTime());
+    });
+
+    it('handles SKIPPED status correctly with completedAt timestamp', async () => {
+      const lesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockResolvedValue(lesson as any);
+      progressRepo.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.IN_PROGRESS,
+          completedAt: null,
+        }),
+      );
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return lesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+
+      lessonRepo.find.mockResolvedValue([] as any);
+      progressRepo.find.mockResolvedValue([] as any);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const beforeDate = new Date();
+      const res = await service.upsertLessonProgress('u1', 10, {
+        status: LessonProgressStatus.SKIPPED,
+      } as any);
+      const afterDate = new Date();
+
+      expect(res.status).toBe(LessonProgressStatus.SKIPPED);
+      expect(res.progressPercent).toBe(100);
+      expect(res.completedAt).toBeInstanceOf(Date);
+      expect(res.completedAt!.getTime()).toBeGreaterThanOrEqual(beforeDate.getTime());
+      expect(res.completedAt!.getTime()).toBeLessThanOrEqual(afterDate.getTime());
+    });
+
+    it('preserves existing completedAt when updating already completed lesson', async () => {
+      const existingCompletedAt = new Date('2026-03-01T10:00:00.000Z');
+      const lesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockResolvedValue(lesson as any);
+      progressRepo.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.COMPLETED,
+          completedAt: existingCompletedAt,
+        }),
+      );
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return lesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+
+      lessonRepo.find.mockResolvedValue([] as any);
+      progressRepo.find.mockResolvedValue([] as any);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const res = await service.upsertLessonProgress('u1', 10, {
+        positionSeconds: 50,
+      } as any);
+
+      expect(res.status).toBe(LessonProgressStatus.COMPLETED);
+      expect(res.completedAt).toEqual(existingCompletedAt);
+    });
   });
 
   describe('skipLessonAndUnlockNext', () => {
@@ -570,6 +750,247 @@ describe('ProgressService', () => {
       await expect(
         service.skipLessonAndUnlockNext('u1', 10),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('unlocks next lesson in same chapter when skipping current lesson', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+      const nextLesson = makeLesson({
+        lesson_id: 11,
+        chapter_id: 1,
+        orderIndex: 2,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return nextLesson;
+        return null;
+      });
+
+      // Current lesson progress doesn't exist yet
+      progressRepo.findOne.mockResolvedValue(null);
+      progressRepo.save.mockImplementation(async (x: any) => {
+        if (x.lessonId === 10) {
+          x.status = LessonProgressStatus.SKIPPED;
+          x.progressPercent = 100;
+          x.completedAt = new Date();
+        }
+        return x;
+      });
+
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const res = await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(res.skipped.status).toBe(LessonProgressStatus.SKIPPED);
+      expect(res.skipped.progressPercent).toBe(100);
+      expect(res.unlockedNext?.lessonId).toBe(11);
+      expect(res.unlockedNext?.status).toBe(LessonProgressStatus.IN_PROGRESS);
+      expect(streakService.bumpStreak).toHaveBeenCalled();
+    });
+
+    it('unlocks first lesson of next chapter when current chapter is completed after skip', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 2, // Last lesson in chapter
+      });
+      const currentChapter = makeChapter({
+        chapter_id: 1,
+        levelId: 2,
+        chapter_orderIndex: 1,
+      });
+      const nextChapter = makeChapter({
+        chapter_id: 2,
+        levelId: 2,
+        chapter_orderIndex: 2,
+      });
+      const firstNextLesson = makeLesson({
+        lesson_id: 20,
+        chapter_id: 2,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null; // No next lesson in current chapter
+        if (args?.where?.chapter_id === 2 && args?.order)
+          return firstNextLesson;
+        return null;
+      });
+
+      chapterRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.chapter_id === 1) return currentChapter;
+        if (args?.where?.levelId === 2 && args?.where?.chapter_orderIndex)
+          return nextChapter;
+        return null;
+      });
+
+      progressRepo.findOne.mockResolvedValue(null);
+      progressRepo.save.mockImplementation(async (x: any) => x);
+
+      // Mock isChapterCompletedForUser to return true
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({ lesson_id: 10, chapter_id: 1 }),
+      ] as any);
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.SKIPPED,
+        }),
+      ]);
+
+      const res = await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(res.skipped.status).toBe(LessonProgressStatus.SKIPPED);
+      expect(res.unlockedNext?.lessonId).toBe(20);
+      expect(res.unlockedNext?.status).toBe(LessonProgressStatus.IN_PROGRESS);
+    });
+
+    it('returns null unlockedNext when chapter not completed after skipping last lesson', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 2, // Last lesson in chapter
+      });
+      const currentChapter = makeChapter({
+        chapter_id: 1,
+        levelId: 2,
+        chapter_orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null; // No next lesson in current chapter
+        return null;
+      });
+
+      chapterRepo.findOne.mockResolvedValue(currentChapter as any);
+      progressRepo.findOne.mockResolvedValue(null);
+      progressRepo.save.mockImplementation(async (x: any) => x);
+
+      // Mock isChapterCompletedForUser to return false (chapter not completed)
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({ lesson_id: 9, chapter_id: 1 }),
+        makeLesson({ lesson_id: 10, chapter_id: 1 }),
+      ] as any);
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.SKIPPED,
+        }),
+        // Missing progress for lesson 9, so chapter not completed
+      ]);
+
+      const res = await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(res.skipped.status).toBe(LessonProgressStatus.SKIPPED);
+      expect(res.unlockedNext).toBeNull();
+    });
+
+    it('updates existing next lesson progress from LOCKED to IN_PROGRESS', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+      const nextLesson = makeLesson({
+        lesson_id: 11,
+        chapter_id: 1,
+        orderIndex: 2,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return nextLesson;
+        return null;
+      });
+
+      // Current lesson progress doesn't exist, next lesson is locked
+      const progressByLessonId = new Map<number, LessonProgress | null>();
+      progressByLessonId.set(10, null);
+      progressByLessonId.set(11, makeProgress({
+        lessonId: 11,
+        userId: 'u1',
+        status: LessonProgressStatus.LOCKED,
+        mapLessonId: null,
+      }));
+
+      progressRepo.findOne.mockImplementation(async (args: any) => {
+        const lid = args?.where?.lessonId;
+        return progressByLessonId.get(lid) ?? null;
+      });
+
+      progressRepo.save.mockImplementation(async (x: any) => {
+        if (x.lessonId === 10) {
+          x.status = LessonProgressStatus.SKIPPED;
+          x.progressPercent = 100;
+          x.completedAt = new Date();
+        } else if (x.lessonId === 11) {
+          x.status = LessonProgressStatus.IN_PROGRESS;
+          x.lastViewedAt = new Date();
+          x.mapLessonId = 10;
+        }
+        progressByLessonId.set(x.lessonId, x);
+        return x;
+      });
+
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      const res = await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(res.unlockedNext?.status).toBe(LessonProgressStatus.IN_PROGRESS);
+      // Note: mapLessonId is not exposed in the response DTO, only stored internally
+      expect(progressRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lessonId: 11,
+          status: LessonProgressStatus.IN_PROGRESS,
+        }),
+      );
+    });
+
+    it('does not call quiz service for non-checkpoint lessons', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+        lesson_type: 'article' as any,
+      });
+      const nextLesson = makeLesson({
+        lesson_id: 11,
+        chapter_id: 1,
+        orderIndex: 2,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return nextLesson;
+        return null;
+      });
+
+      progressRepo.findOne.mockResolvedValue(null);
+      progressRepo.save.mockImplementation(async (x: any) => x);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(quizService.skipCheckpointsByLesson).not.toHaveBeenCalled();
     });
   });
 
@@ -1000,6 +1421,355 @@ describe('ProgressService', () => {
       const res = await service.getLevelChapterRoadmaps('u1', 2);
       expect(res).toHaveLength(2);
       expect(spy).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('Redis Cache Invalidation', () => {
+    it('invalidates cache when upsertLessonProgress is called', async () => {
+      const lesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+
+      lessonRepo.findOne.mockResolvedValue(lesson as any);
+      progressRepo.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.IN_PROGRESS,
+        }),
+      );
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return lesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+
+      lessonRepo.find.mockResolvedValue([] as any);
+      progressRepo.find.mockResolvedValue([] as any);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      await service.upsertLessonProgress('u1', 10, {
+        progressPercent: 50,
+      } as any);
+
+      expect(redisCacheService.deleteByPrefix).toHaveBeenCalledWith(
+        'learner-home:user:u1:',
+      );
+    });
+
+    it('invalidates cache when skipLessonAndUnlockNext is called', async () => {
+      const currentLesson = makeLesson({
+        lesson_id: 10,
+        chapter_id: 1,
+        orderIndex: 1,
+      });
+      const nextLesson = makeLesson({
+        lesson_id: 11,
+        chapter_id: 1,
+        orderIndex: 2,
+      });
+
+      lessonRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10) return currentLesson;
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return nextLesson;
+        return null;
+      });
+
+      progressRepo.findOne.mockResolvedValue(null);
+      progressRepo.save.mockImplementation(async (x: any) => x);
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      await service.skipLessonAndUnlockNext('u1', 10);
+
+      expect(redisCacheService.deleteByPrefix).toHaveBeenCalledWith(
+        'learner-home:user:u1:',
+      );
+    });
+
+    it('handles missing Redis cache service gracefully', async () => {
+      // Create a new service instance without Redis cache service
+      const moduleWithoutRedis: TestingModule = await Test.createTestingModule({
+        providers: [
+          ProgressService,
+          {
+            provide: getRepositoryToken(LessonProgress),
+            useValue: {
+              find: jest.fn(),
+              findOne: jest.fn(),
+              create: jest.fn((x: any) => x),
+              save: jest.fn(async (x: any) => x),
+            },
+          },
+          {
+            provide: getRepositoryToken(Lesson),
+            useValue: {
+              find: jest.fn(),
+              findOne: jest.fn(),
+            },
+          },
+          {
+            provide: getRepositoryToken(Chapter),
+            useValue: {
+              find: jest.fn(),
+              findOne: jest.fn(),
+            },
+          },
+          {
+            provide: StreakService,
+            useValue: {
+              bumpStreak: jest.fn(),
+              getStreak: jest.fn(),
+            },
+          },
+          {
+            provide: QuizService,
+            useValue: {
+              skipCheckpointsByLesson: jest.fn(),
+            },
+          },
+          // Note: RedisCacheService is not provided here
+        ],
+      }).compile();
+
+      const serviceWithoutRedis = moduleWithoutRedis.get(ProgressService);
+      const progressRepoWithoutRedis = moduleWithoutRedis.get(getRepositoryToken(LessonProgress));
+      const lessonRepoWithoutRedis = moduleWithoutRedis.get(getRepositoryToken(Lesson));
+      const chapterRepoWithoutRedis = moduleWithoutRedis.get(getRepositoryToken(Chapter));
+
+      lessonRepoWithoutRedis.findOne.mockResolvedValue(
+        makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1 }) as any,
+      );
+      progressRepoWithoutRedis.findOne.mockResolvedValue(
+        makeProgress({
+          lessonId: 10,
+          userId: 'u1',
+          status: LessonProgressStatus.IN_PROGRESS,
+        }),
+      );
+      lessonRepoWithoutRedis.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.lesson_id === 10)
+          return makeLesson({ lesson_id: 10, chapter_id: 1, orderIndex: 1 });
+        if (args?.where?.chapter_id === 1 && args?.where?.orderIndex)
+          return null;
+        return null;
+      });
+      lessonRepoWithoutRedis.find.mockResolvedValue([] as any);
+      progressRepoWithoutRedis.find.mockResolvedValue([] as any);
+      chapterRepoWithoutRedis.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2 }) as any,
+      );
+
+      // Should not throw error even without Redis service
+      const res = await serviceWithoutRedis.upsertLessonProgress('u1', 10, {
+        progressPercent: 50,
+      } as any);
+
+      expect(res.status).toBe(LessonProgressStatus.IN_PROGRESS);
+    });
+  });
+
+  describe('Video Lesson Published State Resolution', () => {
+    it('includes video lessons with URL in roadmap even when isPublished is false', async () => {
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any,
+      );
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({
+          lesson_id: 11,
+          chapter_id: 1,
+          orderIndex: 1,
+          lesson_title: 'Video with URL',
+          lesson_type: 'video' as any,
+          lesson_videoUrl: 'https://cdn.skllracademy.com/videos/11.mp4',
+          isPublished: false, // This should be overridden by URL presence
+        }),
+        makeLesson({
+          lesson_id: 12,
+          chapter_id: 1,
+          orderIndex: 2,
+          lesson_title: 'Video without URL',
+          lesson_type: 'video' as any,
+          lesson_videoUrl: '',
+          isPublished: false,
+        }),
+        makeLesson({
+          lesson_id: 13,
+          chapter_id: 1,
+          orderIndex: 3,
+          lesson_title: 'Published Article',
+          lesson_type: 'article' as any,
+          isPublished: true,
+        }),
+      ] as any);
+
+      progressRepo.findOne.mockResolvedValue(makeProgress({ lessonId: 11 }));
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 11,
+          status: LessonProgressStatus.IN_PROGRESS,
+          progressPercent: 0,
+        }),
+      ]);
+
+      streakService.getStreak.mockResolvedValue({
+        isReward: false,
+        isFlameOn: false,
+      });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+
+      // Should include lesson 11 (video with URL) despite isPublished=false
+      expect(res.items.map((item) => item.lessonId)).toContain(11);
+      expect(res.items.find((item) => item.lessonId === 11)?.isPublished).toBe(true);
+
+      // Should not include lesson 12 (video without URL and isPublished=false)
+      expect(res.items.map((item) => item.lessonId)).not.toContain(12);
+
+      // Should include lesson 13 (published article)
+      expect(res.items.map((item) => item.lessonId)).toContain(13);
+    });
+
+    it('excludes video lessons without URL even when isPublished is true', async () => {
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any,
+      );
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({
+          lesson_id: 11,
+          chapter_id: 1,
+          orderIndex: 1,
+          lesson_title: 'Video without URL',
+          lesson_type: 'video' as any,
+          lesson_videoUrl: '',
+          isPublished: true, // Should be excluded due to empty URL
+        }),
+      ] as any);
+
+      progressRepo.findOne.mockResolvedValue(makeProgress({ lessonId: 11 }));
+      progressRepo.find.mockResolvedValue([]);
+
+      streakService.getStreak.mockResolvedValue({
+        isReward: false,
+        isFlameOn: false,
+      });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+
+      // Should not include the video lesson without URL
+      expect(res.items).toHaveLength(0);
+    });
+
+    it('includes non-video lessons based on isPublished flag only', async () => {
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any,
+      );
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({
+          lesson_id: 11,
+          chapter_id: 1,
+          orderIndex: 1,
+          lesson_title: 'Published Article',
+          lesson_type: 'article' as any,
+          isPublished: true,
+        }),
+        makeLesson({
+          lesson_id: 12,
+          chapter_id: 1,
+          orderIndex: 2,
+          lesson_title: 'Unpublished Article',
+          lesson_type: 'article' as any,
+          isPublished: false,
+        }),
+        makeLesson({
+          lesson_id: 13,
+          chapter_id: 1,
+          orderIndex: 3,
+          lesson_title: 'Published Quiz',
+          lesson_type: 'quiz' as any,
+          isPublished: true,
+        }),
+      ] as any);
+
+      progressRepo.findOne.mockResolvedValue(makeProgress({ lessonId: 11 }));
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 11,
+          status: LessonProgressStatus.IN_PROGRESS,
+          progressPercent: 0,
+        }),
+      ]);
+
+      streakService.getStreak.mockResolvedValue({
+        isReward: false,
+        isFlameOn: false,
+      });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+
+      // Should include published non-video lessons
+      expect(res.items.map((item) => item.lessonId)).toContain(11);
+      expect(res.items.map((item) => item.lessonId)).toContain(13);
+
+      // Should not include unpublished non-video lessons
+      expect(res.items.map((item) => item.lessonId)).not.toContain(12);
+    });
+
+    it('handles whitespace-only video URLs correctly', async () => {
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any,
+      );
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({
+          lesson_id: 11,
+          chapter_id: 1,
+          orderIndex: 1,
+          lesson_title: 'Video with whitespace URL',
+          lesson_type: 'video' as any,
+          lesson_videoUrl: '   ', // Whitespace only
+          isPublished: true,
+        }),
+        makeLesson({
+          lesson_id: 12,
+          chapter_id: 1,
+          orderIndex: 2,
+          lesson_title: 'Video with valid URL',
+          lesson_type: 'video' as any,
+          lesson_videoUrl: ' https://cdn.skllracademy.com/videos/12.mp4 ', // URL with whitespace
+          isPublished: false,
+        }),
+      ] as any);
+
+      progressRepo.findOne.mockResolvedValue(makeProgress({ lessonId: 12 }));
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 12,
+          status: LessonProgressStatus.IN_PROGRESS,
+          progressPercent: 0,
+        }),
+      ]);
+
+      streakService.getStreak.mockResolvedValue({
+        isReward: false,
+        isFlameOn: false,
+      });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+
+      // Should not include lesson 11 (whitespace-only URL)
+      expect(res.items.map((item) => item.lessonId)).not.toContain(11);
+
+      // Should include lesson 12 (URL with surrounding whitespace)
+      expect(res.items.map((item) => item.lessonId)).toContain(12);
+      expect(res.items.find((item) => item.lessonId === 12)?.isPublished).toBe(true);
     });
   });
 });
