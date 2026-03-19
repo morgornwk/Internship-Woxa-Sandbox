@@ -432,6 +432,14 @@ export class AiQuizService {
           ? 'true_false'
           : 'multiple_choice';
 
+    // Validate type consistency
+    if (typeRaw === 'true_false' && Array.isArray(choices) && choices.length !== 2) {
+      throw new BadRequestException('true_false type requires exactly 2 choices');
+    }
+    if (typeRaw === 'multiple_choice' && Array.isArray(choices) && choices.length !== 4) {
+      throw new BadRequestException('multiple_choice type requires exactly 4 choices');
+    }
+
     if (typeof question !== 'string' || !question.trim()) {
       throw new BadRequestException('Invalid question');
     }
@@ -514,6 +522,16 @@ export class AiQuizService {
       .filter(Boolean)
       .join('\n');
 
+    const isTrueFalse = options?.quiz_type === 'true_false';
+
+    const choicesRule = isTrueFalse
+      ? `- "choices" MUST be exactly 2 strings: ["True", "False"] (or the equivalent in the target language)\n- "answerIndex" must be 0 (True) or 1 (False)`
+      : `- Choice 1: Use the EXACT value you extracted (this is the correct answer)\n- Choices 2-4: Create plausible but clearly wrong alternatives\n- All choices must be in the same format and language`;
+
+    const outputFormatExample = isTrueFalse
+      ? `{\n  "questions": [\n    {\n      "type": "true_false",\n      "question": "",\n      "choices": ["True", "False"],\n      "answerIndex": 0,\n      "explanation": ""\n    }\n  ]\n}`
+      : `{\n  "questions": [\n    {\n      "type": "multiple_choice",\n      "question": "",\n      "choices": ["", "", "", ""],\n      "answerIndex": 0,\n      "explanation": ""\n    }\n  ]\n}`;
+
     return `<task>Generate 1 quiz question by carefully analyzing the lesson content below.</task>
 
 ${meta ? `<constraints>\n${meta}\n</constraints>\n` : ''}
@@ -540,9 +558,7 @@ STEP 4: CREATE THE QUESTION
 - The question should have only ONE correct answer
 
 STEP 5: CREATE ANSWER CHOICES
-- Choice 1: Use the EXACT value you extracted (this is the correct answer)
-- Choices 2-4: Create plausible but clearly wrong alternatives
-- All choices must be in the same format and language
+${choicesRule}
 
 CRITICAL RULES:
 - Return ONLY valid JSON (no markdown code blocks, no extra text)
@@ -568,17 +584,7 @@ LANGUAGE RULES (CRITICAL):
 </instructions>
 
 <output_format>
-{
-  "questions": [
-    {
-      "type": "multiple_choice" | "true_false",
-      "question": "",
-      "choices": ["", "", "", ""],
-      "answerIndex": 0,
-      "explanation": ""
-    }
-  ]
-}
+${outputFormatExample}
 </output_format>
 
 <lesson_content>
