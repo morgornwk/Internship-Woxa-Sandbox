@@ -93,17 +93,24 @@ export class LearnerHomeService {
     return streak;
   }
 
-  // ดึงข้อมูล total XP ของผู้ใช้จากฐานข้อมูล UserXp โดยรวมค่า xpEarned ทั้งหมดที่ผู้ใช้ได้รับมาแล้ว
+  // ดึงข้อมูล total XP ของผู้ใช้จากฐานข้อมูล UserXp จากค่า xpTotal ล่าสุด เพื่อให้รองรับการหักคะแนนตอนแลกของรางวัล
   private async getTotalXp(userId: string) {
+    const latest = await this.userXpRepository.findOne({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
+    });
+
+    if (latest && typeof latest.xpTotal === 'number') {
+      return latest.xpTotal;
+    }
+
     const result = await this.userXpRepository
       .createQueryBuilder('ux')
       .select('COALESCE(SUM(ux.xpEarned), 0)', 'total')
       .where('ux.userId = :userId', { userId })
       .getRawOne<{ total: string }>();
 
-    const totalXp = Number(result?.total ?? 0);
-
-    return totalXp;
+    return Number(result?.total ?? 0);
   }
 
   private resolveRoadmapLessonPublishedState(

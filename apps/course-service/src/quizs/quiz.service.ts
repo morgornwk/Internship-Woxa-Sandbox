@@ -213,47 +213,42 @@ export class QuizService {
 
         // คำนวณ XP ของบทนั้น ๆ โดยดูจาก checkpoint ทั้งหมดในบท (ถ้าบทไหนไม่มี checkpoint เลยจะใช้ค่า default เป็น 5 XP ต่อบท)
         // ถ้ายังไม่มี user_xp ของบทนี้ → สร้างใหม่ (xpEarned/xpTotal)
-        if (!userXp) {
-          const otherRaw = await this.userXpRepository
+        // หาค่า xpTotal ล่าสุด แทนการ sum ใหม่ทั้งหมด ป้องกันคะแนนที่แลกไปกลับมาใหม่
+        let currentBalance = 0;
+        const latestRow = await this.userXpRepository.findOne({
+          where: { userId },
+          order: { updatedAt: 'DESC' },
+        });
+
+        if (latestRow && typeof latestRow.xpTotal === 'number') {
+          currentBalance = latestRow.xpTotal;
+        } else {
+          const raw = await this.userXpRepository
             .createQueryBuilder('ux')
-            .select('COALESCE(SUM(ux.xpEarned), 0)', 'sum')
+            .select('COALESCE(SUM(ux.xpEarned), 0)', 'total')
             .where('ux.userId = :userId', { userId })
-            .andWhere('ux.chapterId != :chapterId', {
-              chapterId: lesson.chapter_id,
-            })
-            .getRawOne<{ sum: string }>();
+            .getRawOne<{ total: string }>();
+          currentBalance = Number(raw?.total ?? 0);
+        }
 
-          const sumOther = Number(otherRaw?.sum ?? 0);
-          const cumulative = sumOther + 0; // quiz ไม่ให้ XP
+        const newTotal = currentBalance; // quiz ไม่ให้ XP, delta คือ 0
 
+        // ถ้ายังไม่มี user_xp ของบทนี้ → สร้างใหม่
+        if (!userXp) {
           userXp = this.userXpRepository.create({
             userId,
             chapterId: lesson.chapter_id,
             xpEarned: 0,
-            xpTotal: cumulative,
+            xpTotal: newTotal,
             checkpointStatus: 'COMPLETED',
             completedAt: new Date(),
             lastAttemptAt: new Date(),
           });
-
-          // ถ้ามีอยู่แล้วอัพเดต (xpEarned/xpTotal)
         } else {
-          const otherRaw = await this.userXpRepository
-            .createQueryBuilder('ux')
-            .select('COALESCE(SUM(ux.xpEarned), 0)', 'sum')
-            .where('ux.userId = :userId', { userId })
-            .andWhere('ux.chapterId != :chapterId', {
-              chapterId: lesson.chapter_id,
-            })
-            .getRawOne<{ sum: string }>();
-
-          const sumOther = Number(otherRaw?.sum ?? 0);
-          const cumulative = sumOther + 0; // quiz ไม่ให้ XP
-
           userXp.checkpointStatus = 'COMPLETED';
           userXp.completedAt = new Date();
           userXp.lastAttemptAt = new Date();
-          userXp.xpTotal = cumulative;
+          userXp.xpTotal = newTotal;
         }
 
         await this.userXpRepository.save(userXp);
@@ -763,16 +758,28 @@ export class QuizService {
       where: { userId, chapterId },
     });
 
-    // คำนวณ cumulative xpTotal = sum(xpEarned ของบทอื่น ๆ) + earnedXp ของบทนี้
-    const otherRaw = await this.userXpRepository
-      .createQueryBuilder('ux')
-      .select('COALESCE(SUM(ux.xpEarned), 0)', 'sum')
-      .where('ux.userId = :userId', { userId })
-      .andWhere('ux.chapterId != :chapterId', { chapterId })
-      .getRawOne<{ sum: string }>();
+    const oldEarnedXp = userXp ? userXp.xpEarned : 0;
+    const delta = earnedXp - oldEarnedXp;
 
-    const sumOther = Number(otherRaw?.sum ?? 0);
-    const cumulativeTotal = sumOther + earnedXp;
+    // หาค่า xpTotal ล่าสุด (current balance) เพื่อบวกแต้มใหม่ (delta)
+    let currentBalance = 0;
+    const latestRow = await this.userXpRepository.findOne({
+      where: { userId },
+      order: { updatedAt: 'DESC' },
+    });
+
+    if (latestRow && typeof latestRow.xpTotal === 'number') {
+      currentBalance = latestRow.xpTotal;
+    } else {
+      const raw = await this.userXpRepository
+        .createQueryBuilder('ux')
+        .select('COALESCE(SUM(ux.xpEarned), 0)', 'total')
+        .where('ux.userId = :userId', { userId })
+        .getRawOne<{ total: string }>();
+      currentBalance = Number(raw?.total ?? 0);
+    }
+
+    const cumulativeTotal = Math.max(0, currentBalance + delta);
 
     // ถ้ายังไม่มี user_xp ของบทนี้ → สร้างใหม่ (userId, chapterId, xpEarned, xpTotal, checkpointStatus, completedAt, lastAttemptAt)
     if (!userXp) {

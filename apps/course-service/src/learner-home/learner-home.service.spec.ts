@@ -29,6 +29,7 @@ describe('LearnerHomeService', () => {
   };
 
   type UserXpRepoMock = {
+    findOne: jest.Mock;
     createQueryBuilder: jest.Mock;
   };
 
@@ -98,6 +99,7 @@ describe('LearnerHomeService', () => {
         {
           provide: getRepositoryToken(UserXp),
           useValue: {
+            findOne: jest.fn().mockResolvedValue(null),
             createQueryBuilder: jest.fn(() => ({
               select: jest.fn().mockReturnThis(),
               from: jest.fn().mockReturnThis(),
