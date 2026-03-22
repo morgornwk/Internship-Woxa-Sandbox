@@ -975,6 +975,50 @@ describe('ProgressService', () => {
       expect(res.items[0].progressPercent).toBe(100);
       expect(res.progressPercent).toBe(100);
     });
+
+    it('self-heals missing rows and enforces sequential locking', async () => {
+      chapterRepo.findOne.mockResolvedValue(
+        makeChapter({ chapter_id: 1, levelId: 2, chapter_title: 'Ch' }) as any,
+      );
+      // Simulate added lesson at orderIndex 0, with a completed lesson at orderIndex 1
+      lessonRepo.find.mockResolvedValue([
+        makeLesson({ lesson_id: 1163, chapter_id: 1, orderIndex: 0 }),
+        makeLesson({ lesson_id: 1162, chapter_id: 1, orderIndex: 1 }),
+        makeLesson({ lesson_id: 1164, chapter_id: 1, orderIndex: 2 }),
+      ] as any);
+
+      progressRepo.findOne.mockResolvedValue(makeProgress({ lessonId: 1163 }));
+      // 1162 is COMPLETED, 1163 and 1164 have no rows
+      progressRepo.find.mockResolvedValue([
+        makeProgress({
+          lessonId: 1162,
+          status: LessonProgressStatus.COMPLETED,
+          progressPercent: 100,
+        }),
+      ]);
+
+      streakService.getStreak.mockResolvedValue({
+        isReward: false,
+        isFlameOn: false,
+      });
+
+      const res = await service.getChapterRoadmap('u1', 1);
+      
+      // 1163 should be IN_PROGRESS (first uncompleted)
+      expect(res.items[0].lessonId).toBe(1163);
+      expect(res.items[0].status).toBe(LessonProgressStatus.IN_PROGRESS);
+      
+      // 1162 is COMPLETED
+      expect(res.items[1].lessonId).toBe(1162);
+      expect(res.items[1].status).toBe(LessonProgressStatus.COMPLETED);
+
+      // 1164 should be LOCKED because 1163 was not completed
+      expect(res.items[2].lessonId).toBe(1164);
+      expect(res.items[2].status).toBe(LessonProgressStatus.LOCKED);
+
+      // nextAvailable should be 1163
+      expect(res.nextAvailableLessonId).toBe(1163);
+    });
   });
 
   describe('getLevelChapterRoadmaps', () => {
