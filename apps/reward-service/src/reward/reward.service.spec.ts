@@ -211,11 +211,7 @@ describe('RewardService', () => {
 
       jest
         .spyOn(userXpRepo, 'createQueryBuilder')
-        .mockReturnValue(
-          mockQB as Repository<UserXp>['createQueryBuilder'] extends () => infer T
-            ? T
-            : never,
-        );
+        .mockReturnValue(mockQB as any);
 
       const result = await service.getUserTotalXp('user1');
 
