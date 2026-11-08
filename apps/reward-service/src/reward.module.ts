@@ -25,7 +25,7 @@ import { UserXp } from 'apps/course-service/src/quizs/entities/user-xp.entity';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -35,7 +35,7 @@ import { UserXp } from 'apps/course-service/src/quizs/entities/user-xp.entity';
         type: 'postgres',
         url: config.get<string>('COURSE_DATABASE_URL'),
         entities: [UserXp],
-        synchronize: false,
+        synchronize: true,
       }),
     }),
 

@@ -42,7 +42,7 @@ import { Reward } from 'apps/reward-service/src/reward/entities/rewards.entity';
         type: 'postgres',
         url: config.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: false,
+        synchronize: true,
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -63,7 +63,7 @@ import { Reward } from 'apps/reward-service/src/reward/entities/rewards.entity';
           Quizs,
           QuizsCheckpoint,
         ],
-        synchronize: false,
+        synchronize: true,
       }),
     }),
     TypeOrmModule.forRootAsync({
@@ -73,7 +73,7 @@ import { Reward } from 'apps/reward-service/src/reward/entities/rewards.entity';
         type: 'postgres',
         url: config.get<string>('REWARD_DATABASE_URL'),
         entities: [RewardRedemption, Reward],
-        synchronize: false,
+        synchronize: true,
       }),
     }),
 

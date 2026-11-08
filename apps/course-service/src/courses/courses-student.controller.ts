@@ -21,7 +21,7 @@ import { CourseResponseDto, CourseStructureResponseDto } from './dto';
 @ApiTags('Student | Course')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(UserRole.STUDENT)
+// @Roles(UserRole.STUDENT)
 @Controller('student/course')
 export class StudentCoursesController {
   constructor(private readonly coursesService: CoursesService) {}

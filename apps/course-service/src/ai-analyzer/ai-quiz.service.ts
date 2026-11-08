@@ -383,6 +383,9 @@ export class AiQuizService {
 
     const savedQuiz = await this.quizRepo.save(quiz);
 
+
+    console.log(quizData);
+
     ai.status = 'APPROVED';
     await this.aiRepo.save(ai);
 
